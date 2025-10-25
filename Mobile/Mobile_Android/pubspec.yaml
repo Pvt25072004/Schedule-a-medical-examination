@@ -1,0 +1,46 @@
+name: clinic_booking_system
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  # PHIÊN BẢN SDK CHÍNH XÁC
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  # Cấu hình Flutter SDK cho dependencies (cấp 1)
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # CÁC GÓI FIREBASE VÀ GOOGLE_SIGN-IN ĐÃ CẬP NHẬT
+  firebase_core: ^2.25.5
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.14.0
+  firebase_messaging: ^14.7.17
+  firebase_database: ^10.4.0
+  google_sign_in: ^6.2.1
+
+  lottie: ^3.3.2
+  animations: ^2.1.0
+  image_picker: ^1.2.0
+  http: ^1.5.0
+  emailjs: ^4.0.0
+
+# dev_dependencies là khóa chính, cùng cấp với dependencies
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # flutter_lints phải là một package dependency (cấp 1)
+  flutter_lints: ^3.0.0
+
+# flutter là khóa chính, cùng cấp với dependencies
+flutter:
+  # uses-material-design phải thụt lề dưới flutter
+  uses-material-design: true
+  assets:
+    # assets phải thụt lề dưới flutter
+    - assets/animations/
+    - assets/images/
