@@ -216,9 +216,6 @@ class AuthService {
     }
   }
 
-  /// ---------------- PassWord --------------
-
-
   /// ---------------- Logout ----------------
   Future<void> signOut() async {
     await _googleSignIn.signOut();

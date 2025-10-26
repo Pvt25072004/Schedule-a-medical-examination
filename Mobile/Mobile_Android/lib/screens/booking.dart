@@ -11,8 +11,18 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _selectedDoctor;
   DateTime? _selectedDate;
   String? _selectedTimeSlot;
-  final List<String> doctors = ['BS. Nguyễn Văn A - Tim mạch', 'BS. Trần Thị B - Nội khoa', 'BS. Lê Văn C - Nhi khoa'];
-  final List<String> timeSlots = ['08:00 - 09:00', '09:00 - 10:00', '10:00 - 11:00', '14:00 - 15:00', '15:00 - 16:00'];
+  final List<String> doctors = [
+    'BS. Nguyễn Văn A - Tim mạch',
+    'BS. Trần Thị B - Nội khoa',
+    'BS. Lê Văn C - Nhi khoa'
+  ];
+  final List<String> timeSlots = [
+    '08:00 - 09:00',
+    '09:00 - 10:00',
+    '10:00 - 11:00',
+    '14:00 - 15:00',
+    '15:00 - 16:00'
+  ];
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -27,14 +37,18 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _confirmBooking() {
-    if (_selectedDoctor == null || _selectedDate == null || _selectedTimeSlot == null) {
+    if (_selectedDoctor == null ||
+        _selectedDate == null ||
+        _selectedTimeSlot == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn đầy đủ thông tin!')),
       );
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Đặt lịch thành công cho $_selectedDoctor vào $_selectedDate lúc $_selectedTimeSlot!')),
+      SnackBar(
+          content: Text(
+              'Đặt lịch thành công cho $_selectedDoctor vào $_selectedDate lúc $_selectedTimeSlot!')),
     );
     Navigator.pop(context); // FIXED: Quay về screen trước
   }
@@ -47,6 +61,7 @@ class _BookingScreenState extends State<BookingScreen> {
         title: const Text("Đặt lịch khám"),
         backgroundColor: Colors.greenAccent,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -66,12 +81,14 @@ class _BookingScreenState extends State<BookingScreen> {
                   labelText: 'Bác sĩ/Khoa',
                   contentPadding: EdgeInsets.all(16),
                 ),
-                items: doctors.map((doctor) => DropdownMenuItem(value: doctor, child: Text(doctor))).toList(),
+                items: doctors
+                    .map((doctor) =>
+                        DropdownMenuItem(value: doctor, child: Text(doctor)))
+                    .toList(),
                 onChanged: (value) => setState(() => _selectedDoctor = value),
               ),
             ),
             const SizedBox(height: 20),
-
             const Text(
               'Chọn ngày khám',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -80,13 +97,14 @@ class _BookingScreenState extends State<BookingScreen> {
             Card(
               child: ListTile(
                 title: const Text('Ngày khám'),
-                subtitle: Text(_selectedDate == null ? 'Chọn ngày' : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+                subtitle: Text(_selectedDate == null
+                    ? 'Chọn ngày'
+                    : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () => _selectDate(context),
               ),
             ),
             const SizedBox(height: 20),
-
             const Text(
               'Chọn khung giờ',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -96,24 +114,28 @@ class _BookingScreenState extends State<BookingScreen> {
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: timeSlots.map((slot) => FilterChip(
-                  label: Text(slot),
-                  selected: _selectedTimeSlot == slot,
-                  onSelected: (selected) => setState(() => _selectedTimeSlot = selected ? slot : null),
-                  selectedColor: Colors.greenAccent.withOpacity(0.3),
-                )).toList(),
+                children: timeSlots
+                    .map((slot) => FilterChip(
+                          label: Text(slot),
+                          selected: _selectedTimeSlot == slot,
+                          onSelected: (selected) => setState(
+                              () => _selectedTimeSlot = selected ? slot : null),
+                          selectedColor: Colors.greenAccent.withOpacity(0.3),
+                        ))
+                    .toList(),
               ),
             ),
             const SizedBox(height: 40),
-
             ElevatedButton(
               onPressed: _confirmBooking,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.greenAccent,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Xác nhận đặt lịch', style: TextStyle(fontSize: 18, color: Colors.white)),
+              child: const Text('Xác nhận đặt lịch',
+                  style: TextStyle(fontSize: 18, color: Colors.white)),
             ),
           ],
         ),

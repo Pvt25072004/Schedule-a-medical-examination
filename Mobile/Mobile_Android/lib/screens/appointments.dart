@@ -11,7 +11,8 @@ class AppointmentsScreen extends StatefulWidget {
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
   String? _userRole;
-  List<Map<String, dynamic>> _appointments = []; // FIXED: Mock data (fetch from DB in real)
+  List<Map<String, dynamic>> _appointments =
+      []; // FIXED: Mock data (fetch from DB in real)
 
   @override
   void initState() {
@@ -71,7 +72,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     if (_userRole == null) {
       return const Scaffold(
         backgroundColor: Color(0xFFFFF8F0),
-        body: Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
+        body:
+            Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
       );
     }
 
@@ -81,56 +83,67 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         title: const Text("Lịch hẹn"),
         backgroundColor: Colors.greenAccent,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         elevation: 0,
       ),
       body: _appointments.isEmpty
           ? const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.event_busy, size: 80, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Chưa có lịch hẹn nào', style: TextStyle(fontSize: 18, color: Colors.grey)),
-          ],
-        ),
-      )
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.event_busy, size: 80, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('Chưa có lịch hẹn nào',
+                      style: TextStyle(fontSize: 18, color: Colors.grey)),
+                ],
+              ),
+            )
           : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _appointments.length,
-        itemBuilder: (context, index) {
-          final appt = _appointments[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ExpansionTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.greenAccent.withOpacity(0.2),
-                child: const Icon(Icons.schedule, color: Colors.greenAccent),
-              ),
-              title: Text(
-                '${appt['date']} - ${appt['time']}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              subtitle: Text(appt['notes']),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: appt['status'] == 'Đã xác nhận' ? Colors.green : Colors.orange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  appt['status'],
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-              children: _userRole == 'DOCTOR'
-                  ? _buildDoctorView(appt) // FIXED: Doctor view: patient details
-                  : _buildPatientView(appt), // FIXED: Patient view: doctor details
+              padding: const EdgeInsets.all(16),
+              itemCount: _appointments.length,
+              itemBuilder: (context, index) {
+                final appt = _appointments[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  child: ExpansionTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.greenAccent.withOpacity(0.2),
+                      child:
+                          const Icon(Icons.schedule, color: Colors.greenAccent),
+                    ),
+                    title: Text(
+                      '${appt['date']} - ${appt['time']}',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    subtitle: Text(appt['notes']),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: appt['status'] == 'Đã xác nhận'
+                            ? Colors.green
+                            : Colors.orange,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        appt['status'],
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                    children: _userRole == 'DOCTOR'
+                        ? _buildDoctorView(
+                            appt) // FIXED: Doctor view: patient details
+                        : _buildPatientView(
+                            appt), // FIXED: Patient view: doctor details
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 
@@ -145,13 +158,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             _buildDetailItem(Icons.person, 'Bệnh nhân', appt['patientName']),
             _buildDetailItem(Icons.phone, 'SĐT', appt['patientPhone']),
             _buildDetailItem(Icons.email, 'Email', appt['patientEmail']),
-            _buildDetailItem(Icons.medical_information, 'Bệnh nền', appt['medicalHistory']),
+            _buildDetailItem(
+                Icons.medical_information, 'Bệnh nền', appt['medicalHistory']),
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () {
                 // FIXED: Placeholder view full profile (limited access)
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Xem chi tiết bệnh nhân (sắp có)')),
+                  const SnackBar(
+                      content: Text('Xem chi tiết bệnh nhân (sắp có)')),
                 );
               },
               icon: const Icon(Icons.visibility, size: 18),
@@ -171,8 +186,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailItem(Icons.local_hospital, 'Bác sĩ', appt['doctorName']),
-            _buildDetailItem(Icons.medical_services  , 'Chuyên khoa', appt['doctorSpecialty']),
+            _buildDetailItem(
+                Icons.local_hospital, 'Bác sĩ', appt['doctorName']),
+            _buildDetailItem(
+                Icons.medical_services, 'Chuyên khoa', appt['doctorSpecialty']),
             _buildDetailItem(Icons.phone, 'SĐT', appt['doctorPhone']),
             const SizedBox(height: 8),
             TextButton.icon(
@@ -202,7 +219,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                Text(label,
+                    style:
+                        TextStyle(fontSize: 14, color: Colors.grey.shade600)),
                 Text(value, style: const TextStyle(fontSize: 16)),
               ],
             ),
