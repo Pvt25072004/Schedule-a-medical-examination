@@ -3,6 +3,7 @@ import 'package:animations/animations.dart';
 import 'package:clinic_booking_system/screens/main_screen.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/service/email_service.dart';
+import 'package:clinic_booking_system/subscreens/password/emailforpass.dart';
 import 'package:clinic_booking_system/utils/otp_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -17,8 +18,7 @@ class Loginscreen extends StatefulWidget {
   State<Loginscreen> createState() => _Loginscreen();
 }
 
-class _Loginscreen extends State<Loginscreen>
-    with TickerProviderStateMixin {
+class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
   final _authService = AuthService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -36,9 +36,8 @@ class _Loginscreen extends State<Loginscreen>
   // Controller cho Looping Animation của mũi tên
   late AnimationController _arrowController;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _borderGlowAnimation;
 
-  // Tọa độ cho quả bóng di chuyển
+  // Tọa độ cho quả bóng
   late AnimationController _borderFlashController;
 
   late double x2, y2, dx2, dy2;
@@ -76,7 +75,8 @@ class _Loginscreen extends State<Loginscreen>
     _offsetAnimation = Tween<Offset>(
       begin: const Offset(0.0, 1.0),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _mainController, curve: Curves.easeInOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _mainController, curve: Curves.easeInOutCubic));
     _mainController.forward();
 
     // ====================== 2. Khởi tạo Arrow Controller (Looping) ======================
@@ -88,13 +88,6 @@ class _Loginscreen extends State<Loginscreen>
     _scaleAnimation = Tween<double>(
       begin: 0.9,
       end: 1.1,
-    ).animate(
-      CurvedAnimation(parent: _arrowController, curve: Curves.easeInOut),
-    );
-
-    _borderGlowAnimation = Tween<double>(
-      begin: 0.0,
-      end: 8.0,
     ).animate(
       CurvedAnimation(parent: _arrowController, curve: Curves.easeInOut),
     );
@@ -241,11 +234,13 @@ class _Loginscreen extends State<Loginscreen>
         return;
       }
       setState(() {
-
         _updateBall(
-          x2, y2, dx2, dy2,
+          x2,
+          y2,
+          dx2,
+          dy2,
           _borderFlashController2,
-              (newX, newY, newDX, newDY) {
+          (newX, newY, newDX, newDY) {
             x2 = newX;
             y2 = newY;
             dx2 = newDX;
@@ -254,9 +249,12 @@ class _Loginscreen extends State<Loginscreen>
         );
 
         _updateBall(
-          x3, y3, dx3, dy3,
+          x3,
+          y3,
+          dx3,
+          dy3,
           _borderFlashController3,
-              (newX, newY, newDX, newDY) {
+          (newX, newY, newDX, newDY) {
             x3 = newX;
             y3 = newY;
             dx3 = newDX;
@@ -265,9 +263,12 @@ class _Loginscreen extends State<Loginscreen>
         );
 
         _updateBall(
-          x4, y4, dx4, dy4,
+          x4,
+          y4,
+          dx4,
+          dy4,
           _borderFlashController4,
-              (newX, newY, newDX, newDY) {
+          (newX, newY, newDX, newDY) {
             x4 = newX;
             y4 = newY;
             dx4 = newDX;
@@ -276,9 +277,12 @@ class _Loginscreen extends State<Loginscreen>
         );
 
         _updateBall(
-          x5, y5, dx5, dy5,
+          x5,
+          y5,
+          dx5,
+          dy5,
           _borderFlashController5,
-              (newX, newY, newDX, newDY) {
+          (newX, newY, newDX, newDY) {
             x5 = newX;
             y5 = newY;
             dx5 = newDX;
@@ -287,9 +291,12 @@ class _Loginscreen extends State<Loginscreen>
         );
 
         _updateBall(
-          x6, y6, dx6, dy6,
+          x6,
+          y6,
+          dx6,
+          dy6,
           _borderFlashController6,
-              (newX, newY, newDX, newDY) {
+          (newX, newY, newDX, newDY) {
             x6 = newX;
             y6 = newY;
             dx6 = newDX;
@@ -301,13 +308,13 @@ class _Loginscreen extends State<Loginscreen>
   }
 
   void _updateBall(
-      double x,
-      double y,
-      double dx,
-      double dy,
-      AnimationController flash,
-      Function(double, double, double, double) applyChanges,
-      ) {
+    double x,
+    double y,
+    double dx,
+    double dy,
+    AnimationController flash,
+    Function(double, double, double, double) applyChanges,
+  ) {
     x += dx;
     y += dy;
 
@@ -338,17 +345,20 @@ class _Loginscreen extends State<Loginscreen>
             children: [
               const Text(
                 "Chào mừng bạn đến với ứng dụng Clinic Booking System!\n\n"
-                    "Bằng việc sử dụng ứng dụng này, bạn đồng ý với các điều khoản và điều kiện sau:\n\n"
-                    "1. Quyền sử dụng: Ứng dụng được cung cấp miễn phí cho mục đích đặt lịch khám bệnh. Bạn không được sao chép, phân phối hoặc sửa đổi nội dung mà không có sự cho phép.\n\n"
-                    "2. Bảo mật thông tin: Chúng tôi cam kết bảo vệ thông tin cá nhân của bạn theo quy định GDPR và luật bảo vệ dữ liệu Việt Nam. Dữ liệu chỉ được sử dụng để cung cấp dịch vụ.\n\n"
-                    "3. Trách nhiệm: Người dùng chịu trách nhiệm về tính chính xác của thông tin cung cấp. Chúng tôi không chịu trách nhiệm cho bất kỳ thiệt hại nào phát sinh từ việc sử dụng ứng dụng.\n\n"
-                    "4. Thay đổi điều khoản: Chúng tôi có quyền thay đổi điều khoản này bất cứ lúc nào. Việc tiếp tục sử dụng ứng dụng sau thay đổi có nghĩa là bạn chấp nhận.\n\n"
-                    "5. Liên hệ: Nếu có thắc mắc, vui lòng liên hệ support@clinicbooking.com.\n\n"
-                    "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi! (Nội dung mẫu dài để demo scroll)",
+                "Bằng việc sử dụng ứng dụng này, bạn đồng ý với các điều khoản và điều kiện sau:\n\n"
+                "1. Quyền sử dụng: Ứng dụng được cung cấp miễn phí cho mục đích đặt lịch khám bệnh. Bạn không được sao chép, phân phối hoặc sửa đổi nội dung mà không có sự cho phép.\n\n"
+                "2. Bảo mật thông tin: Chúng tôi cam kết bảo vệ thông tin cá nhân của bạn theo quy định GDPR và luật bảo vệ dữ liệu Việt Nam. Dữ liệu chỉ được sử dụng để cung cấp dịch vụ.\n\n"
+                "3. Trách nhiệm: Người dùng chịu trách nhiệm về tính chính xác của thông tin cung cấp. Chúng tôi không chịu trách nhiệm cho bất kỳ thiệt hại nào phát sinh từ việc sử dụng ứng dụng.\n\n"
+                "4. Thay đổi điều khoản: Chúng tôi có quyền thay đổi điều khoản này bất cứ lúc nào. Việc tiếp tục sử dụng ứng dụng sau thay đổi có nghĩa là bạn chấp nhận.\n\n"
+                "5. Liên hệ: Nếu có thắc mắc, vui lòng liên hệ support@clinicbooking.com.\n\n"
+                "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi! (Nội dung mẫu dài để demo scroll)",
                 style: TextStyle(fontSize: 14),
               ),
               // Thêm nội dung dài hơn nếu cần để test scroll
-              ...List.generate(10, (index) => Text("Đoạn văn ${index + 1}: Nội dung chi tiết về điều khoản số ${index + 1}. Đây là nội dung mẫu để làm dài popup.\n\n")),
+              ...List.generate(
+                  10,
+                  (index) => Text(
+                      "Đoạn văn ${index + 1}: Nội dung chi tiết về điều khoản số ${index + 1}. Đây là nội dung mẫu để làm dài popup.\n\n")),
             ],
           ),
         ),
@@ -433,7 +443,8 @@ class _Loginscreen extends State<Loginscreen>
           }
 
           showLoadingDialog("Đang tạo tài khoản...");
-          final UserCredential createdCred = await _authService.signUpWithEmail(input, password, displayName);
+          final UserCredential createdCred =
+              await _authService.signUpWithEmail(input, password, displayName);
 
           if (createdCred.user != null) {
             await _authService.updateProfile(createdCred.user!.uid, {
@@ -443,12 +454,14 @@ class _Loginscreen extends State<Loginscreen>
             });
           }
 
-          final cred = await _authService.signInWithEmail(input, password); // SỬA ĐỔI LỚN
+          final cred = await _authService.signInWithEmail(
+              input, password); // SỬA ĐỔI LỚN
           safePopDialog();
 
           final uid = cred.user?.uid;
           if (uid != null) {
-            await _authService.updateProfile(uid, {'is_onboarding_needed': true});
+            await _authService
+                .updateProfile(uid, {'is_onboarding_needed': true});
           }
 
           _showSnack("✅ Đăng ký thành công! Hãy chọn vai trò.");
@@ -484,7 +497,8 @@ class _Loginscreen extends State<Loginscreen>
           return;
         }
 
-        userCred = await _authService.verifyOtpAndSignIn(verificationId, smsCode);
+        userCred =
+            await _authService.verifyOtpAndSignIn(verificationId, smsCode);
       } else {
         if (!isValidEmail(input)) {
           safePopDialog();
@@ -499,8 +513,10 @@ class _Loginscreen extends State<Loginscreen>
 
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && context.mounted) {
-        final userData = await _authService.fetchUserData(user.uid); // FIXED: Fetch từ DB
-        final bool isOnboardingNeeded = userData['is_onboarding_needed'] ?? false;
+        final userData =
+            await _authService.fetchUserData(user.uid); // FIXED: Fetch từ DB
+        final bool isOnboardingNeeded =
+            userData['is_onboarding_needed'] ?? false;
         final String userRole = userData['role'] ?? 'UNASSIGNED';
 
         _showSnack("🎉 Đăng nhập thành công!");
@@ -582,7 +598,8 @@ class _Loginscreen extends State<Loginscreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && context.mounted) {
         final userData = await _authService.fetchUserData(user.uid);
-        final bool isOnboardingNeeded = userData['is_onboarding_needed'] ?? true; // Mặc định true cho Google mới
+        final bool isOnboardingNeeded = userData['is_onboarding_needed'] ??
+            true; // Mặc định true cho Google mới
         final String userRole = userData['role'] ?? 'UNASSIGNED';
 
         _showSnack("🎉 Đăng nhập Google thành công!");
@@ -758,7 +775,8 @@ class _Loginscreen extends State<Loginscreen>
                   child: Column(
                     children: [
                       const SizedBox(height: 20),
-                      Image.asset('assets/images/logo.png', width: 150, height: 150),
+                      Image.asset('assets/images/logo.png',
+                          width: 150, height: 150),
                       AnimatedSize(
                         duration: const Duration(milliseconds: 600),
                         curve: Curves.easeInOut,
@@ -768,19 +786,19 @@ class _Loginscreen extends State<Loginscreen>
                             duration: const Duration(milliseconds: 600),
                             transitionBuilder:
                                 (child, animation, secondaryAnimation) =>
-                                FadeTransition(
-                                  opacity: animation,
-                                  child: SizeTransition(
-                                    sizeFactor: animation,
-                                    axis: Axis.vertical,
-                                    child: child,
-                                  ),
-                                ),
+                                    FadeTransition(
+                              opacity: animation,
+                              child: SizeTransition(
+                                sizeFactor: animation,
+                                axis: Axis.vertical,
+                                child: child,
+                              ),
+                            ),
                             child: isLogin
                                 ? _buildLoginCard(key: const ValueKey("login"))
                                 : _buildRegisterCard(
-                              key: const ValueKey("register"),
-                            ),
+                                    key: const ValueKey("register"),
+                                  ),
                           ),
                         ),
                       ),
@@ -800,7 +818,9 @@ class _Loginscreen extends State<Loginscreen>
                                 width: 12,
                                 height: 12,
                                 decoration: BoxDecoration(
-                                  color: isLogin ? Colors.greenAccent : Colors.grey.shade400,
+                                  color: isLogin
+                                      ? Colors.greenAccent
+                                      : Colors.grey.shade400,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -814,7 +834,9 @@ class _Loginscreen extends State<Loginscreen>
                                 width: 12,
                                 height: 12,
                                 decoration: BoxDecoration(
-                                  color: !isLogin ? Colors.greenAccent : Colors.grey.shade400,
+                                  color: !isLogin
+                                      ? Colors.greenAccent
+                                      : Colors.grey.shade400,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -841,7 +863,9 @@ class _Loginscreen extends State<Loginscreen>
                     ignoring: _mainController.value < 0.01,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: _mainController.isAnimating ? null : _triggerExitToWelcome,
+                      onTap: _mainController.isAnimating
+                          ? null
+                          : _triggerExitToWelcome,
                       child: AnimatedBuilder(
                           animation: _arrowController,
                           builder: (context, child) {
@@ -849,7 +873,8 @@ class _Loginscreen extends State<Loginscreen>
 
                             // scale = 0.9 → độ sáng nền thấp
                             // scale = 1.1 → nền sáng hơn
-                            final double backgroundOpacity = 0.12 + (scale - 0.9) * 1.6;
+                            final double backgroundOpacity =
+                                0.12 + (scale - 0.9) * 1.6;
 
                             return Container(
                               width: 70,
@@ -862,31 +887,38 @@ class _Loginscreen extends State<Loginscreen>
                                   height: 55,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Colors.black.withOpacity(backgroundOpacity), // nền tối để nổi avatar
+                                    color: Colors.black.withOpacity(
+                                        backgroundOpacity), // nền tối để nổi avatar
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.white.withOpacity(
-                                          0.3 + (scale - 0.9) * 2.2, // scale to, glow sáng gấp đôi
+                                          0.3 +
+                                              (scale - 0.9) *
+                                                  2.2, // scale to, glow sáng gấp đôi
                                         ),
-                                        blurRadius: 8 + (scale - 0.9) * 30, // tăng blur khi to để cảm giác nở sáng
+                                        blurRadius: 8 +
+                                            (scale - 0.9) *
+                                                30, // tăng blur khi to để cảm giác nở sáng
                                         spreadRadius: (scale - 0.9) * 14,
                                       ),
                                     ],
                                     border: Border.all(
                                       color: Colors.white,
-                                      width: 2 + (scale - 0.9) * 4, // border trắng sáng mạnh khi scale max
+                                      width: 2 +
+                                          (scale - 0.9) *
+                                              4, // border trắng sáng mạnh khi scale max
                                     ),
                                   ),
                                   child: const Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     size: 32,
-                                    color: Colors.white, // icon trắng để đồng bộ ánh sáng
+                                    color: Colors
+                                        .white, // icon trắng để đồng bộ ánh sáng
                                   ),
                                 ),
                               ),
                             );
-                          }
-                      ),
+                          }),
                     ),
                   ),
                 );
@@ -934,11 +966,18 @@ class _Loginscreen extends State<Loginscreen>
               ),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: _navigateToForgotPassword,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ForgotPasswordScreen(),
+                    ),
+                  );
+                },
                 child: Text(
                   "Quên mật khẩu?",
                   textAlign: TextAlign.end,
-                  style: TextStyle(color: Colors.greenAccent, fontSize: 13),
+                  style: TextStyle(color: Colors.greenAccent, fontSize: 15),
                 ),
               ),
             ],
@@ -1015,7 +1054,10 @@ class _Loginscreen extends State<Loginscreen>
                     onTap: _showTermsDialog,
                     child: const Text(
                       "Tôi đã đọc và đồng ý với Điều khoản & Điều kiện",
-                      style: TextStyle(fontSize: 13, color: Colors.blue, decoration: TextDecoration.underline),
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline),
                     ),
                   ),
                 ),
@@ -1037,11 +1079,11 @@ class _Loginscreen extends State<Loginscreen>
   }
 
   Widget _buildTextField(
-      String hint,
-      IconData icon,
-      TextEditingController controller, {
-        bool obscure = false,
-      }) {
+    String hint,
+    IconData icon,
+    TextEditingController controller, {
+    bool obscure = false,
+  }) {
     // Xác định đây có phải là trường nhập email/số điện thoại không
     bool isEmailOrPhoneField = controller == _emailController;
 
@@ -1049,83 +1091,85 @@ class _Loginscreen extends State<Loginscreen>
       padding: const EdgeInsets.only(bottom: 12),
       child: isEmailOrPhoneField
           ? (isLogin
-          ? Row(
-        children: [
-          // Dropdown chọn loại đăng nhập
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _inputType,
-                items: const [
-                  DropdownMenuItem(value: 'email', child: Text('Email')),
-                  DropdownMenuItem(value: 'phone', child: Text('SĐT')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _inputType = value!;
-                    _emailController.clear(); // reset khi đổi loại
-                    _passwordController.clear();
-                    _confirmPassword.clear();
-                  });
-                },
-                icon: const Icon(Icons.arrow_drop_down),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
+              ? Row(
+                  children: [
+                    // Dropdown chọn loại đăng nhập
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _inputType,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'email', child: Text('Email')),
+                            DropdownMenuItem(
+                                value: 'phone', child: Text('SĐT')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _inputType = value!;
+                              _emailController.clear(); // reset khi đổi loại
+                              _passwordController.clear();
+                              _confirmPassword.clear();
+                            });
+                          },
+                          icon: const Icon(Icons.arrow_drop_down),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
 
-          // TextField chính
-          Expanded(
-            child: TextField(
+                    // TextField chính
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        obscureText: obscure,
+                        keyboardType: _inputType == 'phone'
+                            ? TextInputType.phone
+                            : TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(
+                            _inputType == 'phone' ? Icons.phone : Icons.email,
+                            color: Colors.greenAccent,
+                          ),
+                          hintText: _inputType == 'phone'
+                              ? 'Nhập số điện thoại'
+                              : 'Nhập email',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : TextField(
+                  controller: controller,
+                  obscureText: obscure,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.email, color: Colors.greenAccent),
+                    hintText: 'Nhập email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ))
+          : TextField(
               controller: controller,
               obscureText: obscure,
-              keyboardType: _inputType == 'phone'
-                  ? TextInputType.phone
-                  : TextInputType.emailAddress,
               decoration: InputDecoration(
-                prefixIcon: Icon(
-                  _inputType == 'phone' ? Icons.phone : Icons.email,
-                  color: Colors.greenAccent,
-                ),
-                hintText: _inputType == 'phone'
-                    ? 'Nhập số điện thoại'
-                    : 'Nhập email',
+                prefixIcon: Icon(icon, color: Colors.greenAccent),
+                hintText: hint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
-          ),
-        ],
-      )
-          : TextField(
-        controller: controller,
-        obscureText: obscure,
-        keyboardType: TextInputType.emailAddress,
-        decoration: InputDecoration(
-          prefixIcon: Icon(Icons.email, color: Colors.greenAccent),
-          hintText: 'Nhập email',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ))
-          : TextField(
-        controller: controller,
-        obscureText: obscure,
-        decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: Colors.greenAccent),
-          hintText: hint,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1166,10 +1210,10 @@ class _Loginscreen extends State<Loginscreen>
             decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.grey.shade300)
-            ),
+                border: Border.all(color: Colors.grey.shade300)),
             child: Center(
-              child: Icon(Icons.g_mobiledata, color: Colors.red.shade600, size: 36),
+              child: Icon(Icons.g_mobiledata,
+                  color: Colors.red.shade600, size: 36),
             ),
           ),
         ),
@@ -1180,7 +1224,8 @@ class _Loginscreen extends State<Loginscreen>
           onTap: () {
             _showSnack("Tính năng khác chưa được triển khai.");
           },
-          child: const Icon(Icons.alternate_email, color: Colors.lightBlue, size: 36),
+          child: const Icon(Icons.alternate_email,
+              color: Colors.lightBlue, size: 36),
         ),
       ],
     );
@@ -1216,6 +1261,7 @@ class _Loginscreen extends State<Loginscreen>
       ),
     );
   }
+
   Widget _buildBall(Animation<double> flashAnim, Color color) {
     return Container(
       width: 80,
@@ -1225,19 +1271,16 @@ class _Loginscreen extends State<Loginscreen>
         color: color.withOpacity(0.3),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withOpacity(
-                0.3 + flashAnim.value * 0.7),
+            color: Colors.white.withOpacity(0.3 + flashAnim.value * 0.7),
             blurRadius: 10 + flashAnim.value * 18,
             spreadRadius: 1 + flashAnim.value * 3,
           ),
         ],
         border: Border.all(
           width: 2 + flashAnim.value * 3,
-          color: Colors.white.withOpacity(
-              0.4 + flashAnim.value * 0.6),
+          color: Colors.white.withOpacity(0.4 + flashAnim.value * 0.6),
         ),
       ),
     );
   }
-
 }
