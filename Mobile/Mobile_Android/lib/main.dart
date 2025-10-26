@@ -1,4 +1,3 @@
-// main.dart - FIXED: Update _getStartScreen để check incomplete → OnboardingFlowScreen (combined), sign out nếu cần
 import 'package:clinic_booking_system/firebase_options.dart';
 import 'package:clinic_booking_system/screens/chat.dart';
 import 'package:clinic_booking_system/screens/home.dart';

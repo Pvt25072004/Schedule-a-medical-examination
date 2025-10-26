@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'package:animations/animations.dart';
 import 'package:clinic_booking_system/screens/main_screen.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/service/email_service.dart';
 import 'package:clinic_booking_system/utils/otp_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import '../screens/onboarding.dart';
 
@@ -25,6 +25,7 @@ class _Loginscreen extends State<Loginscreen>
   final _confirmPassword = TextEditingController();
   final _displayNameController = TextEditingController();
   String _inputType = 'email';
+  bool _agreed = false;
 
   late bool isLogin;
 
@@ -35,8 +36,32 @@ class _Loginscreen extends State<Loginscreen>
   // Controller cho Looping Animation của mũi tên
   late AnimationController _arrowController;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _haloSizeAnimation;
-  late Animation<double> _haloOpacityAnimation;
+  late Animation<double> _borderGlowAnimation;
+
+  // Tọa độ cho quả bóng di chuyển
+  late AnimationController _borderFlashController;
+
+  late double x2, y2, dx2, dy2;
+  late double x3, y3, dx3, dy3;
+  late double x4, y4, dx4, dy4;
+  late double x5, y5, dx5, dy5;
+  late double x6, y6, dx6, dy6;
+
+  late AnimationController _borderFlashController2;
+  late AnimationController _borderFlashController3;
+  late AnimationController _borderFlashController4;
+  late AnimationController _borderFlashController5;
+  late AnimationController _borderFlashController6;
+
+  late Animation<double> _borderFlashAnimation2;
+  late Animation<double> _borderFlashAnimation3;
+  late Animation<double> _borderFlashAnimation4;
+  late Animation<double> _borderFlashAnimation5;
+  late Animation<double> _borderFlashAnimation6;
+
+  Timer? _timer;
+
+  final double speed = 1.2;
 
   @override
   void initState() {
@@ -60,15 +85,280 @@ class _Loginscreen extends State<Loginscreen>
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
 
-    // 3. Định nghĩa các Animations (sử dụng _arrowController)
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+    _scaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.1,
+    ).animate(
       CurvedAnimation(parent: _arrowController, curve: Curves.easeInOut),
     );
-    _haloSizeAnimation = Tween<double>(begin: 0, end: 180).animate(
+
+    _borderGlowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 8.0,
+    ).animate(
       CurvedAnimation(parent: _arrowController, curve: Curves.easeInOut),
     );
-    _haloOpacityAnimation = Tween<double>(begin: 0.0, end: 0.4).animate(
-      CurvedAnimation(parent: _arrowController, curve: Curves.easeInOut),
+
+    // ====================== 3. Khởi tạo bóng bay ======================
+    // ====================== Bóng 2 ======================
+    dx2 = speed;
+    dy2 = -speed;
+    x2 = 50;
+    y2 = 530;
+
+    _borderFlashController2 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    _borderFlashAnimation2 = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _borderFlashController2,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _borderFlashController2.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _borderFlashController2.reverse();
+      }
+    });
+
+    // ====================== Bóng 3 ======================
+    dx3 = -speed;
+    dy3 = speed;
+    x3 = 260;
+    y3 = 80;
+
+    _borderFlashController3 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    _borderFlashAnimation3 = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _borderFlashController3,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _borderFlashController3.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _borderFlashController3.reverse();
+      }
+    });
+
+    // ====================== Bóng 4 ======================
+    dx4 = -speed;
+    dy4 = -speed;
+    x4 = 300;
+    y4 = 400;
+
+    _borderFlashController4 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    _borderFlashAnimation4 = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _borderFlashController4,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _borderFlashController4.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _borderFlashController4.reverse();
+      }
+    });
+
+    // ====================== Bóng 5 ======================
+    dx5 = speed;
+    dy5 = speed;
+    x5 = 100;
+    y5 = 200;
+
+    _borderFlashController5 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    _borderFlashAnimation5 = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _borderFlashController5,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _borderFlashController5.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _borderFlashController5.reverse();
+      }
+    });
+
+    // ====================== Bóng 6 ======================
+    dx6 = -speed;
+    dy6 = speed;
+    x6 = 200;
+    y6 = 300;
+
+    _borderFlashController6 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    _borderFlashAnimation6 = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _borderFlashController6,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _borderFlashController6.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _borderFlashController6.reverse();
+      }
+    });
+
+    _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+
+        _updateBall(
+          x2, y2, dx2, dy2,
+          _borderFlashController2,
+              (newX, newY, newDX, newDY) {
+            x2 = newX;
+            y2 = newY;
+            dx2 = newDX;
+            dy2 = newDY;
+          },
+        );
+
+        _updateBall(
+          x3, y3, dx3, dy3,
+          _borderFlashController3,
+              (newX, newY, newDX, newDY) {
+            x3 = newX;
+            y3 = newY;
+            dx3 = newDX;
+            dy3 = newDY;
+          },
+        );
+
+        _updateBall(
+          x4, y4, dx4, dy4,
+          _borderFlashController4,
+              (newX, newY, newDX, newDY) {
+            x4 = newX;
+            y4 = newY;
+            dx4 = newDX;
+            dy4 = newDY;
+          },
+        );
+
+        _updateBall(
+          x5, y5, dx5, dy5,
+          _borderFlashController5,
+              (newX, newY, newDX, newDY) {
+            x5 = newX;
+            y5 = newY;
+            dx5 = newDX;
+            dy5 = newDY;
+          },
+        );
+
+        _updateBall(
+          x6, y6, dx6, dy6,
+          _borderFlashController6,
+              (newX, newY, newDX, newDY) {
+            x6 = newX;
+            y6 = newY;
+            dx6 = newDX;
+            dy6 = newDY;
+          },
+        );
+      });
+    });
+  }
+
+  void _updateBall(
+      double x,
+      double y,
+      double dx,
+      double dy,
+      AnimationController flash,
+      Function(double, double, double, double) applyChanges,
+      ) {
+    x += dx;
+    y += dy;
+
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
+
+    if (x <= 0 || x >= w - 60) {
+      dx = -dx;
+      flash.forward(from: 0);
+    }
+    if (y <= 0 || y >= h - 60) {
+      dy = -dy;
+      flash.forward(from: 0);
+    }
+
+    applyChanges(x, y, dx, dy);
+  }
+
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Điều khoản & Điều kiện"),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Chào mừng bạn đến với ứng dụng Clinic Booking System!\n\n"
+                    "Bằng việc sử dụng ứng dụng này, bạn đồng ý với các điều khoản và điều kiện sau:\n\n"
+                    "1. Quyền sử dụng: Ứng dụng được cung cấp miễn phí cho mục đích đặt lịch khám bệnh. Bạn không được sao chép, phân phối hoặc sửa đổi nội dung mà không có sự cho phép.\n\n"
+                    "2. Bảo mật thông tin: Chúng tôi cam kết bảo vệ thông tin cá nhân của bạn theo quy định GDPR và luật bảo vệ dữ liệu Việt Nam. Dữ liệu chỉ được sử dụng để cung cấp dịch vụ.\n\n"
+                    "3. Trách nhiệm: Người dùng chịu trách nhiệm về tính chính xác của thông tin cung cấp. Chúng tôi không chịu trách nhiệm cho bất kỳ thiệt hại nào phát sinh từ việc sử dụng ứng dụng.\n\n"
+                    "4. Thay đổi điều khoản: Chúng tôi có quyền thay đổi điều khoản này bất cứ lúc nào. Việc tiếp tục sử dụng ứng dụng sau thay đổi có nghĩa là bạn chấp nhận.\n\n"
+                    "5. Liên hệ: Nếu có thắc mắc, vui lòng liên hệ support@clinicbooking.com.\n\n"
+                    "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi! (Nội dung mẫu dài để demo scroll)",
+                style: TextStyle(fontSize: 14),
+              ),
+              // Thêm nội dung dài hơn nếu cần để test scroll
+              ...List.generate(10, (index) => Text("Đoạn văn ${index + 1}: Nội dung chi tiết về điều khoản số ${index + 1}. Đây là nội dung mẫu để làm dài popup.\n\n")),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Đóng"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -78,6 +368,11 @@ class _Loginscreen extends State<Loginscreen>
       final password = _passwordController.text.trim();
       final confirm = _confirmPassword.text.trim();
       final displayName = _displayNameController.text.trim();
+
+      if (!isLogin && !_agreed) {
+        _showSnack("⚠️ Vui lòng đồng ý với Điều khoản & Điều kiện!");
+        return;
+      }
 
       void showLoadingDialog(String message) {
         showDialog(
@@ -154,46 +449,6 @@ class _Loginscreen extends State<Loginscreen>
           final uid = cred.user?.uid;
           if (uid != null) {
             await _authService.updateProfile(uid, {'is_onboarding_needed': true});
-          }
-
-          _showSnack("✅ Đăng ký thành công! Hãy chọn vai trò.");
-          if (context.mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const OnboardingFlowScreen()),
-            );
-          }
-        } else {
-          if (!isValidPhone(input)) {
-            _showSnack("❌ Số điện thoại không hợp lệ!");
-            return;
-          }
-
-          final phone = normalizePhone(input);
-          showLoadingDialog("Đang gửi mã OTP...");
-          final verificationId = await _authService.sendOtpPhone(phone);
-          safePopDialog();
-
-          final smsCode = await showOtpDialog(context, null);
-          if (smsCode == null || smsCode.isEmpty) {
-            _showSnack("⚠️ Bạn chưa nhập OTP.");
-            return;
-          }
-
-          // Đăng ký bằng OTP
-          showLoadingDialog("Đang xác thực...");
-          final userCred = await _authService.verifyOtpAndSignIn(verificationId, smsCode); // FIXED: Lưu userCred
-          safePopDialog();
-
-          final uid = userCred.user?.uid;
-          if (uid != null) {
-            // FIXED: Update profile với displayName, phone, và onboarding_needed = true
-            await _authService.updateProfile(uid, {
-              'displayName': displayName.isNotEmpty ? displayName : phone,
-              'phone': phone,
-              'is_onboarding_needed': true, // FIXED: Set onboarding true cho flow mới
-              'createdAt': ServerValue.timestamp,
-            });
           }
 
           _showSnack("✅ Đăng ký thành công! Hãy chọn vai trò.");
@@ -283,12 +538,15 @@ class _Loginscreen extends State<Loginscreen>
   }
 
   void _triggerExitToWelcome() {
-    _arrowController.stop();
     _mainController.reverse().then((_) {
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/welcome');
       }
     });
+  }
+
+  void _navigateToForgotPassword() {
+    Navigator.pushNamed(context, '/forgot_password');
   }
 
   //Đăng nhập bằng GooGle Signin
@@ -355,8 +613,15 @@ class _Loginscreen extends State<Loginscreen>
 
   @override
   void dispose() {
+    _timer?.cancel();
     _mainController.dispose();
     _arrowController.dispose();
+    _borderFlashController.dispose();
+    _borderFlashController2.dispose();
+    _borderFlashController3.dispose();
+    _borderFlashController4.dispose();
+    _borderFlashController5.dispose();
+    _borderFlashController6.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPassword.dispose();
@@ -388,13 +653,13 @@ class _Loginscreen extends State<Loginscreen>
           ),
           Positioned(
             left: -100,
-            bottom: -150,
+            bottom: -120,
             child: Container(
               width: 220,
               height: 220,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.greenAccent, Colors.green],
+                  colors: [Colors.greenAccent, Colors.lightGreen],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -404,7 +669,7 @@ class _Loginscreen extends State<Loginscreen>
           ),
           Positioned(
             bottom: 50,
-            left: 200,
+            left: 250,
             child: Container(
               width: 100,
               height: 100,
@@ -417,6 +682,72 @@ class _Loginscreen extends State<Loginscreen>
                 borderRadius: BorderRadius.all(Radius.circular(200)),
               ),
             ),
+          ),
+          Positioned(
+            top: 200,
+            left: -50,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green, Colors.lightGreen],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.all(Radius.circular(200)),
+              ),
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _borderFlashController2,
+            builder: (context, child) {
+              return Positioned(
+                left: x2,
+                top: y2,
+                child: _buildBall(_borderFlashAnimation2, Colors.amberAccent),
+              );
+            },
+          ),
+          AnimatedBuilder(
+            animation: _borderFlashController3,
+            builder: (context, child) {
+              return Positioned(
+                left: x3,
+                top: y3,
+                child: _buildBall(_borderFlashAnimation3, Colors.cyan),
+              );
+            },
+          ),
+          AnimatedBuilder(
+            animation: _borderFlashController4,
+            builder: (context, child) {
+              return Positioned(
+                left: x4,
+                top: y4,
+                child: _buildBall(_borderFlashAnimation4, Colors.greenAccent),
+              );
+            },
+          ),
+          AnimatedBuilder(
+            animation: _borderFlashController5,
+            builder: (context, child) {
+              return Positioned(
+                left: x5,
+                top: y5,
+                child: _buildBall(_borderFlashAnimation5, Colors.blueGrey),
+              );
+            },
+          ),
+          AnimatedBuilder(
+            animation: _borderFlashController6,
+            builder: (context, child) {
+              return Positioned(
+                left: x6,
+                top: y6,
+                child: _buildBall(_borderFlashAnimation6, Colors.pinkAccent),
+              );
+            },
           ),
           SlideTransition(
             position: _offsetAnimation,
@@ -501,61 +832,65 @@ class _Loginscreen extends State<Loginscreen>
           Positioned(
             top: 30,
             left: 30,
-            child: IgnorePointer(
-              ignoring: false,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  _arrowController.stop();
-                  _triggerExitToWelcome();
-                },
-                child: AnimatedBuilder(
-                  animation: _arrowController,
-                  builder: (context, child) {
-                    return Container(
-                      width: 70,
-                      height: 70,
-                      alignment: Alignment.center,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Opacity(
-                            opacity: _haloOpacityAnimation.value,
-                            child: Container(
-                              width: _haloSizeAnimation.value,
-                              height: _haloSizeAnimation.value,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.greenAccent.withOpacity(0.1),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.greenAccent.withOpacity(1),
-                                    blurRadius: 20,
-                                    spreadRadius: 5,
+            child: AnimatedBuilder(
+              animation: _mainController,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _mainController.value,
+                  child: IgnorePointer(
+                    ignoring: _mainController.value < 0.01,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _mainController.isAnimating ? null : _triggerExitToWelcome,
+                      child: AnimatedBuilder(
+                          animation: _arrowController,
+                          builder: (context, child) {
+                            final double scale = _scaleAnimation.value;
+
+                            // scale = 0.9 → độ sáng nền thấp
+                            // scale = 1.1 → nền sáng hơn
+                            final double backgroundOpacity = 0.12 + (scale - 0.9) * 1.6;
+
+                            return Container(
+                              width: 70,
+                              height: 70,
+                              alignment: Alignment.center,
+                              child: Transform.scale(
+                                scale: scale,
+                                child: Container(
+                                  width: 55,
+                                  height: 55,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black.withOpacity(backgroundOpacity), // nền tối để nổi avatar
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withOpacity(
+                                          0.3 + (scale - 0.9) * 2.2, // scale to, glow sáng gấp đôi
+                                        ),
+                                        blurRadius: 8 + (scale - 0.9) * 30, // tăng blur khi to để cảm giác nở sáng
+                                        spreadRadius: (scale - 0.9) * 14,
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2 + (scale - 0.9) * 4, // border trắng sáng mạnh khi scale max
+                                    ),
                                   ),
-                                ],
+                                  child: const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 32,
+                                    color: Colors.white, // icon trắng để đồng bộ ánh sáng
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Transform.scale(
-                            scale: _scaleAnimation.value,
-                            child: Container(
-                              width: 55,
-                              height: 55,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.transparent,
-                              ),
-                              child: const Icon(Icons.keyboard_arrow_down,
-                                  size: 36, color: Colors.white),
-                            ),
-                          ),
-                        ],
+                            );
+                          }
                       ),
-                    );
-                  },
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -566,8 +901,12 @@ class _Loginscreen extends State<Loginscreen>
   Widget _buildLoginCard({required Key key}) {
     return Card(
       key: key,
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white.withOpacity(0.8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.greenAccent.withOpacity(0.5), width: 2),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -575,40 +914,43 @@ class _Loginscreen extends State<Loginscreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Hello 👋",
+              "Xin chào 👋",
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            const Text("Sign in to your account"),
+            const Text("Đăng nhập vào tài khoản của bạn"),
             const SizedBox(height: 20),
 
             // Email/SĐT
-            _buildTextField("Email", Icons.person, _emailController),
+            _buildTextField("Email/SĐT", Icons.person, _emailController),
 
             // Password chỉ hiện khi chọn email
             if (_inputType == 'email') ...[
               const SizedBox(height: 10),
               _buildTextField(
-                "Password",
+                "Mật khẩu",
                 Icons.lock,
                 _passwordController,
                 obscure: true,
               ),
               const SizedBox(height: 8),
-              Text(
-                "Forgot your Password?",
-                textAlign: TextAlign.end,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              GestureDetector(
+                onTap: _navigateToForgotPassword,
+                child: Text(
+                  "Quên mật khẩu?",
+                  textAlign: TextAlign.end,
+                  style: TextStyle(color: Colors.greenAccent, fontSize: 13),
+                ),
               ),
             ],
 
             const SizedBox(height: 20),
-            _buildAuthButton("Login"),
+            _buildAuthButton("Đăng nhập"),
             const SizedBox(height: 10),
-            const Center(child: Text("Or Login using social media")),
+            const Center(child: Text("Hoặc đăng nhập bằng mạng xã hội")),
             const SizedBox(height: 10),
             _buildSocialRow(),
             const SizedBox(height: 10),
-            _buildSwitchText("Don't have an account? ", "Register Now"),
+            _buildSwitchText("Chưa có tài khoản? ", "Đăng ký ngay"),
           ],
         ),
       ),
@@ -618,8 +960,12 @@ class _Loginscreen extends State<Loginscreen>
   Widget _buildRegisterCard({required Key key}) {
     return Card(
       key: key,
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white.withOpacity(0.8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.greenAccent.withOpacity(0.5), width: 2),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -627,26 +973,26 @@ class _Loginscreen extends State<Loginscreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Create Account ✨",
+              "Tạo tài khoản ✨",
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
 
             // Email hoặc SĐT
-            _buildTextField("Email", Icons.person, _emailController),
+            _buildTextField("Email", Icons.email, _emailController),
 
             // Nếu là email thì có password
             if (_inputType == 'email') ...[
               const SizedBox(height: 10),
               _buildTextField(
-                "Password",
+                "Mật khẩu",
                 Icons.lock,
                 _passwordController,
                 obscure: true,
               ),
               const SizedBox(height: 10),
               _buildTextField(
-                "Confirm Password",
+                "Xác nhận mật khẩu",
                 Icons.lock_outline,
                 _confirmPassword,
                 obscure: true,
@@ -656,24 +1002,34 @@ class _Loginscreen extends State<Loginscreen>
             const SizedBox(height: 10),
             Row(
               children: [
-                Checkbox(value: true, onChanged: (f) {}),
-                const Expanded(
-                  child: Text(
-                    "I have read and agree to the Terms & Conditions",
-                    style: TextStyle(fontSize: 13),
+                Checkbox(
+                  value: _agreed,
+                  onChanged: (value) {
+                    setState(() {
+                      _agreed = value!;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _showTermsDialog,
+                    child: const Text(
+                      "Tôi đã đọc và đồng ý với Điều khoản & Điều kiện",
+                      style: TextStyle(fontSize: 13, color: Colors.blue, decoration: TextDecoration.underline),
+                    ),
                   ),
                 ),
               ],
             ),
 
             const SizedBox(height: 10),
-            _buildAuthButton("Register Now"),
+            _buildAuthButton("Đăng ký ngay"),
             const SizedBox(height: 10),
-            const Center(child: Text("Or Register using social media")),
+            const Center(child: Text("Hoặc đăng ký bằng mạng xã hội")),
             const SizedBox(height: 10),
             _buildSocialRow(),
             const SizedBox(height: 10),
-            _buildSwitchText("Already have an account? ", "Login"),
+            _buildSwitchText("Đã có tài khoản? ", "Đăng nhập"),
           ],
         ),
       ),
@@ -692,6 +1048,7 @@ class _Loginscreen extends State<Loginscreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: isEmailOrPhoneField
+          ? (isLogin
           ? Row(
         children: [
           // Dropdown chọn loại đăng nhập
@@ -746,6 +1103,18 @@ class _Loginscreen extends State<Loginscreen>
           ),
         ],
       )
+          : TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: TextInputType.emailAddress,
+        decoration: InputDecoration(
+          prefixIcon: Icon(Icons.email, color: Colors.greenAccent),
+          hintText: 'Nhập email',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ))
           : TextField(
         controller: controller,
         obscureText: obscure,
@@ -847,4 +1216,28 @@ class _Loginscreen extends State<Loginscreen>
       ),
     );
   }
+  Widget _buildBall(Animation<double> flashAnim, Color color) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withOpacity(0.3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withOpacity(
+                0.3 + flashAnim.value * 0.7),
+            blurRadius: 10 + flashAnim.value * 18,
+            spreadRadius: 1 + flashAnim.value * 3,
+          ),
+        ],
+        border: Border.all(
+          width: 2 + flashAnim.value * 3,
+          color: Colors.white.withOpacity(
+              0.4 + flashAnim.value * 0.6),
+        ),
+      ),
+    );
+  }
+
 }
