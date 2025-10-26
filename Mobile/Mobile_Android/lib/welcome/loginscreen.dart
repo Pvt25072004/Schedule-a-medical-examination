@@ -1,5 +1,5 @@
 import 'package:animations/animations.dart';
-import 'package:clinic_booking_system/screens/home.dart';
+import 'package:clinic_booking_system/screens/main_screen.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/service/email_service.dart';
 import 'package:clinic_booking_system/utils/otp_utils.dart';
@@ -138,10 +138,19 @@ class _Loginscreen extends State<Loginscreen>
           }
 
           showLoadingDialog("Đang tạo tài khoản...");
-          final cred = await _authService.signUpWithEmail(input, password, displayName); // FIXED: Lưu cred để lấy uid
+          final UserCredential createdCred = await _authService.signUpWithEmail(input, password, displayName);
+
+          if (createdCred.user != null) {
+            await _authService.updateProfile(createdCred.user!.uid, {
+              'is_onboarding_needed': true,
+              'role': 'UNASSIGNED', // Đảm bảo role được set cho fetchUserData
+              // ... (có thể update thêm displayName, phone nếu cần)
+            });
+          }
+
+          final cred = await _authService.signInWithEmail(input, password); // SỬA ĐỔI LỚN
           safePopDialog();
 
-          // FIXED: KHÔNG signOut nữa, trực tiếp update profile với onboarding_needed = true và navigate đến RoleSelection
           final uid = cred.user?.uid;
           if (uid != null) {
             await _authService.updateProfile(uid, {'is_onboarding_needed': true});
@@ -233,9 +242,6 @@ class _Loginscreen extends State<Loginscreen>
 
       safePopDialog();
 
-      // FIXED: Chờ FirebaseAuth cập nhật user, rồi check onboarding từ DB
-      await Future.delayed(const Duration(milliseconds: 800));
-
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && context.mounted) {
         final userData = await _authService.fetchUserData(user.uid); // FIXED: Fetch từ DB
@@ -254,7 +260,7 @@ class _Loginscreen extends State<Loginscreen>
           // Đã hoàn tất, chuyển về Home
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(builder: (_) => const MainScreen()),
           );
         }
       } else {
@@ -285,6 +291,7 @@ class _Loginscreen extends State<Loginscreen>
     });
   }
 
+  //Đăng nhập bằng GooGle Signin
   void _handleGoogleSignIn() async {
     void showLoadingDialog(String message) {
       showDialog(
@@ -314,8 +321,6 @@ class _Loginscreen extends State<Loginscreen>
 
       safePopDialog();
 
-      await Future.delayed(const Duration(milliseconds: 800));
-
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && context.mounted) {
         final userData = await _authService.fetchUserData(user.uid);
@@ -332,7 +337,7 @@ class _Loginscreen extends State<Loginscreen>
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(builder: (_) => const MainScreen()),
           );
         }
       } else {

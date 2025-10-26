@@ -64,6 +64,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  final AuthService _authService = AuthService(); // THÊM DÒNG NÀY
 
   @override
   void initState() {
@@ -118,22 +119,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<Map<String, dynamic>> _fetchUserData(String uid) async {
-    final snapshot = await FirebaseDatabase.instance.ref('users/$uid').get();
-    if (snapshot.exists) {
-      return Map<String, dynamic>.from(snapshot.value as Map);
-    }
-    return {
-      'is_onboarding_needed': true,
-      'role': 'UNASSIGNED',
-      'displayName': '',
-      'dateOfBirth': '',
-      'address': {'province': '', 'district': '', 'street': ''},
-      'medicalHistory': '',
-    };
-  }
-
-  // FIXED: Check profile complete
+  // KHỞI TẠO LẠI HÀM KIỂM TRA HỒ SƠ (vì nó không thuộc AuthService)
   bool _isProfileComplete(Map<String, dynamic> userData) {
     final role = userData['role'] as String? ?? '';
     final displayName = userData['displayName'] as String? ?? '';
@@ -157,18 +143,26 @@ class _MyAppState extends State<MyApp> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      final userData = await _fetchUserData(user.uid);
+      // 1. Lấy dữ liệu người dùng
+      final userData = await _authService.fetchUserData(user.uid); // SỬA: Gọi từ _authService
+      // 2. Kiểm tra trạng thái Onboarding
+      final bool isOnboardingNeeded = userData['is_onboarding_needed'] == true;
+      final bool isProfileIncomplete = !_isProfileComplete(userData);
 
-      // FIXED: Nếu incomplete, sign out và đến OnboardingFlowScreen (combined)
-      if (userData['is_onboarding_needed'] == true || !_isProfileComplete(userData)) {
-        await FirebaseAuth.instance.signOut(); // FIXED: Auto sign out nếu incomplete
-        return const OnboardingFlowScreen(); // FIXED: To combined screen
+      // 💥 SỬA: KHÔNG signOut() NỮA. Nếu cần Onboarding, trả về màn hình Onboarding ngay.
+      if (isOnboardingNeeded || isProfileIncomplete) {
+        // Nếu cần Onboarding (cờ ONBOARDING_NEEDED là true) hoặc hồ sơ cơ bản chưa đủ.
+        // Giữ người dùng đang đăng nhập và chuyển thẳng đến flow Onboarding.
+        return const OnboardingFlowScreen();
       } else {
+        // Đã hoàn tất hồ sơ và có vai trò hợp lệ
         return const MainScreen();
       }
     }
 
-    return const WelcomeScreen(); // FIXED: Sau signout → Welcome/Login flow
+    // 3. Người dùng chưa đăng nhập
+    // Chuyển đến màn hình Chào mừng (WelcomeScreen) để bắt đầu đăng nhập/đăng ký.
+    return const WelcomeScreen();
   }
 
   @override

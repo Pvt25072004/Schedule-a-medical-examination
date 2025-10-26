@@ -1,6 +1,9 @@
-import 'package:clinic_booking_system/screens/profile.dart';
+import 'package:clinic_booking_system/screens/settings.dart';
 import 'package:flutter/material.dart';
 
+import 'appointments.dart';
+import 'booking.dart';
+import 'chatbot.dart';
 import 'home.dart';
 
 class MainScreen extends StatefulWidget {
@@ -15,7 +18,10 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    ProfileScreen(),
+    BookingScreen(),
+    AppointmentsScreen(),
+    ChatBotScreen(),
+    SettingScreen(),
   ];
 
   @override
@@ -37,8 +43,20 @@ class _MainScreenState extends State<MainScreen> {
             label: "Trang chủ",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Hồ sơ",
+            icon: Icon(Icons.medical_services),
+            label: "Đặt lịch",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt),
+            label: "Xem lịch",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.support_agent),
+            label: "Hỗ trợ",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: "Cài đặt",
           ),
         ],
       ),

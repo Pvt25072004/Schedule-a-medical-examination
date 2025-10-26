@@ -1,8 +1,7 @@
-// FIXED: Tạo single file screens/onboarding_flow_screen.dart (PageView 4 steps: Role + 3 onboarding)
+import 'package:clinic_booking_system/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../service/auth_service.dart';
-import 'home.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
   const OnboardingFlowScreen({super.key});
@@ -128,7 +127,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const MainScreen()),
         );
         break;
     }
@@ -169,10 +168,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   Icons.personal_injury,
                   'Tôi là Bệnh nhân',
                   'Đặt lịch khám, quản lý hồ sơ sức khỏe cá nhân.',
-                  _selectedRole == 'PATIENT',
+                  _selectedRole == 'Bệnh nhân',
                       () {
                     setState(() {
-                      _selectedRole = 'PATIENT';
+                      _selectedRole = 'Bệnh nhân';
                       _isDoctor = false;
                     });
                   },
@@ -183,10 +182,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   Icons.local_hospital_outlined,
                   'Tôi là Bác sĩ/Chuyên gia',
                   'Quản lý lịch làm việc, hồ sơ chuyên môn.',
-                  _selectedRole == 'DOCTOR',
+                  _selectedRole == 'Bác sĩ',
                       () {
                     setState(() {
-                      _selectedRole = 'DOCTOR';
+                      _selectedRole = 'Bác sĩ';
                       _isDoctor = true;
                     });
                   },
@@ -339,7 +338,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: isSelected ? const Color(0xFF1B5E20) : Colors.grey),
           ],
         ),
       ),
