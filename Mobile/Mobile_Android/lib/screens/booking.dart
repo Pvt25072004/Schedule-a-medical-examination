@@ -1,4 +1,12 @@
+import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import '../subscreens/booking/process_bar.dart';
+import '../subscreens/booking/step1_area_selection.dart';
+import '../subscreens/booking/step2_area_selection.dart';
+import '../subscreens/booking/step3_area_selection.dart';
+import '../subscreens/booking/step4_area_selection.dart';
+import '../subscreens/booking/step5_area_selection.dart';
+import '../subscreens/booking/step6_area_selection.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -8,137 +16,179 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
-  String? _selectedDoctor;
-  DateTime? _selectedDate;
-  String? _selectedTimeSlot;
-  final List<String> doctors = [
-    'BS. Nguyễn Văn A - Tim mạch',
-    'BS. Trần Thị B - Nội khoa',
-    'BS. Lê Văn C - Nhi khoa'
-  ];
-  final List<String> timeSlots = [
-    '08:00 - 09:00',
-    '09:00 - 10:00',
-    '10:00 - 11:00',
-    '14:00 - 15:00',
-    '15:00 - 16:00'
-  ];
+  int currentStep = 1; // Bắt đầu từ step 1
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
-    );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
+  // Data state được truyền giữa các steps
+  String selectedCity = '';
+  Color? cityColor;
+  String selectedHospital = '';
+  String selectedSpecialty = '';
+  Color specialtyColor = Colors.greenAccent;
+  String selectedDoctor = '';
+  double selectedPrice = 0.0;
+  DateTime selectedDate = DateTime.now();
+  String selectedTimeSlot = '';
+  String fullName = '';
+  String phone = '';
+  String email = '';
+  String reason = '';
+  String note = '';
+
+  // Callback để cập nhật state khi chuyển step
+  void goToStep(int step, {Map<String, dynamic>? data}) {
+    setState(() {
+      currentStep = step;
+      if (data != null) {
+        if (step == 2) {
+          selectedCity = data['city'] ?? '';
+          cityColor = data['color'];
+        } else if (step == 3) {
+          selectedHospital = data['hospital'] ?? '';
+        } else if (step == 4) {
+          selectedSpecialty = data['specialty'] ?? '';
+          specialtyColor = data['color'] ?? Colors.greenAccent;
+        } else if (step == 5) {
+          selectedDate = data['date'] ?? DateTime.now();
+          selectedTimeSlot = data['timeSlot'] ?? '';
+        } else if (step == 6) {
+          fullName = data['fullName'] ?? '';
+          phone = data['phone'] ?? '';
+          email = data['email'] ?? '';
+          reason = data['reason'] ?? '';
+          note = data['note'] ?? '';
+        }
+      }
+    });
   }
 
-  void _confirmBooking() {
-    if (_selectedDoctor == null ||
-        _selectedDate == null ||
-        _selectedTimeSlot == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn đầy đủ thông tin!')),
-      );
-      return;
+  // Back to previous step
+  void goBack() {
+    if (currentStep > 1) {
+      setState(() => currentStep--);
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(
-              'Đặt lịch thành công cho $_selectedDoctor vào $_selectedDate lúc $_selectedTimeSlot!')),
-    );
-    Navigator.pop(context); // FIXED: Quay về screen trước
   }
 
   @override
   Widget build(BuildContext context) {
+    Widget body;
+    switch (currentStep) {
+      case 1:
+        body = Step1AreaSelection(
+          onNext: (data) => goToStep(2, data: data),
+        );
+        break;
+      case 2:
+        body = Step2HospitalSelection(
+          cityName: selectedCity,
+          cityColor: cityColor,
+          onNext: (data) => goToStep(3, data: data),
+          onBack: goBack,
+        );
+        break;
+      case 3:
+        body = Step3SpecialtySelection(
+          cityName: selectedCity,
+          hospitalName: selectedHospital,
+          color: cityColor,
+          onNext: (data) => goToStep(4, data: data),
+          onBack: goBack,
+        );
+        break;
+      case 4:
+        body = Step4DateTimeSelection(
+          onNext: (data) => goToStep(5, data: data),
+          onBack: () => goToStep(3),
+        );
+        break;
+      case 5:
+        body = Step5PatientInfo(
+          onNext: (data) => goToStep(6, data: data),
+          onBack: () => goToStep(4),
+        );
+        break;
+      case 6:
+      default:
+        body = Step6Confirmation(
+          cityName: selectedCity,
+          hospitalName: selectedHospital,
+          specialty: selectedSpecialty,
+          doctor: selectedDoctor,
+          date: selectedDate,
+          timeSlot: selectedTimeSlot,
+          price: selectedPrice,
+          fullName: fullName,
+          phone: phone,
+          email: email,
+          reason: reason,
+          note: note,
+          onConfirm: () {
+            showAppSnackBar(context, 'Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận.');
+          },
+          onBack: () => goToStep(5),
+        );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F0),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Đặt lịch khám"),
-        backgroundColor: Colors.greenAccent,
+        title: Row(
+          children: [
+            // Icon / Logo
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2FA8E0), Color(0xFF4BE29D)], // xanh blue-green
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Icon(Icons.favorite, color: Colors.white, size: 20),
+            ),
+
+            const SizedBox(width: 10),
+
+            // Text phần tên & mô tả
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text(
+                  'HealthCare VN',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  'Đặt lịch khám bệnh trực tuyến',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        backgroundColor: currentStep == 6 ? Colors.green : (currentStep == 4 ? specialtyColor : Colors.white),
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Chọn bác sĩ',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: DropdownButtonFormField<String>(
-                value: _selectedDoctor,
-                decoration: const InputDecoration(
-                  labelText: 'Bác sĩ/Khoa',
-                  contentPadding: EdgeInsets.all(16),
-                ),
-                items: doctors
-                    .map((doctor) =>
-                        DropdownMenuItem(value: doctor, child: Text(doctor)))
-                    .toList(),
-                onChanged: (value) => setState(() => _selectedDoctor = value),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Chọn ngày khám',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: ListTile(
-                title: const Text('Ngày khám'),
-                subtitle: Text(_selectedDate == null
-                    ? 'Chọn ngày'
-                    : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Chọn khung giờ',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: timeSlots
-                    .map((slot) => FilterChip(
-                          label: Text(slot),
-                          selected: _selectedTimeSlot == slot,
-                          onSelected: (selected) => setState(
-                              () => _selectedTimeSlot = selected ? slot : null),
-                          selectedColor: Colors.greenAccent.withOpacity(0.3),
-                        ))
-                    .toList(),
-              ),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: _confirmBooking,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.greenAccent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Xác nhận đặt lịch',
-                  style: TextStyle(fontSize: 18, color: Colors.white)),
-            ),
-          ],
-        ),
+      body: Column(
+        children: [
+          SizedBox(height: 10),
+          BookingProgressBar(
+            currentStep: currentStep,
+            totalSteps: 6,
+            onStepTap: (step) => goToStep(step), // Pass callback for tappable steps
+          ),
+          Expanded(child: body),
+        ],
       ),
     );
   }

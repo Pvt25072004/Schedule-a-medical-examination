@@ -1,8 +1,7 @@
 import 'package:clinic_booking_system/firebase_options.dart';
-import 'package:clinic_booking_system/screens/chat.dart';
 import 'package:clinic_booking_system/screens/home.dart';
-import 'package:clinic_booking_system/screens/main_screen.dart';
-import 'package:clinic_booking_system/screens/onboarding.dart';
+import 'package:clinic_booking_system/screens/dashboard.dart';
+import 'package:clinic_booking_system/welcome/onboarding.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -68,54 +67,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setupFirebaseMessaging();
-    });
-  }
-
-  Future<void> setupFirebaseMessaging() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Received foreground message: ${message.data}');
-      if (message.data['type'] == 'chat') {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              contactUid: message.data['contactUid'] ?? '',
-              contactName: message.data['contactName'] ?? 'Người dùng',
-            ),
-          ),
-        );
-      }
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Message opened app: ${message.data}');
-      if (message.data['type'] == 'chat') {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              contactUid: message.data['contactUid'] ?? '',
-              contactName: message.data['contactName'] ?? 'Người dùng',
-            ),
-          ),
-        );
-      }
-    });
-
-    RemoteMessage? initialMessage = await messaging.getInitialMessage();
-    if (initialMessage != null && initialMessage.data['type'] == 'chat') {
-      print('App opened from terminated: ${initialMessage.data}');
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(
-            contactUid: initialMessage.data['contactUid'] ?? '',
-            contactName: initialMessage.data['contactName'] ?? 'Người dùng',
-          ),
-        ),
-      );
-    }
   }
 
   // KHỞI TẠO LẠI HÀM KIỂM TRA HỒ SƠ (vì nó không thuộc AuthService)
@@ -177,10 +128,6 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/home': (context) => const HomeScreen(),
-        '/chat': (context) => const ChatScreen(
-          contactUid: 'default_uid',
-          contactName: 'Người dùng',
-        ),
         '/onboarding-flow': (context) => const OnboardingFlowScreen(), // FIXED: Route for combined
       },
       home: FutureBuilder<Widget>(
@@ -188,6 +135,7 @@ class _MyAppState extends State<MyApp> {
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Scaffold(
+              backgroundColor: Colors.white,
               body: Center(child: CircularProgressIndicator()),
             );
           }

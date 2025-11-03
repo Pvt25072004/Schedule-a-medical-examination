@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:animations/animations.dart';
-import 'package:clinic_booking_system/screens/main_screen.dart';
+import 'package:clinic_booking_system/screens/dashboard.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/service/email_service.dart';
 import 'package:clinic_booking_system/subscreens/password/emailforpass.dart';
 import 'package:clinic_booking_system/utils/otp_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../screens/onboarding.dart';
+import 'onboarding.dart';
 
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key, required this.isLogin});

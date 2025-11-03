@@ -1,7 +1,10 @@
+import 'package:clinic_booking_system/utils/snackbar_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';
+import 'package:intl/intl.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -46,6 +49,30 @@ class _SettingScreenState extends State<SettingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Lấy dữ liệu ngày sinh trước khi build widget
+    final dobRaw = userData?['dateOfBirth'];
+    String dobText = 'N/A';
+
+    if (dobRaw != null) {
+      try {
+        DateTime dob;
+        if (dobRaw is int) {
+          // Nếu lưu dưới dạng milliseconds
+          dob = DateTime.fromMillisecondsSinceEpoch(dobRaw);
+        } else if (dobRaw is String) {
+          // Nếu lưu dạng "yyyy-MM-dd" hoặc ISO string
+          dob = DateTime.parse(dobRaw);
+        } else if (dobRaw is DateTime) {
+          dob = dobRaw;
+        } else {
+          dob = DateTime(1970);
+        }
+        dobText = DateFormat('dd/MM/yyyy').format(dob);
+      } catch (e) {
+        dobText = 'N/A';
+      }
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
       appBar: AppBar(
@@ -58,34 +85,40 @@ class _SettingScreenState extends State<SettingScreen> {
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Hỗ trợ: Liên hệ sangtranidol@gmail.com')),
+              showAppSnackBar(
+                context,
+                'Trợ giúp và hỗ trợ (sắp có)',
               );
             },
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
           Card(
             elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ExpansionTile(
               leading: CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.greenAccent.withOpacity(0.2),
                 // FIXED: Check null và empty string trước khi dùng NetworkImage
-                backgroundImage: (userData?['photoUrl'] != null && (userData!['photoUrl'] as String).isNotEmpty)
+                backgroundImage: (userData?['photoUrl'] != null &&
+                        (userData!['photoUrl'] as String).isNotEmpty)
                     ? NetworkImage(userData!['photoUrl'] as String)
                     : null,
-                child: (userData?['photoUrl'] == null || (userData!['photoUrl'] as String).isEmpty)
-                    ? const Icon(Icons.person, size: 20, color: Colors.greenAccent)
+                child: (userData?['photoUrl'] == null ||
+                        (userData!['photoUrl'] as String).isEmpty)
+                    ? const Icon(Icons.person,
+                        size: 20, color: Colors.greenAccent)
                     : null,
               ),
               title: Text(
                 userData?['displayName'] ?? 'Tên người dùng',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               subtitle: Text(userData?['role'] ?? 'N/A'),
               trailing: const Icon(Icons.keyboard_arrow_down),
@@ -97,12 +130,17 @@ class _SettingScreenState extends State<SettingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildProfileItem(Icons.phone, 'Số điện thoại', userData?['phone'] ?? 'N/A'),
-                      _buildProfileItem(Icons.email, 'Email', userData?['email'] ?? 'N/A'),
-                      _buildProfileItem(Icons.description, 'Giới thiệu', userData?['bio'] ?? 'Chưa cập nhật'),
-                      _buildProfileItem(Icons.location_on, 'Địa chỉ', _getAddressString(userData)),
-                      _buildProfileItem(Icons.cake, 'Ngày sinh', userData?['dateOfBirth'] ?? 'N/A'),
-                      _buildProfileItem(Icons.medical_information, 'Bệnh nền', userData?['medicalHistory'] ?? 'Không có'),
+                      _buildProfileItem(Icons.phone, 'Số điện thoại',
+                          userData?['phone'] ?? 'N/A'),
+                      _buildProfileItem(
+                          Icons.email, 'Email', userData?['email'] ?? 'N/A'),
+                      _buildProfileItem(Icons.description, 'Giới thiệu',
+                          userData?['bio'] ?? 'Chưa cập nhật'),
+                      _buildProfileItem(Icons.location_on, 'Địa chỉ',
+                          _getAddressString(userData)),
+                      _buildProfileItem(Icons.cake, 'Ngày sinh', dobText),
+                      _buildProfileItem(Icons.medical_information, 'Bệnh nền',
+                          userData?['medicalHistory'] ?? 'Không có'),
                       const SizedBox(height: 8),
                       TextButton.icon(
                         onPressed: () {},
@@ -116,44 +154,53 @@ class _SettingScreenState extends State<SettingScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.notifications, color: Colors.greenAccent),
-                  title: const Text('Thông báo', style: TextStyle(fontWeight: FontWeight.w500)),
+                  leading: const Icon(Icons.notifications,
+                      color: Colors.greenAccent),
+                  title: const Text('Thông báo',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
                   trailing: Switch(
                     value: true,
                     onChanged: (value) {
                       setState(() {});
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Thông báo ${value ? 'bật' : 'tắt'}')),
+                      showAppSnackBar(
+                        context,
+                        'Thông báo ${value ? 'bật' : 'tắt'}',
                       );
                     },
                   ),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.privacy_tip, color: Colors.greenAccent),
-                  title: const Text('Quyền riêng tư', style: TextStyle(fontWeight: FontWeight.w500)),
+                  leading:
+                      const Icon(Icons.privacy_tip, color: Colors.greenAccent),
+                  title: const Text('Quyền riêng tư',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chính sách quyền riêng tư (sắp có)')),
+                    showAppSnackBar(
+                      context,
+                      'Chính sách quyền riêng tư (sắp có)',
                     );
                   },
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.language, color: Colors.greenAccent),
-                  title: const Text('Ngôn ngữ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  leading:
+                      const Icon(Icons.language, color: Colors.greenAccent),
+                  title: const Text('Ngôn ngữ',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
                   trailing: const Text('Tiếng Việt'),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chọn ngôn ngữ (sắp có)')),
+                    showAppSnackBar(
+                      context,
+                      'Chọn ngôn ngữ (sắp có)',
                     );
                   },
                 ),
@@ -161,17 +208,18 @@ class _SettingScreenState extends State<SettingScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _handleLogout,
               icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text('Đăng xuất', style: TextStyle(fontSize: 16, color: Colors.red)),
+              label: const Text('Đăng xuất',
+                  style: TextStyle(fontSize: 16, color: Colors.red)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: Colors.red),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -201,7 +249,9 @@ class _SettingScreenState extends State<SettingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                Text(label,
+                    style:
+                        TextStyle(fontSize: 14, color: Colors.grey.shade600)),
                 Text(value, style: const TextStyle(fontSize: 16)),
               ],
             ),

@@ -1,4 +1,5 @@
-import 'package:clinic_booking_system/screens/main_screen.dart';
+import 'package:clinic_booking_system/screens/dashboard.dart';
+import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../service/auth_service.dart';
@@ -22,14 +23,20 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   final TextEditingController _streetController = TextEditingController();
   String? _selectedProvince;
   String? _selectedDistrict;
-  final List<String> provinces = ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Cần Thơ'];
+  final List<String> provinces = [
+    'Hà Nội',
+    'TP. Hồ Chí Minh',
+    'Đà Nẵng',
+    'Cần Thơ'
+  ];
   final Map<String, List<String>> districts = {
     'Hà Nội': ['Ba Đình', 'Hoàn Kiếm', 'Cầu Giấy'],
     'TP. Hồ Chí Minh': ['Quận 1', 'Quận 3', 'Quận 7'],
     'Đà Nẵng': ['Hải Châu', 'Thanh Khê'],
     'Cần Thơ': ['Ninh Kiều', 'Cái Răng'],
   };
-  final TextEditingController _medicalHistoryController = TextEditingController();
+  final TextEditingController _medicalHistoryController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -54,9 +61,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         _streetController.text = address['street'] ?? '';
         _medicalHistoryController.text = userData['medicalHistory'] ?? '';
         // FIXED: Jump to current step based on completeness (e.g., if role set, start step 1)
-        if (_selectedRole != null && _selectedRole != 'UNASSIGNED') _currentStep = 1;
-        if (_displayNameController.text.isNotEmpty && _selectedDate != null) _currentStep = 2;
-        if (_selectedProvince != null && _selectedDistrict != null && _streetController.text.isNotEmpty) _currentStep = 3;
+        if (_selectedRole != null && _selectedRole != 'UNASSIGNED')
+          _currentStep = 1;
+        if (_displayNameController.text.isNotEmpty && _selectedDate != null)
+          _currentStep = 2;
+        if (_selectedProvince != null &&
+            _selectedDistrict != null &&
+            _streetController.text.isNotEmpty) _currentStep = 3;
         _pageController.jumpToPage(_currentStep);
       });
     }
@@ -69,8 +80,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     switch (_currentStep) {
       case 0: // Role Selection
         if (_selectedRole == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vui lòng chọn vai trò!')),
+          showAppSnackBar(
+            context,
+            'Vui lòng chọn vai trò!',
           );
           return;
         }
@@ -78,20 +90,24 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         if (_isDoctor) {
           final doctorCode = _doctorCodeController.text.trim();
           if (doctorCode.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Vui lòng nhập mã bác sĩ!')),
+            showAppSnackBar(
+              context,
+              'Vui lòng nhập mã bác sĩ!',
             );
             return;
           }
           updates['doctor_code'] = doctorCode;
         }
         await _authService.updateProfile(user.uid, updates);
-        _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut);
         break;
       case 1: // Basic Profile
         if (_displayNameController.text.isEmpty || _selectedDate == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vui lòng hoàn tất thông tin!')),
+          showAppSnackBar(
+            context,
+            'Vui lòng hoàn tất thông tin!',
           );
           return;
         }
@@ -99,12 +115,17 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           'displayName': _displayNameController.text.trim(),
           'dateOfBirth': _selectedDate!.toIso8601String(),
         });
-        _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut);
         break;
       case 2: // Address
-        if (_selectedProvince == null || _selectedDistrict == null || _streetController.text.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vui lòng hoàn tất địa chỉ!')),
+        if (_selectedProvince == null ||
+            _selectedDistrict == null ||
+            _streetController.text.isEmpty) {
+          showAppSnackBar(
+            context,
+            'Vui lòng hoàn tất địa chỉ!',
           );
           return;
         }
@@ -115,15 +136,18 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             'street': _streetController.text.trim(),
           },
         });
-        _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut);
         break;
       case 3: // Medical History - Complete
         await _authService.updateProfile(user.uid, {
           'medicalHistory': _medicalHistoryController.text.trim(),
           'is_onboarding_needed': false, // FIXED: Chỉ false ở cuối
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Hoàn tất hồ sơ! Chào mừng đến STL Clinic')),
+        showAppSnackBar(
+          context,
+          'Hoàn tất hồ sơ! Chào mừng đến STL Clinic',
         );
         Navigator.pushReplacement(
           context,
@@ -147,7 +171,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Bước ${_currentStep + 1}/4')),
+      appBar: AppBar(
+          title: Text('Bước ${_currentStep + 1}/4'),
+          automaticallyImplyLeading: false),
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
@@ -169,7 +195,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   'Tôi là Bệnh nhân',
                   'Đặt lịch khám, quản lý hồ sơ sức khỏe cá nhân.',
                   _selectedRole == 'Bệnh nhân',
-                      () {
+                  () {
                     setState(() {
                       _selectedRole = 'Bệnh nhân';
                       _isDoctor = false;
@@ -183,7 +209,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   'Tôi là Bác sĩ/Chuyên gia',
                   'Quản lý lịch làm việc, hồ sơ chuyên môn.',
                   _selectedRole == 'Bác sĩ',
-                      () {
+                  () {
                     setState(() {
                       _selectedRole = 'Bác sĩ';
                       _isDoctor = true;
@@ -197,13 +223,15 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                     decoration: InputDecoration(
                       labelText: 'Mã bác sĩ (VD: BS001)',
                       prefixIcon: const Icon(Icons.verified_user),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       hintText: 'Nhập mã bác sĩ của bạn',
                     ),
                   ),
                 ],
                 const Spacer(),
-                ElevatedButton(onPressed: _nextStep, child: const Text('Tiếp theo')),
+                ElevatedButton(
+                    onPressed: _nextStep, child: const Text('Tiếp theo')),
               ],
             ),
           ),
@@ -220,18 +248,23 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 const SizedBox(height: 20),
                 TextField(
                   controller: _displayNameController,
-                  decoration: const InputDecoration(labelText: 'Tên hiển thị', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Tên hiển thị', border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 20),
                 GestureDetector(
                   onTap: () => _selectDate(context),
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Ngày sinh', border: OutlineInputBorder()),
-                    child: Text(_selectedDate == null ? 'Chọn ngày sinh' : _selectedDate.toString().split(' ')[0]),
+                    decoration: const InputDecoration(
+                        labelText: 'Ngày sinh', border: OutlineInputBorder()),
+                    child: Text(_selectedDate == null
+                        ? 'Chọn ngày sinh'
+                        : _selectedDate.toString().split(' ')[0]),
                   ),
                 ),
                 const Spacer(),
-                ElevatedButton(onPressed: _nextStep, child: const Text('Tiếp theo')),
+                ElevatedButton(
+                    onPressed: _nextStep, child: const Text('Tiếp theo')),
               ],
             ),
           ),
@@ -248,8 +281,11 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: _selectedProvince,
-                  decoration: const InputDecoration(labelText: 'Tỉnh/Thành phố'),
-                  items: provinces.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                  decoration:
+                      const InputDecoration(labelText: 'Tỉnh/Thành phố'),
+                  items: provinces
+                      .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                      .toList(),
                   onChanged: (v) {
                     setState(() {
                       _selectedProvince = v;
@@ -262,16 +298,21 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   DropdownButtonFormField<String>(
                     value: _selectedDistrict,
                     decoration: const InputDecoration(labelText: 'Quận/Huyện'),
-                    items: (districts[_selectedProvince] ?? []).map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                    items: (districts[_selectedProvince] ?? [])
+                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                        .toList(),
                     onChanged: (v) => setState(() => _selectedDistrict = v),
                   ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _streetController,
-                  decoration: const InputDecoration(labelText: 'Đường/Phố/Số nhà', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Đường/Phố/Số nhà',
+                      border: OutlineInputBorder()),
                 ),
                 const Spacer(),
-                ElevatedButton(onPressed: _nextStep, child: const Text('Tiếp theo')),
+                ElevatedButton(
+                    onPressed: _nextStep, child: const Text('Tiếp theo')),
               ],
             ),
           ),
@@ -301,7 +342,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   ),
                 ),
                 const Spacer(),
-                ElevatedButton(onPressed: _nextStep, child: const Text('Hoàn tất')),
+                ElevatedButton(
+                    onPressed: _nextStep, child: const Text('Hoàn tất')),
               ],
             ),
           ),
@@ -310,7 +352,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
   }
 
-  Widget _buildRoleCard(String role, IconData icon, String title, String subtitle, bool isSelected, VoidCallback onTap) {
+  Widget _buildRoleCard(String role, IconData icon, String title,
+      String subtitle, bool isSelected, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -319,22 +362,39 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFF1F8E9) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? const Color(0xFF1B5E20) : Colors.grey.shade300, width: 2),
+          border: Border.all(
+              color:
+                  isSelected ? const Color(0xFF1B5E20) : Colors.grey.shade300,
+              width: 2),
           boxShadow: [
-            BoxShadow(color: Colors.grey.withOpacity(0.15), spreadRadius: 2, blurRadius: 8, offset: const Offset(0, 4)),
+            BoxShadow(
+                color: Colors.grey.withOpacity(0.15),
+                spreadRadius: 2,
+                blurRadius: 8,
+                offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
           children: [
-            Icon(icon, size: 40, color: isSelected ? const Color(0xFF1B5E20) : Colors.blueGrey),
+            Icon(icon,
+                size: 40,
+                color: isSelected ? const Color(0xFF1B5E20) : Colors.blueGrey),
             const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF1B5E20) : Colors.black)),
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? const Color(0xFF1B5E20)
+                              : Colors.black)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                  Text(subtitle,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                 ],
               ),
             ),

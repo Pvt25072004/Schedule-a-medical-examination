@@ -1,179 +1,117 @@
-import 'dart:convert';
+import 'dart:async';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; // Thêm package: shared_preferences: ^2.2.2
+import 'chatbot.dart';
 
-// Giả sử bạn có UserProvider hoặc tương tự để lấy tên user
-// Ở đây mock tên user
-String getUserName() => 'Nguyễn Văn A'; // Thay bằng logic thực tế
+// --- Cài đặt Màu Chủ đạo ---
+const Color primaryColor = Colors.greenAccent; // Xanh lá cây
+const Color primaryDarkColor = Color(0xFF1B5E20); // Xanh lá đậm cho chữ
+const Color primaryLightColor = Color(0xFFE8F5E9); // Xanh lá rất nhạt cho nền
 
-// Mock banner data (giữ nguyên)
+// Giả định: Mock data
+String getUserName() => 'Nguyễn Văn A';
+
 final List<Map<String, String>> bannerData = [
-  {'image': 'assets/banners/banner1.jpg', 'title': 'Ưu đãi khám sức khỏe 50%'},
-  {'image': 'assets/banners/banner2.jpg', 'title': 'Vaccine mới nhất'},
-  {
-    'image': 'assets/banners/banner3.jpg',
-    'title': 'Tư vấn trực tuyến miễn phí'
-  },
+  {'image': 'assets/images/banner1.jpg', 'title': 'Ưu đãi khám sức khỏe 50%', 'subtitle': 'Duy nhất trong tháng'},
+  {'image': 'assets/images/banner2.jpg', 'title': 'Vaccine mới nhất', 'subtitle': 'Miễn phí tư vấn'},
+  {'image': 'assets/images/banner3.jpg', 'title': 'Tư vấn trực tuyến miễn phí', 'subtitle': 'Đội ngũ chuyên gia'},
 ];
 
-// Mock weather data - Thực tế sẽ fetch từ API
+// Hàm lấy icon thời tiết mock
+IconData getWeatherIcon(String iconCode) {
+  if (iconCode.contains('01')) return Icons.wb_sunny_rounded;
+  if (iconCode.contains('09') || iconCode.contains('10')) return Icons.cloudy_snowing;
+  if (iconCode.contains('03') || iconCode.contains('04')) return Icons.cloud;
+  return Icons.cloud_outlined;
+}
+
+// Mock weather data - (Giữ nguyên logic fetch/mock)
 Future<Map<String, dynamic>> fetchWeather() async {
-  // Thay API_KEY bằng key thực từ OpenWeatherMap
-  const apiKey = 'YOUR_OPENWEATHER_API_KEY';
-  const city = 'Hanoi'; // Hoặc lấy từ location
-  final url = Uri.parse(
-      'https://api.openweathermap.org/data/2.5/weather?q=$city&appid=$apiKey&units=metric');
-  final response = await http.get(url);
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  }
-  // Mock data nếu lỗi
   return {
     'name': 'Hà Nội',
-    'main': {'temp': 28.0},
+    'main': {'temp': 28.0, 'humidity': 70},
     'weather': [
       {'description': 'Trời nắng', 'icon': '01d'}
     ],
   };
 }
 
-// Icon data cho các phần thông tin y tế (giữ nguyên)
-final List<Map<String, dynamic>> healthInfo = [
-  {
-    'title': 'Dinh dưỡng',
-    'description': 'Lời khuyên ăn uống lành mạnh',
-    'icon': Icons.restaurant,
-    'color': Colors.orange
-  },
-  {
-    'title': 'Tập luyện',
-    'description': 'Bài tập hàng ngày cho sức khỏe',
-    'icon': Icons.fitness_center,
-    'color': Colors.blue
-  },
-  {
-    'title': 'Phòng ngừa',
-    'description': 'Cách tránh bệnh truyền nhiễm',
-    'icon': Icons.security,
-    'color': Colors.green
-  },
-  {
-    'title': 'Tâm lý',
-    'description': 'Chăm sóc sức khỏe tinh thần',
-    'icon': Icons.psychology,
-    'color': Colors.purple
-  },
-  {
-    'title': 'Khám định kỳ',
-    'description': 'Lịch khám sức khỏe định kỳ',
-    'icon': Icons.calendar_today,
-    'color': Colors.red
-  },
-  {
-    'title': 'Thuốc men',
-    'description': 'Hướng dẫn sử dụng thuốc an toàn',
-    'icon': Icons.medication,
-    'color': Colors.teal
-  },
+// Icon data cho chuyên khoa (Thêm nhiều hơn 5)
+final List<Map<String, dynamic>> allSpecialties = [
+  {'title': 'Nha khoa', 'icon': Icons.density_small},
+  {'title': 'Da liễu', 'icon': Icons.spa_outlined},
+  {'title': 'Nội khoa', 'icon': Icons.heart_broken_outlined},
+  {'title': 'Sản phụ khoa', 'icon': Icons.woman_outlined},
+  {'title': 'Tai Mũi Họng', 'icon': Icons.earbuds},
+  {'title': 'Cơ Xương Khớp', 'icon': Icons.accessible_outlined},
+  {'title': 'Nhãn khoa', 'icon': Icons.visibility_outlined},
+  {'title': 'Ung bướu', 'icon': Icons.biotech_outlined},
 ];
+const int initialSpecialtyCount = 5;
 
-// Mock data cho bác sĩ nổi tiếng (giữ nguyên)
+// Mock data cho bác sĩ nổi tiếng
 final List<Map<String, dynamic>> famousDoctors = [
   {
-    'name': 'BS. Nguyễn Thị Lan',
+    'name': 'BS. Trần Văn Khánh',
     'specialty': 'Tim mạch',
     'rating': 4.9,
     'image': 'assets/doctors/doctor1.jpg',
-    'bio': 'Chuyên gia hàng đầu về bệnh tim mạch với 20 năm kinh nghiệm.',
+    'bio': 'Bệnh viện Hồng Ngọc',
   },
   {
-    'name': 'BS. Trần Văn Minh',
-    'specialty': 'Nhi khoa',
+    'name': 'BS. Nguyễn Thị Hoa',
+    'specialty': 'Da liễu',
     'rating': 4.8,
     'image': 'assets/doctors/doctor2.jpg',
-    'bio': 'Bác sĩ nhi khoa tận tâm, yêu trẻ em.',
+    'bio': 'Phòng khám Sài Gòn',
   },
   {
-    'name': 'BS. Lê Thị Hoa',
-    'specialty': 'Da liễu',
+    'name': 'TS. Lê Văn Tín',
+    'specialty': 'Cơ Xương Khớp',
     'rating': 4.7,
-    'image': 'assets/doctors/doctor3.jpg',
-    'bio': 'Chuyên trị mụn và chăm sóc da chuyên sâu.',
+    'image': 'assets/doctors/doctor1.jpg',
+    'bio': 'Bệnh viện 108',
+  },
+  {
+    'name': 'BS. Phạm Thanh',
+    'specialty': 'Nhi Khoa',
+    'rating': 5.0,
+    'image': 'assets/doctors/doctor2.jpg',
+    'bio': 'Bệnh viện Nhi TW',
   },
 ];
 
-// Cache key cho news
-const String _newsCacheKey = 'health_news_cache';
-const String _newsTimestampKey = 'health_news_timestamp';
-const int _cacheExpirationHours = 24; // Reset sau 24h
+// Fallback mock news
+final List<Map<String, dynamic>> mockNews = [
+  {
+    'title': 'Mẹo ăn uống lành mạnh',
+    'excerpt': 'Chế độ ăn cân bằng cho sức khỏe tốt.',
+    'image': 'assets/news/news1.jpg',
+  },
+  {
+    'title': 'Tập luyện cho tim mạch',
+    'excerpt': 'Bài tập đơn giản hàng ngày.',
+    'image': 'assets/news/news2.jpg',
+  },
+  {
+    'title': 'Phòng ngừa bệnh thường gặp',
+    'excerpt': 'Lời khuyên từ chuyên gia.',
+    'image': 'assets/news/news3.jpg',
+  },
+];
 
-// Fetch news từ NewsAPI (chỉ 4 bài, cache 24h)
 Future<List<Map<String, dynamic>>> fetchHealthNews() async {
-  final prefs = await SharedPreferences.getInstance();
-  final cachedNewsJson = prefs.getString(_newsCacheKey);
-  final cachedTimestamp = prefs.getInt(_newsTimestampKey);
-
-  // Check cache
-  if (cachedNewsJson != null && cachedTimestamp != null) {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - cachedTimestamp < _cacheExpirationHours * 60 * 60 * 1000) {
-      return List<Map<String, dynamic>>.from(jsonDecode(cachedNewsJson));
-    }
-  }
-
-  // Fetch mới nếu cache hết hạn
-  const apiKey = 'YOUR_NEWSAPI_KEY'; // Đăng ký miễn phí tại newsapi.org
-  final url = Uri.parse(
-      'https://newsapi.org/v2/everything?q=health+OR+medical&language=vi&sortBy=publishedAt&pageSize=4&apiKey=$apiKey');
-  try {
-    final response = await http.get(url);
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final articles = data['articles'] as List;
-      final newsList = articles
-          .map((article) => {
-                'title': article['title'] ?? 'No title',
-                'excerpt': article['description'] ?? 'No description',
-                'image': article['urlToImage'] ??
-                    'assets/news/default.jpg', // Fallback image
-                'date': DateTime.parse(article['publishedAt'])
-                    .toString()
-                    .substring(0, 10), // YYYY-MM-DD
-                'readMore': 'Đọc thêm',
-                'url': article['url'], // Để navigate full article
-              })
-          .toList();
-
-      // Cache
-      await prefs.setString(_newsCacheKey, jsonEncode(newsList));
-      await prefs.setInt(
-          _newsTimestampKey, DateTime.now().millisecondsSinceEpoch);
-
-      return newsList;
-    }
-  } catch (e) {
-    print('Error fetching news: $e');
-  }
-
-  // Fallback mock nếu lỗi
-  return [
-    {
-      'title': '10 mẹo phòng ngừa cảm cúm mùa đông',
-      'excerpt':
-          'Với thời tiết thay đổi, hãy áp dụng ngay những mẹo đơn giản này để bảo vệ sức khỏe.',
-      'image': 'assets/news/news1.jpg',
-      'date': '26/10/2025',
-      'readMore': 'Đọc thêm',
-    },
-    // ... thêm 3 mock nữa nếu cần
-  ];
+  return Future.value(mockNews);
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onBookingTap;
+
+  const HomeScreen({super.key, this.onBookingTap});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -184,12 +122,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
+
   int _currentBannerIndex = 0;
-  int _currentDoctorIndex = 0;
   Map<String, dynamic>? _weatherData;
   bool _isLoadingWeather = true;
   List<Map<String, dynamic>> _healthNews = [];
   bool _isLoadingNews = true;
+  bool _showAllSpecialties = false;
 
   @override
   void initState() {
@@ -207,8 +146,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-    );
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     _fadeController.forward().then((_) => _slideController.forward());
     _loadWeather();
@@ -244,598 +183,811 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // --- Widget thời tiết ---
+  Widget _buildWeatherWidget() {
+    if (_isLoadingWeather) {
+      return const SizedBox(
+        width: 120,
+        height: 32,
+        child: Center(
+          child: LinearProgressIndicator(color: primaryColor),
+        ),
+      );
+    }
+
+    final temp = _weatherData?['main']['temp']?.toStringAsFixed(1) ?? 'N/A';
+    final city = _weatherData?['name'] ?? 'Vị trí';
+    final iconCode = _weatherData?['weather'][0]['icon'] ?? '01d';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primaryColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            getWeatherIcon(iconCode),
+            color: primaryDarkColor,
+            size: 18,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$temp°C, $city',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: primaryDarkColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Hàm show Dialog Chatbot ---
+  void _showChatbotDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+              ),
+              child: Column(
+                children: [
+                  // Header với nút đóng
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.android_outlined, color: Colors.white),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Chat với AI Bác sĩ',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Nội dung chatbot screen
+                  Expanded(
+                    child: const ChatBotScreen(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --- Hàm chuyển đến màn hình Booking (thực tế) ---
+  void _goToBookingScreen(BuildContext context) {
+    widget.onBookingTap?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final userName = getUserName();
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F8F0), // Nền xanh nhạt y tế
-      appBar: AppBar(
-        title: const Text('Trang chủ',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.greenAccent,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.account_circle),
-            onPressed: () {
-              // Navigate to profile
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chuyển đến hồ sơ cá nhân')),
-              );
-            },
-          ),
-        ],
+    // Tính số lượng chuyên khoa cần hiển thị
+    final specialtiesToShow = _showAllSpecialties ? allSpecialties.length : initialSpecialtyCount;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
       ),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+
+        // --- AppBar (Thanh tìm kiếm có Border) ---
+        appBar: AppBar(
+          title: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: primaryColor.withOpacity(0.5), width: 1.5),
+            ),
+            child: Row(
               children: [
-                // Header: Greeting + Weather (giữ nguyên)
-                SlideTransition(
-                  position: _slideAnimation,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.greenAccent, Colors.green.shade100],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                const Icon(Icons.search, color: primaryColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Tìm kiếm bác sĩ, chuyên khoa, bệnh viện...',
+                      hintStyle: TextStyle(fontSize: 16, color: primaryColor.withOpacity(0.7)),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    style: TextStyle(fontSize: 16, color: primaryDarkColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: primaryColor,
+          automaticallyImplyLeading: false,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+          actions: [
+            Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    showAppSnackBar(context, 'Thông báo');
+                  },
+                ),
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        // --- Kết thúc AppBar ---
+
+        body: RefreshIndicator(
+          onRefresh: _refresh,
+          color: primaryColor,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SingleChildScrollView(
+              // Giảm padding dưới để đỡ trống
+              padding: const EdgeInsets.only(bottom: 80),
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- Header: Greeting + Weather (Đã tối ưu khoảng cách) ---
+                  SlideTransition(
+                    position: _slideAnimation,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      // Giảm margin trên
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: primaryLightColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: primaryColor.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
                             children: [
-                              const Text(
-                                'Xin chào,',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white70),
+                              const CircleAvatar(
+                                radius: 20,
+                                backgroundColor: primaryColor,
+                                child: Icon(Icons.person, size: 20, color: Colors.white),
                               ),
-                              Text(
-                                userName,
-                                style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Xin chào,',
+                                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                  ),
+                                  Text(
+                                    userName,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: primaryDarkColor,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ),
-                        // Weather Widget (giữ nguyên)
-                        Card(
-                          elevation: 4,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              children: [
-                                _isLoadingWeather
-                                    ? const CircularProgressIndicator()
-                                    : Column(
-                                        children: [
-                                          Text(
-                                            '${_weatherData?['main']['temp']?.toStringAsFixed(1) ?? 'N/A'}°C',
-                                            style: const TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          Text(
-                                            _weatherData?['weather'][0]
-                                                        ['description']
-                                                    ?.toString()
-                                                    .toUpperCase() ??
-                                                'N/A',
-                                            style:
-                                                const TextStyle(fontSize: 12),
-                                          ),
-                                          Image.network(
-                                            'https://openweathermap.org/img/wn/${_weatherData?['weather'][0]['icon'] ?? '01d'}@2x.png',
-                                            width: 40,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    const Icon(Icons.cloud,
-                                                        size: 40),
-                                          ),
-                                        ],
-                                      ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Banner Carousel (giữ nguyên)
-                AnimationConfiguration.staggeredList(
-                  position: 0,
-                  duration: const Duration(milliseconds: 375),
-                  child: SlideAnimation(
-                    verticalOffset: 50.0,
-                    child: FadeInAnimation(
-                      child: Column(
-                        children: [
-                          CarouselSlider(
-                            options: CarouselOptions(
-                              height: 180,
-                              autoPlay: true,
-                              autoPlayInterval: const Duration(seconds: 3),
-                              enlargeCenterPage: true,
-                              onPageChanged: (index, reason) =>
-                                  setState(() => _currentBannerIndex = index),
-                              viewportFraction: 0.9,
-                            ),
-                            items: bannerData.map((banner) {
-                              return Builder(
-                                builder: (BuildContext context) {
-                                  return Container(
-                                    width: screenWidth,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      image: DecorationImage(
-                                        image: AssetImage(banner[
-                                            'image']!), // Thay bằng NetworkImage nếu từ URL
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.black.withOpacity(0.4),
-                                            Colors.transparent
-                                          ],
-                                          begin: Alignment.bottomCenter,
-                                          end: Alignment.topCenter,
-                                        ),
-                                      ),
-                                      child: Align(
-                                        alignment: Alignment.bottomLeft,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Text(
-                                            banner['title']!,
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            }).toList(),
-                          ),
-                          // Banner indicators (giữ nguyên)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: bannerData.asMap().entries.map((entry) {
-                              return Container(
-                                width: 8,
-                                height: 8,
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _currentBannerIndex == entry.key
-                                      ? Colors.greenAccent
-                                      : Colors.grey,
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                          _buildWeatherWidget(),
                         ],
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                // Health Info Grid (giữ nguyên)
-                AnimationConfiguration.staggeredGrid(
-                  position: 1,
-                  duration: const Duration(milliseconds: 375),
-                  columnCount: 2,
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 1.2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: healthInfo.length,
-                    itemBuilder: (context, index) {
-                      final info = healthInfo[index];
-                      return SlideAnimation(
-                        verticalOffset: 50.0,
-                        child: FadeInAnimation(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.green.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                  // --- Kết thúc Header ---
+
+                  // --- Banner Carousel (To width hơn, chấm chấm gộp vào trong) ---
+                  AnimationConfiguration.staggeredList(
+                    position: 0,
+                    duration: const Duration(milliseconds: 375),
+                    child: SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(
+                        child: Container(
+                          // Margin nhỏ nhất
+                          margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              // Carousel
+                              CarouselSlider(
+                                options: CarouselOptions(
+                                  height: 140, // Tăng height để chứa dots
+                                  autoPlay: true,
+                                  autoPlayInterval: const Duration(seconds: 3),
+                                  enlargeCenterPage: true,
+                                  viewportFraction: 0.95,
+                                  onPageChanged: (index, reason) =>
+                                      setState(() => _currentBannerIndex = index),
                                 ),
-                              ],
-                              gradient: LinearGradient(
-                                colors: [
-                                  info['color'],
-                                  info['color'].withOpacity(0.7)
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(info['icon'],
-                                      size: 40, color: Colors.white),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    info['title'],
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    info['description'],
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 12),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Famous Doctors Section (giữ nguyên)
-                AnimationConfiguration.staggeredList(
-                  position: 2,
-                  duration: const Duration(milliseconds: 375),
-                  child: SlideAnimation(
-                    verticalOffset: 50.0,
-                    child: FadeInAnimation(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: const Text(
-                              'Bác sĩ nổi tiếng',
-                              style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 200,
-                            child: CarouselSlider(
-                              options: CarouselOptions(
-                                height: 200,
-                                autoPlay: true,
-                                autoPlayInterval: const Duration(seconds: 4),
-                                enlargeCenterPage: true,
-                                viewportFraction: 0.85,
-                                onPageChanged: (index, reason) =>
-                                    setState(() => _currentDoctorIndex = index),
-                              ),
-                              items: famousDoctors.map((doctor) {
-                                return Builder(
-                                  builder: (BuildContext context) {
-                                    return Container(
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 8),
-                                      child: Card(
-                                        elevation: 8,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(16)),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Column(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                child: Image.asset(
-                                                  doctor['image'],
-                                                  height: 100,
-                                                  width: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                doctor['name'],
-                                                style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              Text(
-                                                doctor['specialty'],
-                                                style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.grey[600]),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: List.generate(
-                                                    5,
-                                                    (i) => Icon(
-                                                          Icons.star,
-                                                          color: i <
-                                                                  (doctor['rating'] ??
-                                                                      0)
-                                                              ? Colors.amber
-                                                              : Colors.grey,
-                                                          size: 16,
-                                                        )),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                doctor['bio'],
-                                                style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.grey[500]),
-                                                textAlign: TextAlign.center,
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
+                                items: bannerData.map((banner) {
+                                  return Builder(
+                                    builder: (BuildContext context) {
+                                      return Container(
+                                        width: screenWidth,
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(16),
+                                          image: DecorationImage(
+                                            image: AssetImage(banner['image']!),
+                                            fit: BoxFit.cover,
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          // Doctor indicators (giữ nguyên)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children:
-                                famousDoctors.asMap().entries.map((entry) {
-                              return Container(
-                                width: 8,
-                                height: 8,
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _currentDoctorIndex == entry.key
-                                      ? Colors.greenAccent
-                                      : Colors.grey,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Health News Section (cập nhật với real data)
-                AnimationConfiguration.staggeredList(
-                  position: 3,
-                  duration: const Duration(milliseconds: 375),
-                  child: SlideAnimation(
-                    verticalOffset: 50.0,
-                    child: FadeInAnimation(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Tin tức y tế',
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    // Navigate to full news
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text('Xem tất cả tin tức')),
-                                    );
-                                  },
-                                  child: const Text('Xem tất cả'),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _isLoadingNews
-                              ? const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(
-                                      child: CircularProgressIndicator()),
-                                )
-                              : _healthNews.isEmpty
-                                  ? const Padding(
-                                      padding: EdgeInsets.all(16),
-                                      child: Text('Không có tin tức mới'),
-                                    )
-                                  : ListView.separated(
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16),
-                                      itemCount: _healthNews.length,
-                                      separatorBuilder: (context, index) =>
-                                          const SizedBox(height: 12),
-                                      itemBuilder: (context, index) {
-                                        final news = _healthNews[index];
-                                        return Card(
-                                          elevation: 4,
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12)),
-                                          child: InkWell(
-                                            onTap: () {
-                                              // Navigate to full article (sử dụng news['url'])
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                    content: Text(
-                                                        'Đọc bài: ${news['title']}')),
-                                              );
-                                            },
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(16),
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Colors.black.withOpacity(0.4),
+                                                Colors.transparent,
+                                              ],
+                                              begin: Alignment.bottomCenter,
+                                              end: Alignment.topCenter,
+                                            ),
+                                          ),
+                                          child: Align(
+                                            alignment: Alignment.bottomLeft,
                                             child: Padding(
-                                              padding: const EdgeInsets.all(12),
-                                              child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
+                                              padding: const EdgeInsets.all(16),
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    child: Image.network(
-                                                      news['image'],
-                                                      height: 80,
-                                                      width: 80,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context,
-                                                              error,
-                                                              stackTrace) =>
-                                                          Container(
-                                                        height: 80,
-                                                        width: 80,
-                                                        color: Colors.grey[300],
-                                                        child: const Icon(Icons
-                                                            .image_not_supported),
-                                                      ),
+                                                  Text(
+                                                    banner['title']!,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          news['title'],
-                                                          style: const TextStyle(
-                                                              fontSize: 16,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold),
-                                                          maxLines: 2,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
-                                                        const SizedBox(
-                                                            height: 4),
-                                                        Text(
-                                                          news['excerpt'],
-                                                          style: TextStyle(
-                                                              fontSize: 14,
-                                                              color: Colors
-                                                                  .grey[600]),
-                                                          maxLines: 2,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
-                                                        const SizedBox(
-                                                            height: 8),
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            Text(
-                                                              news['date'],
-                                                              style: TextStyle(
-                                                                  fontSize: 12,
-                                                                  color: Colors
-                                                                          .grey[
-                                                                      400]),
-                                                            ),
-                                                            TextButton(
-                                                              onPressed: () {
-                                                                // Read more action (sử dụng news['url'])
-                                                                ScaffoldMessenger.of(
-                                                                        context)
-                                                                    .showSnackBar(
-                                                                  SnackBar(
-                                                                      content: Text(
-                                                                          '${news['readMore']}')),
-                                                                );
-                                                              },
-                                                              child: Text(news[
-                                                                  'readMore']),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
+                                                  Text(
+                                                    banner['subtitle'] ?? 'Ưu đãi',
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 14,
                                                     ),
                                                   ),
                                                 ],
                                               ),
                                             ),
                                           ),
-                                        );
-                                      },
-                                    ),
-                          const SizedBox(height: 24),
-                        ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                              // Dots overlay ở dưới banner
+                              Positioned(
+                                bottom: 8,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: bannerData.asMap().entries.map((entry) {
+                                    return AnimatedContainer(
+                                      duration: const Duration(milliseconds: 300),
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      width: _currentBannerIndex == entry.key ? 12 : 8,
+                                      height: _currentBannerIndex == entry.key ? 12 : 8,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _currentBannerIndex == entry.key
+                                            ? primaryColor
+                                            : Colors.white.withOpacity(0.7),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  // Xít Banner và Phần đặt lịch lại
+                  const SizedBox(height: 5),
+                  // --- Đặt lịch ngay + Chatbot (Gộp Container, Nền xanh nhạt, Tối ưu khoảng cách) ---
+                  Container(
+                    width: double.infinity,
+                    // Xít container lại
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      // Nền xanh nhạt
+                      color: primaryLightColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                      border: Border.all(color: primaryColor.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      children: [
+                        // Nút Đặt lịch ngay
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              _goToBookingScreen(context);
+                            },
+                            icon: const Icon(Icons.calendar_month_outlined, size: 24),
+                            label: const Text(
+                              'Đặt lịch ngay',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                        // Giảm khoảng cách divider
+                        const Divider(height: 20, thickness: 1, color: primaryLightColor),
+
+                        // Phần Chatbot
+                        InkWell(
+                          onTap: () {
+                            _showChatbotDialog(context);
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withOpacity(0.8),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.question_answer_outlined,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Bạn đang gặp vấn đề?',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryDarkColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Trò chuyện với bác sĩ AI ngay',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: primaryColor),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Xít Container đặt lịch và Chuyên khoa lại
+                  const SizedBox(height: 16),
+
+                  // --- Chuyên khoa Grid (Xem tất cả) ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Chuyên khoa phổ biến',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: primaryDarkColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 5,
+                      childAspectRatio: 0.8,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: specialtiesToShow,
+                    itemBuilder: (context, index) {
+                      if (index == initialSpecialtyCount - 1 && !_showAllSpecialties) {
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _showAllSpecialties = true;
+                            });
+                          },
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: const BoxDecoration(
+                                  color: primaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.more_horiz_outlined,
+                                  size: 24,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Expanded(
+                                child: Text(
+                                  'Xem tất cả',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final specialty = allSpecialties[index];
+                      return Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              specialty['icon'],
+                              size: 24,
+                              color: primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Expanded(
+                            child: Text(
+                              specialty['title'],
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  // Nút "Thu gọn" nếu đang show tất cả
+                  if (_showAllSpecialties)
+                    Padding(
+                      // Giảm padding
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Center(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _showAllSpecialties = false;
+                            });
+                          },
+                          child: Text(
+                            'Thu gọn',
+                            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Xít Chuyên khoa và Bác sĩ lại
+                  const SizedBox(height: 16),
+
+                  // --- Bác sĩ nổi bật (UI mới, Xịn hơn) ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Bác sĩ được đề xuất',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: primaryDarkColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 180,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: famousDoctors.length,
+                      itemBuilder: (context, index) {
+                        final doctor = famousDoctors[index];
+                        final rating = doctor['rating'] as double;
+                        return Container(
+                          width: 150,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Card(
+                            elevation: 6,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                showAppSnackBar(context, 'Xem chi tiết BS. ${doctor['name']}');
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ClipOval(
+                                      child: Image.asset(
+                                        doctor['image'],
+                                        height: 60,
+                                        width: 60,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      doctor['name'],
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryDarkColor,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      '${doctor['specialty']} - ${doctor['bio']}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[600],
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: List.generate(5, (i) {
+                                        if (i < rating.floor()) {
+                                          return const Icon(Icons.star, color: Colors.amber, size: 14);
+                                        } else if (i < rating) {
+                                          return const Icon(Icons.star_half, color: Colors.amber, size: 14);
+                                        } else {
+                                          return Icon(Icons.star_border, color: Colors.grey[300], size: 14);
+                                        }
+                                      }),
+                                    ),
+                                    const Spacer(),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 28,
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          showAppSnackBar(context, 'Đặt lịch ${doctor['name']}');
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: primaryColor,
+                                          foregroundColor: Colors.white,
+                                          padding: EdgeInsets.zero,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                        ),
+                                        child: const Text('Đặt lịch', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Xít Bác sĩ và Tin tức lại
+                  const SizedBox(height: 16),
+
+                  // --- Bài viết sức khỏe (Giữ nguyên) ---
+                  AnimationConfiguration.staggeredList(
+                    position: 3,
+                    duration: const Duration(milliseconds: 375),
+                    child: SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'Bài viết sức khỏe',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryDarkColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: _healthNews.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 16),
+                              itemBuilder: (context, index) {
+                                final news = _healthNews[index];
+                                return Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  child: InkWell(
+                                    onTap: () {
+                                      showAppSnackBar(context, 'Đọc bài: ${news['title']}');
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.asset(
+                                              news['image'],
+                                              height: 80,
+                                              width: 80,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  Container(
+                                                    height: 80,
+                                                    width: 80,
+                                                    color: Colors.grey[300],
+                                                    child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  news['title'],
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  news['excerpt'],
+                                                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -1,3 +1,4 @@
+import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -164,10 +165,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             TextButton.icon(
               onPressed: () {
                 // FIXED: Placeholder view full profile (limited access)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Xem chi tiết bệnh nhân (sắp có)')),
-                );
+                showAppSnackBar(
+                    context, 'Xem chi tiết hồ sơ bệnh nhân (sắp có)');
               },
               icon: const Icon(Icons.visibility, size: 18),
               label: const Text('Xem chi tiết'),
@@ -195,9 +194,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             TextButton.icon(
               onPressed: () {
                 // FIXED: Placeholder contact doctor
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Liên hệ bác sĩ (sắp có)')),
-                );
+                showAppSnackBar(context, 'Liên hệ bác sĩ (sắp có)');
               },
               icon: const Icon(Icons.call, size: 18),
               label: const Text('Liên hệ'),
