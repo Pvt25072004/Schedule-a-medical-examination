@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 
 import '../subscreens/settings/editprofile.dart';
+import '../subscreens/settings/legal.dart';
+import '../subscreens/settings/notification.dart';
 
 // --- Cài đặt Màu Chủ đạo (Đặt ở cấp độ này để đảm bảo sử dụng nhất quán) ---
 const Color primaryColor = Colors.greenAccent;
@@ -234,7 +236,12 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.notifications_active_outlined,
             title: 'Thông báo',
             subtitle: 'Cấu hình thông báo và nhắc nhở',
-            onTap: () { showAppSnackBar(context, 'Cấu hình Thông báo (sắp có)'); },
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+              );
+            },
             iconColor: Colors.redAccent,
           ),
 
@@ -290,7 +297,12 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.description_outlined,
             title: 'Pháp lý',
             subtitle: 'Điều khoản và chính sách',
-            onTap: () { showAppSnackBar(context, 'Xem Chính sách (sắp có)'); },
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LegalScreen()),
+              );
+            },
             iconColor: Colors.brown,
           ),
 
