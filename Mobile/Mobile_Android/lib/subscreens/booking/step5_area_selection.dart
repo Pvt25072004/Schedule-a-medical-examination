@@ -24,7 +24,7 @@ class Step5DoctorSelection extends StatelessWidget {
   // --- MOCK DATA Bác sĩ ---
   final List<Map<String, dynamic>> doctors = const [
     {
-      'title': 'BS.CKI Nguyễn Văn A (Tên rất dài để test overflow)',
+      'title': 'BS.CKI Nguyễn Văn A',
       'specialty': 'Tim mạch (Chuyên khoa tim mạch phức tạp)',
       'hospital': 'Bệnh viện Bạch Mai (Địa điểm nổi tiếng)',
       'rating': 4.9,

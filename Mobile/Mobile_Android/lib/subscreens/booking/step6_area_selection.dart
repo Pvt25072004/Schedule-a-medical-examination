@@ -371,7 +371,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryDarkColor,
+                          backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

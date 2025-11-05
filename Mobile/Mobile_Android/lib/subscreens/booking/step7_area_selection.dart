@@ -143,7 +143,7 @@ class _Step7PaymentState extends State<Step7Payment> {
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                  isButtonEnabled ? primaryColor : Colors.grey,
+                  isButtonEnabled ? Colors.green : Colors.grey,
                   foregroundColor: Colors.white,
                 ),
                 child: Text(
@@ -297,7 +297,7 @@ class _Step7PaymentState extends State<Step7Payment> {
                     icon: const Icon(Icons.check_circle_outline),
                     label: const Text('Hoàn tất Thanh toán'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryDarkColor,
+                      backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(

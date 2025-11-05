@@ -5,9 +5,13 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';
 import 'package:intl/intl.dart';
-import 'dart:async'; // Cần import này cho StreamSubscription
+import 'dart:async';
 
 import '../subscreens/settings/editprofile.dart';
+
+// --- Cài đặt Màu Chủ đạo (Đặt ở cấp độ này để đảm bảo sử dụng nhất quán) ---
+const Color primaryColor = Colors.greenAccent;
+const Color primaryDarkColor = Color(0xFF1B5E20);
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -18,9 +22,6 @@ class SettingScreen extends StatefulWidget {
 
 class _SettingScreenState extends State<SettingScreen> {
   Map<dynamic, dynamic>? userData;
-  // bool _isExpanded = false; // Thuộc tính này không cần dùng nữa vì ExpansionTile tự quản lý
-
-  // Dùng để quản lý kết nối realtime
   StreamSubscription<DatabaseEvent>? _userSubscription;
 
   @override
@@ -29,14 +30,48 @@ class _SettingScreenState extends State<SettingScreen> {
     _subscribeToUserData();
   }
 
-  // --- HÀM LẮNG NGHE REALTIME DATA ---
+  // Thêm hàm này vào class _SettingScreenState trong SettingScreen.dart
+
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Xác nhận Đăng xuất'),
+          content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?'),
+          actions: [
+            // Nút HỦY
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Đóng hộp thoại
+              },
+              child: const Text('HỦY', style: TextStyle(color: Colors.black54)),
+            ),
+            // Nút ĐỒNG Ý
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Đóng hộp thoại
+                _handleLogout(); // Thực hiện hành động đăng xuất
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, // Màu đỏ cho hành động nguy hiểm
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('ĐỒNG Ý'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _subscribeToUserData() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     final ref = FirebaseDatabase.instance.ref('users/${user.uid}');
 
-    // Đăng ký lắng nghe sự kiện onValue (thời gian thực)
     _userSubscription = ref.onValue.listen((event) {
       if (context.mounted) {
         final data = event.snapshot.value;
@@ -45,7 +80,6 @@ class _SettingScreenState extends State<SettingScreen> {
             userData = data;
           });
         } else {
-          // Xử lý trường hợp dữ liệu bị xóa/null
           setState(() {
             userData = null;
           });
@@ -58,7 +92,6 @@ class _SettingScreenState extends State<SettingScreen> {
     });
   }
 
-  // --- HỦY ĐĂNG KÝ KHI WIDGET BỊ HỦY ---
   @override
   void dispose() {
     _userSubscription?.cancel();
@@ -76,182 +109,211 @@ class _SettingScreenState extends State<SettingScreen> {
     }
   }
 
+  // --- Widget helper cho các mục cài đặt chung ---
+  Widget _buildSettingTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Widget? trailing,
+    Color iconColor = primaryColor,
+  }) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Icon(icon, color: iconColor),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Lấy dữ liệu ngày sinh trước khi build widget
-    final dobRaw = userData?['dateOfBirth'];
-    String dobText = 'N/A';
+    // Tên người dùng và thông tin cơ bản
+    final displayName = userData?['displayName'] ?? 'Tên người dùng';
+    final userEmail = userData?['email'] ?? 'Chưa cập nhật email';
+    final userPhone = userData?['phone'] ?? 'N/A';
+    final photoUrl = (userData?['photoUrl'] != null && (userData!['photoUrl'] as String).isNotEmpty)
+        ? userData!['photoUrl'] as String : null;
 
-    if (dobRaw != null) {
-      try {
-        DateTime dob;
-        if (dobRaw is int) {
-          // Nếu lưu dưới dạng milliseconds
-          dob = DateTime.fromMillisecondsSinceEpoch(dobRaw);
-        } else if (dobRaw is String) {
-          // Nếu lưu dạng "yyyy-MM-dd" hoặc ISO string
-          dob = DateTime.parse(dobRaw);
-        } else if (dobRaw is DateTime) {
-          dob = dobRaw;
-        } else {
-          dob = DateTime(1970);
-        }
-        dobText = DateFormat('dd/MM/yyyy').format(dob);
-      } catch (e) {
-        dobText = 'N/A';
-      }
+    if (userData == null && FirebaseAuth.instance.currentUser != null) {
+      return const Center(child: CircularProgressIndicator(color: primaryColor));
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F0),
+      backgroundColor: Colors.white, // ĐỒNG BỘ BACKGROUND LÀ TRẮNG
       appBar: AppBar(
-        title: const Text("Cài đặt"),
-        backgroundColor: Colors.greenAccent,
+        title: Column(
+          // Căn lề trái cho nội dung Column
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center, // Căn giữa theo chiều dọc
+          children: [
+            // 1. Tiêu đề chính
+            const Text(
+              "Cài đặt",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white, // Chữ trắng trên nền primaryColor
+              ),
+            ),
+            // 2. Subheader mô tả
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                "Quản lý tài khoản và tùy chỉnh",
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withOpacity(0.8) // Màu trắng mờ hơn
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: primaryColor, // Xanh lá Accent
         foregroundColor: Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              showAppSnackBar(
-                context,
-                'Trợ giúp và hỗ trợ (sắp có)',
-              );
-            },
-          ),
-        ],
       ),
-      body: userData == null && FirebaseAuth.instance.currentUser != null ?
-      const Center(child: CircularProgressIndicator(color: Colors.greenAccent)) // Show loading indicator
-          : ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 110), // THÊM PADDING BOTTOM 100PX
         children: [
-          Card(
-            elevation: 4,
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ExpansionTile(
-              leading: CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.greenAccent.withOpacity(0.2),
-                // FIXED: Check null và empty string trước khi dùng NetworkImage
-                backgroundImage: (userData?['photoUrl'] != null &&
-                    (userData!['photoUrl'] as String).isNotEmpty)
-                    ? NetworkImage(userData!['photoUrl'] as String)
-                    : null,
-                child: (userData?['photoUrl'] == null ||
-                    (userData!['photoUrl'] as String).isEmpty)
-                    ? const Icon(Icons.person,
-                    size: 20, color: Colors.greenAccent)
-                    : null,
-              ),
-              title: Text(
-                userData?['displayName'] ?? 'Tên người dùng',
-                style:
-                const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              subtitle: Text(userData?['role'] ?? 'N/A'),
-              trailing: const Icon(Icons.keyboard_arrow_down),
-              onExpansionChanged: (expanded) {}, // không cần setState
-
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildProfileItem(Icons.phone, 'Số điện thoại',
-                          userData?['phone'] ?? 'N/A'),
-                      _buildProfileItem(
-                          Icons.email, 'Email', userData?['email'] ?? 'N/A'),
-                      _buildProfileItem(Icons.description, 'Giới thiệu',
-                          userData?['bio'] ?? 'Chưa cập nhật'),
-                      _buildProfileItem(Icons.location_on, 'Địa chỉ',
-                          _getAddressString(userData)),
-                      _buildProfileItem(Icons.cake, 'Ngày sinh', dobText),
-                      _buildProfileItem(Icons.medical_information, 'Bệnh nền',
-                          userData?['medicalHistory'] ?? 'Không có'),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: () {
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.edit, size: 18),
-                        label: const Text('Chỉnh sửa hồ sơ'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
+          // --- 1. THÔNG TIN NGƯỜI DÙNG & EDIT PROFILE ---
           Card(
             elevation: 2,
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.notifications,
-                      color: Colors.greenAccent),
-                  title: const Text('Thông báo',
-                      style: TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: Switch(
-                    value: true,
-                    onChanged: (value) {
-                      setState(() {});
-                      showAppSnackBar(
-                        context,
-                        'Thông báo ${value ? 'bật' : 'tắt'}',
-                      );
-                    },
-                  ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: InkWell(
+              onTap: () {
+                // CHUYỂN THẲNG ĐẾN TRANG CHỈNH SỬA HỒ SƠ
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: primaryColor.withOpacity(0.2),
+                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                      child: photoUrl == null ? const Icon(Icons.person, size: 30, color: primaryColor) : null,
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                          Text(userEmail, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                          Text('ID: $userPhone', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  ],
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading:
-                  const Icon(Icons.privacy_tip, color: Colors.greenAccent),
-                  title: const Text('Quyền riêng tư',
-                      style: TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    showAppSnackBar(
-                      context,
-                      'Chính sách quyền riêng tư (sắp có)',
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading:
-                  const Icon(Icons.language, color: Colors.greenAccent),
-                  title: const Text('Ngôn ngữ',
-                      style: TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: const Text('Tiếng Việt'),
-                  onTap: () {
-                    showAppSnackBar(
-                      context,
-                      'Chọn ngôn ngữ (sắp có)',
-                    );
-                  },
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
+
+          const SizedBox(height: 20),
+
+          // --- KHỐI 1: TÙY CHỈNH CHỨC NĂNG (Thông báo, Lịch hẹn, Ngôn ngữ) ---
+
+          // Thông báo
+          _buildSettingTile(
+            icon: Icons.notifications_active_outlined,
+            title: 'Thông báo',
+            subtitle: 'Cấu hình thông báo và nhắc nhở',
+            onTap: () { showAppSnackBar(context, 'Cấu hình Thông báo (sắp có)'); },
+            iconColor: Colors.redAccent,
+          ),
+
+          // Lịch hẹn
+          _buildSettingTile(
+            icon: Icons.calendar_month,
+            title: 'Lịch hẹn',
+            subtitle: 'Tùy chỉnh lịch khám và nhắc nhở',
+            onTap: () { showAppSnackBar(context, 'Quản lý Lịch hẹn (sắp có)'); },
+            iconColor: Colors.blueAccent,
+          ),
+
+          // Ngôn ngữ & Khu vực
+          _buildSettingTile(
+            icon: Icons.language,
+            title: 'Ngôn ngữ & Khu vực',
+            subtitle: 'Thay đổi ngôn ngữ và múi giờ',
+            onTap: () { showAppSnackBar(context, 'Chọn Ngôn ngữ (sắp có)'); },
+            iconColor: Colors.teal,
+          ),
+
+          // --- KHỐI 2: BẢO MẬT & PHÁP LÝ ---
+
+          // Quyền riêng tư
+          _buildSettingTile(
+            icon: Icons.privacy_tip_outlined,
+            title: 'Quyền riêng tư',
+            subtitle: 'Kiểm soát quyền riêng tư và dữ liệu',
+            onTap: () { showAppSnackBar(context, 'Chính sách Quyền riêng tư (sắp có)'); },
+            iconColor: Colors.orange,
+          ),
+
+          // Bảo mật
+          _buildSettingTile(
+            icon: Icons.lock_outline,
+            title: 'Bảo mật',
+            subtitle: 'Bảo vệ tài khoản của bạn',
+            onTap: () { showAppSnackBar(context, 'Cài đặt Bảo mật (sắp có)'); },
+            iconColor: Colors.purple,
+          ),
+
+          // Thanh toán
+          _buildSettingTile(
+            icon: Icons.credit_card,
+            title: 'Thanh toán',
+            subtitle: 'Quản lý phương thức thanh toán',
+            onTap: () { showAppSnackBar(context, 'Quản lý Thanh toán (sắp có)'); },
+            iconColor: Colors.indigo,
+          ),
+
+          // Pháp lý (Legal)
+          _buildSettingTile(
+            icon: Icons.description_outlined,
+            title: 'Pháp lý',
+            subtitle: 'Điều khoản và chính sách',
+            onTap: () { showAppSnackBar(context, 'Xem Chính sách (sắp có)'); },
+            iconColor: Colors.brown,
+          ),
+
+          // Trợ giúp & Hỗ trợ
+          _buildSettingTile(
+            icon: Icons.help_outline,
+            title: 'Trợ giúp & Hỗ trợ',
+            subtitle: 'Liên hệ và câu hỏi thường gặp',
+            onTap: () { showAppSnackBar(context, 'Hỗ trợ (sắp có)'); },
+            iconColor: Colors.blueGrey,
+          ),
+
+          const SizedBox(height: 30),
+
+          // --- 3. ĐĂNG XUẤT (VỊ TRÍ HỢP LÝ NHẤT) ---
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _handleLogout,
+              // Gọi hàm xác nhận thay vì _handleLogout trực tiếp
+              onPressed: _showLogoutConfirmation,
               icon: const Icon(Icons.logout, color: Colors.red),
               label: const Text('Đăng xuất',
-                  style: TextStyle(fontSize: 16, color: Colors.red)),
+                  style: TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: Colors.red),
@@ -260,36 +322,15 @@ class _SettingScreenState extends State<SettingScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  String _getAddressString(Map<dynamic, dynamic>? data) {
-    if (data == null || data['address'] == null) return 'N/A';
-    final address = data['address'] as Map<dynamic, dynamic>?;
-    if (address == null) return 'N/A';
-    final province = address['province'] ?? '';
-    final district = address['district'] ?? '';
-    final street = address['street'] ?? '';
-    return [province, district, street].where((s) => s.isNotEmpty).join(', ');
-  }
+          const SizedBox(height: 40),
 
-  Widget _buildProfileItem(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.greenAccent),
-          const SizedBox(width: 12),
-          Expanded(
+          // --- Phiên bản và Bản quyền ---
+          Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style:
-                    TextStyle(fontSize: 14, color: Colors.grey.shade600)),
-                Text(value, style: const TextStyle(fontSize: 16)),
+                const Text('Phiên bản 2.5.1', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                Text('© 2024 HealthApp', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
               ],
             ),
           ),
