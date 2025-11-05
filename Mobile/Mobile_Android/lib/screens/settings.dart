@@ -5,6 +5,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';
 import 'package:intl/intl.dart';
+import 'dart:async'; // Cần import này cho StreamSubscription
+
+import '../subscreens/settings/editprofile.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -15,27 +18,53 @@ class SettingScreen extends StatefulWidget {
 
 class _SettingScreenState extends State<SettingScreen> {
   Map<dynamic, dynamic>? userData;
-  bool _isExpanded = false;
+  // bool _isExpanded = false; // Thuộc tính này không cần dùng nữa vì ExpansionTile tự quản lý
+
+  // Dùng để quản lý kết nối realtime
+  StreamSubscription<DatabaseEvent>? _userSubscription;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    _subscribeToUserData();
   }
 
-  Future<void> _fetchUserData() async {
+  // --- HÀM LẮNG NGHE REALTIME DATA ---
+  void _subscribeToUserData() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     final ref = FirebaseDatabase.instance.ref('users/${user.uid}');
-    final snapshot = await ref.get();
 
-    if (snapshot.exists) {
-      setState(() {
-        userData = snapshot.value as Map<dynamic, dynamic>;
-      });
-    }
+    // Đăng ký lắng nghe sự kiện onValue (thời gian thực)
+    _userSubscription = ref.onValue.listen((event) {
+      if (context.mounted) {
+        final data = event.snapshot.value;
+        if (data != null && data is Map<dynamic, dynamic>) {
+          setState(() {
+            userData = data;
+          });
+        } else {
+          // Xử lý trường hợp dữ liệu bị xóa/null
+          setState(() {
+            userData = null;
+          });
+        }
+      }
+    }, onError: (error) {
+      if (context.mounted) {
+        showAppSnackBar(context, 'Lỗi tải dữ liệu hồ sơ: $error');
+      }
+    });
   }
+
+  // --- HỦY ĐĂNG KÝ KHI WIDGET BỊ HỦY ---
+  @override
+  void dispose() {
+    _userSubscription?.cancel();
+    super.dispose();
+  }
+
 
   Future<void> _handleLogout() async {
     await FirebaseAuth.instance.signOut();
@@ -93,32 +122,34 @@ class _SettingScreenState extends State<SettingScreen> {
           ),
         ],
       ),
-      body: ListView(
+      body: userData == null && FirebaseAuth.instance.currentUser != null ?
+      const Center(child: CircularProgressIndicator(color: Colors.greenAccent)) // Show loading indicator
+          : ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
           Card(
             elevation: 4,
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ExpansionTile(
               leading: CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.greenAccent.withOpacity(0.2),
                 // FIXED: Check null và empty string trước khi dùng NetworkImage
                 backgroundImage: (userData?['photoUrl'] != null &&
-                        (userData!['photoUrl'] as String).isNotEmpty)
+                    (userData!['photoUrl'] as String).isNotEmpty)
                     ? NetworkImage(userData!['photoUrl'] as String)
                     : null,
                 child: (userData?['photoUrl'] == null ||
-                        (userData!['photoUrl'] as String).isEmpty)
+                    (userData!['photoUrl'] as String).isEmpty)
                     ? const Icon(Icons.person,
-                        size: 20, color: Colors.greenAccent)
+                    size: 20, color: Colors.greenAccent)
                     : null,
               ),
               title: Text(
                 userData?['displayName'] ?? 'Tên người dùng',
                 style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               subtitle: Text(userData?['role'] ?? 'N/A'),
               trailing: const Icon(Icons.keyboard_arrow_down),
@@ -143,7 +174,13 @@ class _SettingScreenState extends State<SettingScreen> {
                           userData?['medicalHistory'] ?? 'Không có'),
                       const SizedBox(height: 8),
                       TextButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                          );
+                        },
                         icon: const Icon(Icons.edit, size: 18),
                         label: const Text('Chỉnh sửa hồ sơ'),
                       ),
@@ -157,7 +194,7 @@ class _SettingScreenState extends State<SettingScreen> {
           Card(
             elevation: 2,
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
                 ListTile(
@@ -179,7 +216,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading:
-                      const Icon(Icons.privacy_tip, color: Colors.greenAccent),
+                  const Icon(Icons.privacy_tip, color: Colors.greenAccent),
                   title: const Text('Quyền riêng tư',
                       style: TextStyle(fontWeight: FontWeight.w500)),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -193,7 +230,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading:
-                      const Icon(Icons.language, color: Colors.greenAccent),
+                  const Icon(Icons.language, color: Colors.greenAccent),
                   title: const Text('Ngôn ngữ',
                       style: TextStyle(fontWeight: FontWeight.w500)),
                   trailing: const Text('Tiếng Việt'),
@@ -251,7 +288,7 @@ class _SettingScreenState extends State<SettingScreen> {
               children: [
                 Text(label,
                     style:
-                        TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                    TextStyle(fontSize: 14, color: Colors.grey.shade600)),
                 Text(value, style: const TextStyle(fontSize: 16)),
               ],
             ),
