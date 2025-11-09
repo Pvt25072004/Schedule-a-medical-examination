@@ -1,3 +1,4 @@
+import 'package:clinic_booking_system/subscreens/settings/help.dart';
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -41,7 +42,8 @@ class _SettingScreenState extends State<SettingScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Xác nhận Đăng xuất'),
-          content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?'),
+          content: const Text(
+              'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?'),
           actions: [
             // Nút HỦY
             TextButton(
@@ -100,7 +102,6 @@ class _SettingScreenState extends State<SettingScreen> {
     super.dispose();
   }
 
-
   Future<void> _handleLogout() async {
     await FirebaseAuth.instance.signOut();
     if (context.mounted) {
@@ -127,8 +128,10 @@ class _SettingScreenState extends State<SettingScreen> {
       child: ListTile(
         leading: Icon(icon, color: iconColor),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        subtitle: Text(subtitle,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        trailing: trailing ??
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );
@@ -140,11 +143,14 @@ class _SettingScreenState extends State<SettingScreen> {
     final displayName = userData?['displayName'] ?? 'Tên người dùng';
     final userEmail = userData?['email'] ?? 'Chưa cập nhật email';
     final userPhone = userData?['phone'] ?? 'N/A';
-    final photoUrl = (userData?['photoUrl'] != null && (userData!['photoUrl'] as String).isNotEmpty)
-        ? userData!['photoUrl'] as String : null;
+    final photoUrl = (userData?['photoUrl'] != null &&
+            (userData!['photoUrl'] as String).isNotEmpty)
+        ? userData!['photoUrl'] as String
+        : null;
 
     if (userData == null && FirebaseAuth.instance.currentUser != null) {
-      return const Center(child: CircularProgressIndicator(color: primaryColor));
+      return const Center(
+          child: CircularProgressIndicator(color: primaryColor));
     }
 
     return Scaffold(
@@ -153,7 +159,8 @@ class _SettingScreenState extends State<SettingScreen> {
         title: Column(
           // Căn lề trái cho nội dung Column
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center, // Căn giữa theo chiều dọc
+          mainAxisAlignment:
+              MainAxisAlignment.center, // Căn giữa theo chiều dọc
           children: [
             // 1. Tiêu đề chính
             const Text(
@@ -173,7 +180,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withOpacity(0.8) // Màu trắng mờ hơn
-                ),
+                    ),
               ),
             ),
           ],
@@ -184,12 +191,14 @@ class _SettingScreenState extends State<SettingScreen> {
         automaticallyImplyLeading: false,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 110), // THÊM PADDING BOTTOM 100PX
+        padding: const EdgeInsets.fromLTRB(
+            16, 16, 16, 110), // THÊM PADDING BOTTOM 100PX
         children: [
           // --- 1. THÔNG TIN NGƯỜI DÙNG & EDIT PROFILE ---
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: InkWell(
               onTap: () {
                 // CHUYỂN THẲNG ĐẾN TRANG CHỈNH SỬA HỒ SƠ
@@ -200,27 +209,39 @@ class _SettingScreenState extends State<SettingScreen> {
               },
               borderRadius: BorderRadius.circular(12),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 30,
                       backgroundColor: primaryColor.withOpacity(0.2),
-                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                      child: photoUrl == null ? const Icon(Icons.person, size: 30, color: primaryColor) : null,
+                      backgroundImage:
+                          photoUrl != null ? NetworkImage(photoUrl) : null,
+                      child: photoUrl == null
+                          ? const Icon(Icons.person,
+                              size: 30, color: primaryColor)
+                          : null,
                     ),
                     const SizedBox(width: 15),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                          Text(userEmail, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                          Text('ID: $userPhone', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                          Text(displayName,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18)),
+                          Text(userEmail,
+                              style: TextStyle(
+                                  fontSize: 14, color: Colors.grey[600])),
+                          Text('ID: $userPhone',
+                              style: TextStyle(
+                                  fontSize: 14, color: Colors.grey[600])),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                    const Icon(Icons.arrow_forward_ios,
+                        size: 16, color: Colors.grey),
                   ],
                 ),
               ),
@@ -239,7 +260,8 @@ class _SettingScreenState extends State<SettingScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const NotificationSettingsScreen()),
               );
             },
             iconColor: Colors.redAccent,
@@ -250,7 +272,9 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.calendar_month,
             title: 'Lịch hẹn',
             subtitle: 'Tùy chỉnh lịch khám và nhắc nhở',
-            onTap: () { showAppSnackBar(context, 'Quản lý Lịch hẹn (sắp có)'); },
+            onTap: () {
+              showAppSnackBar(context, 'Quản lý Lịch hẹn (sắp có)');
+            },
             iconColor: Colors.blueAccent,
           ),
 
@@ -259,7 +283,9 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.language,
             title: 'Ngôn ngữ & Khu vực',
             subtitle: 'Thay đổi ngôn ngữ và múi giờ',
-            onTap: () { showAppSnackBar(context, 'Chọn Ngôn ngữ (sắp có)'); },
+            onTap: () {
+              showAppSnackBar(context, 'Chọn Ngôn ngữ (sắp có)');
+            },
             iconColor: Colors.teal,
           ),
 
@@ -270,7 +296,9 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.privacy_tip_outlined,
             title: 'Quyền riêng tư',
             subtitle: 'Kiểm soát quyền riêng tư và dữ liệu',
-            onTap: () { showAppSnackBar(context, 'Chính sách Quyền riêng tư (sắp có)'); },
+            onTap: () {
+              showAppSnackBar(context, 'Chính sách Quyền riêng tư (sắp có)');
+            },
             iconColor: Colors.orange,
           ),
 
@@ -279,7 +307,9 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.lock_outline,
             title: 'Bảo mật',
             subtitle: 'Bảo vệ tài khoản của bạn',
-            onTap: () { showAppSnackBar(context, 'Cài đặt Bảo mật (sắp có)'); },
+            onTap: () {
+              showAppSnackBar(context, 'Cài đặt Bảo mật (sắp có)');
+            },
             iconColor: Colors.purple,
           ),
 
@@ -288,7 +318,9 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.credit_card,
             title: 'Thanh toán',
             subtitle: 'Quản lý phương thức thanh toán',
-            onTap: () { showAppSnackBar(context, 'Quản lý Thanh toán (sắp có)'); },
+            onTap: () {
+              showAppSnackBar(context, 'Quản lý Thanh toán (sắp có)');
+            },
             iconColor: Colors.indigo,
           ),
 
@@ -311,7 +343,12 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.help_outline,
             title: 'Trợ giúp & Hỗ trợ',
             subtitle: 'Liên hệ và câu hỏi thường gặp',
-            onTap: () { showAppSnackBar(context, 'Hỗ trợ (sắp có)'); },
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HelpScreen())
+              );
+            },
             iconColor: Colors.blueGrey,
           ),
 
@@ -325,7 +362,10 @@ class _SettingScreenState extends State<SettingScreen> {
               onPressed: _showLogoutConfirmation,
               icon: const Icon(Icons.logout, color: Colors.red),
               label: const Text('Đăng xuất',
-                  style: TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: Colors.red),
@@ -341,8 +381,10 @@ class _SettingScreenState extends State<SettingScreen> {
           Center(
             child: Column(
               children: [
-                const Text('Phiên bản 2.5.1', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                Text('© 2024 HealthApp', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                const Text('Phiên bản 2.5.1',
+                    style: TextStyle(fontSize: 13, color: Colors.grey)),
+                Text('© 2024 HealthApp',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700])),
               ],
             ),
           ),

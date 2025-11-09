@@ -270,7 +270,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
           ],
         ),

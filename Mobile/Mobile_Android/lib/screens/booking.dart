@@ -6,7 +6,7 @@ import '../subscreens/booking/process_bar.dart';
 import '../subscreens/booking/step1_area_selection.dart';
 import '../subscreens/booking/step2_area_selection.dart';
 import '../subscreens/booking/step3_area_selection.dart';
-import '../subscreens/booking/step4_area_selection.dart'; // step4_date_time_selection
+import '../subscreens/booking/step4_area_selection.dart';
 import '../subscreens/booking/step5_area_selection.dart'; // step5_doctor_selection
 import '../subscreens/booking/step6_area_selection.dart'; // step6_patient_info
 import '../subscreens/booking/step7_area_selection.dart'; // step7_payment
@@ -194,18 +194,14 @@ class _BookingScreenState extends State<BookingScreen> {
         title: Row(
           children: [
             // Icon / Logo
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2FA8E0), Color(0xFF4BE29D)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                'assets/images/LOGOmain.jpg',
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
               ),
-              child: const Icon(Icons.favorite, color: Colors.white, size: 20),
             ),
 
             const SizedBox(width: 10),

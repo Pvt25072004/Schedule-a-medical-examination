@@ -100,7 +100,6 @@ class _BookingProgressBarState extends State<BookingProgressBar> {
     final bool isFinalConfirmation = widget.currentStep == 8;
 
     return Container(
-      height: 110,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: SingleChildScrollView(
         controller: _scrollController, // GÁN SCROLL CONTROLLER
