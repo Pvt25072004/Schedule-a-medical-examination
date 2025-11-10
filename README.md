@@ -1,4 +1,5 @@
-Hệ thống Đặt lịch Khám bệnh (BookingCare Project)
+# Hệ thống Đặt lịch Khám bệnh (BookingCare Project)
+
 Dự án Xây dựng Hệ thống Đặt lịch Khám bệnh, cho phép bệnh nhân dễ dàng tìm kiếm bác sĩ, chuyên khoa và đặt lịch hẹn trực tuyến. Hệ thống cũng cung cấp trang quản trị cho phòng khám/bác sĩ để quản lý lịch hẹn, bệnh nhân và các nghiệp vụ liên quan.
 
 Mục lục

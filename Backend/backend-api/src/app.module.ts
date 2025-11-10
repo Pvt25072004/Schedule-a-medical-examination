@@ -4,6 +4,12 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DoctorsModule } from './doctors/doctors.module';
+import { HospitalsModule } from './hospitals/hospitals.module';
+import { UsersModule } from './users/users.module';
+import { AppointmentsModule } from './appointments/appointments.module';
+import { PaymentsModule } from './payments/payments.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { SchedulesModule } from './schedules/schedules.module';
 
 @Module({
   imports: [
@@ -26,6 +32,12 @@ import { DoctorsModule } from './doctors/doctors.module';
       inject: [ConfigService],
     }),
     DoctorsModule,
+    HospitalsModule,
+    UsersModule,
+    AppointmentsModule,
+    PaymentsModule,
+    ReviewsModule,
+    SchedulesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
