@@ -2,12 +2,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:clinic_booking_system/screens/settings.dart';
-import 'appointments.dart';
-import 'booking.dart';
-import 'home.dart';
-import 'qr_scan.dart';
-import 'chatbot.dart';
+import 'package:clinic_booking_system/screens/profile.dart';
+import 'screens/appointments.dart';
+import 'screens/booking.dart';
+import 'screens/home.dart';
+import 'screens/qr_scan.dart';
+import 'screens/chatbot.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -152,7 +152,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 HomeScreen(onBookingTap: _switchToBooking),
                 const BookingScreen(),
                 const AppointmentsScreen(),
-                const SettingScreen(),
+                const ProfileScreen(),
               ],
             ),
 
@@ -256,7 +256,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           notchMargin: 6,
           elevation: 0, // 👈 Bỏ shadow để navbar không xám khi scroll
           child: SizedBox(
-            height: 60,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -264,7 +263,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 navItem(Icons.medical_services, "Đặt lịch", 1),
                 const SizedBox(width: 40),
                 navItem(Icons.list_alt, "Lịch hẹn", 2),
-                navItem(Icons.settings, "Cài đặt", 3),
+                navItem(Icons.person, "Tài khoản", 3),
               ],
             ),
           ),

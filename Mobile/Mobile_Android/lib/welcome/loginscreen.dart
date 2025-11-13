@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:animations/animations.dart';
-import 'package:clinic_booking_system/screens/dashboard.dart';
+import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/service/email_service.dart';
 import 'package:clinic_booking_system/subscreens/password/emailforpass.dart';

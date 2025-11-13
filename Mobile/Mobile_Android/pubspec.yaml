@@ -36,6 +36,7 @@ dependencies:
   permission_handler: ^12.0.1
   url_launcher: ^6.3.2
   flip_card: ^0.7.0
+  flutter_screenutil: ^5.9.3
 
 flutter_icons:
   android: true
