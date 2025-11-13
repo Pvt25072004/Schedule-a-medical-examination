@@ -155,8 +155,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             keyboardType: TextInputType.number,
             maxLength: 6,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               counterText: "",
               hintText: '------',
@@ -193,21 +192,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
               child: _isLoading
                   ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                        strokeWidth: 2,
-                      ),
-                    )
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                  strokeWidth: 2,
+                ),
+              )
                   : const Text(
-                      'Xác nhận mã OTP',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                'Xác nhận mã OTP',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -216,8 +215,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               onPressed: _isLoading ? null : _sendOtpResend, // Resend logic
               child: const Text(
                 'Gửi lại mã OTP',
-                style:
-                    TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
               ),
             ),
           ),
