@@ -1,9 +1,7 @@
-// main.dart - FIXED: Update _getStartScreen để check incomplete → OnboardingFlowScreen (combined), sign out nếu cần
 import 'package:clinic_booking_system/firebase_options.dart';
-import 'package:clinic_booking_system/screens/chat.dart';
 import 'package:clinic_booking_system/screens/home.dart';
-import 'package:clinic_booking_system/screens/main_screen.dart';
-import 'package:clinic_booking_system/screens/onboarding.dart';
+import 'package:clinic_booking_system/screens/dashboard.dart';
+import 'package:clinic_booking_system/welcome/onboarding.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -12,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -20,6 +19,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('vi', null);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -64,76 +64,14 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  final AuthService _authService = AuthService(); // THÊM DÒNG NÀY
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setupFirebaseMessaging();
-    });
   }
 
-  Future<void> setupFirebaseMessaging() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Received foreground message: ${message.data}');
-      if (message.data['type'] == 'chat') {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              contactUid: message.data['contactUid'] ?? '',
-              contactName: message.data['contactName'] ?? 'Người dùng',
-            ),
-          ),
-        );
-      }
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Message opened app: ${message.data}');
-      if (message.data['type'] == 'chat') {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              contactUid: message.data['contactUid'] ?? '',
-              contactName: message.data['contactName'] ?? 'Người dùng',
-            ),
-          ),
-        );
-      }
-    });
-
-    RemoteMessage? initialMessage = await messaging.getInitialMessage();
-    if (initialMessage != null && initialMessage.data['type'] == 'chat') {
-      print('App opened from terminated: ${initialMessage.data}');
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(
-            contactUid: initialMessage.data['contactUid'] ?? '',
-            contactName: initialMessage.data['contactName'] ?? 'Người dùng',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<Map<String, dynamic>> _fetchUserData(String uid) async {
-    final snapshot = await FirebaseDatabase.instance.ref('users/$uid').get();
-    if (snapshot.exists) {
-      return Map<String, dynamic>.from(snapshot.value as Map);
-    }
-    return {
-      'is_onboarding_needed': true,
-      'role': 'UNASSIGNED',
-      'displayName': '',
-      'dateOfBirth': '',
-      'address': {'province': '', 'district': '', 'street': ''},
-      'medicalHistory': '',
-    };
-  }
-
-  // FIXED: Check profile complete
+  // KHỞI TẠO LẠI HÀM KIỂM TRA HỒ SƠ (vì nó không thuộc AuthService)
   bool _isProfileComplete(Map<String, dynamic> userData) {
     final role = userData['role'] as String? ?? '';
     final displayName = userData['displayName'] as String? ?? '';
@@ -157,18 +95,26 @@ class _MyAppState extends State<MyApp> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      final userData = await _fetchUserData(user.uid);
+      // 1. Lấy dữ liệu người dùng
+      final userData = await _authService.fetchUserData(user.uid); // SỬA: Gọi từ _authService
+      // 2. Kiểm tra trạng thái Onboarding
+      final bool isOnboardingNeeded = userData['is_onboarding_needed'] == true;
+      final bool isProfileIncomplete = !_isProfileComplete(userData);
 
-      // FIXED: Nếu incomplete, sign out và đến OnboardingFlowScreen (combined)
-      if (userData['is_onboarding_needed'] == true || !_isProfileComplete(userData)) {
-        await FirebaseAuth.instance.signOut(); // FIXED: Auto sign out nếu incomplete
-        return const OnboardingFlowScreen(); // FIXED: To combined screen
+      // 💥 SỬA: KHÔNG signOut() NỮA. Nếu cần Onboarding, trả về màn hình Onboarding ngay.
+      if (isOnboardingNeeded || isProfileIncomplete) {
+        // Nếu cần Onboarding (cờ ONBOARDING_NEEDED là true) hoặc hồ sơ cơ bản chưa đủ.
+        // Giữ người dùng đang đăng nhập và chuyển thẳng đến flow Onboarding.
+        return const OnboardingFlowScreen();
       } else {
+        // Đã hoàn tất hồ sơ và có vai trò hợp lệ
         return const MainScreen();
       }
     }
 
-    return const WelcomeScreen(); // FIXED: Sau signout → Welcome/Login flow
+    // 3. Người dùng chưa đăng nhập
+    // Chuyển đến màn hình Chào mừng (WelcomeScreen) để bắt đầu đăng nhập/đăng ký.
+    return const WelcomeScreen();
   }
 
   @override
@@ -184,10 +130,6 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/home': (context) => const HomeScreen(),
-        '/chat': (context) => const ChatScreen(
-          contactUid: 'default_uid',
-          contactName: 'Người dùng',
-        ),
         '/onboarding-flow': (context) => const OnboardingFlowScreen(), // FIXED: Route for combined
       },
       home: FutureBuilder<Widget>(
@@ -195,6 +137,7 @@ class _MyAppState extends State<MyApp> {
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Scaffold(
+              backgroundColor: Colors.white,
               body: Center(child: CircularProgressIndicator()),
             );
           }

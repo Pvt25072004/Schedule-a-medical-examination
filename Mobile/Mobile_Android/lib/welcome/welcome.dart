@@ -71,11 +71,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: Lottie.asset('assets/animations/Doctor.json'),
               ),
               const SizedBox(height: 30),
-              Row(
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 150,
+                    width: 300,
+                    height: 60,
                     child: ElevatedButton(
                       onPressed: () => _navigateToLogin(true),
                       style: ElevatedButton.styleFrom(
@@ -85,12 +86,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           vertical: 12,
                         ),
                       ),
-                      child: const Text('Login'),
+                      child: const Text('Login', style: TextStyle(fontSize: 20)),
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  SizedBox(height: 10),
                   SizedBox(
-                    width: 150,
+                    width: 300,
+                    height: 60,
                     child: ElevatedButton(
                       onPressed: () => _navigateToLogin(false),
                       style: ElevatedButton.styleFrom(
@@ -100,7 +102,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           vertical: 12,
                         ),
                       ),
-                      child: const Text('Register'),
+                      child: const Text('Register', style: TextStyle(fontSize: 20)),
                     ),
                   ),
                 ],

@@ -27,7 +27,20 @@ dependencies:
   animations: ^2.1.0
   image_picker: ^1.2.0
   http: ^1.5.0
-  emailjs: ^4.0.0
+  flutter_launcher_icons: ^0.14.4
+  carousel_slider: ^5.1.1
+  flutter_staggered_animations: ^1.1.1
+  shared_preferences: ^2.5.3
+  intl: ^0.20.2
+  mobile_scanner: ^7.1.3
+  permission_handler: ^12.0.1
+  url_launcher: ^6.3.2
+  flip_card: ^0.7.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/LOGOmain.jpg"
 
 # dev_dependencies là khóa chính, cùng cấp với dependencies
 dev_dependencies:
@@ -41,6 +54,6 @@ flutter:
   # uses-material-design phải thụt lề dưới flutter
   uses-material-design: true
   assets:
-    # assets phải thụt lề dưới flutter
     - assets/animations/
     - assets/images/
+    - assets/translations/

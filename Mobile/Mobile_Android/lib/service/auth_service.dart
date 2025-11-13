@@ -99,6 +99,8 @@ class AuthService {
     }
   }
 
+  // Trong file: lib/service/auth_service.dart
+
   Future<UserCredential> verifyOtpAndSignIn(
       String verificationId,
       String smsCode,
@@ -110,19 +112,37 @@ class AuthService {
       );
 
       final userCred = await _auth.signInWithCredential(credential);
-      final fcmToken = await FirebaseMessaging.instance.getToken();
+      final uid = userCred.user?.uid;
+      if (uid == null) throw Exception("UID is null after phone sign-in.");
 
-      // FIXED: Thêm is_onboarding_needed = true khi đăng ký phone
-      await _db.child('users/${userCred.user?.uid}').update({
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      final userRef = _db.child('users/$uid');
+      final snapshot = await userRef.get();
+
+      final phoneData = {
         'phone': userCred.user?.phoneNumber ?? '',
         'displayName': userCred.user?.displayName ?? 'Người dùng',
         'photoUrl': userCred.user?.photoURL ?? '',
-        'bio': '',
         'fcmToken': fcmToken,
-        'is_onboarding_needed': true, // FIXED: Set onboarding true
-        'role': 'UNASSIGNED', // FIXED: Role mặc định
-        'createdAt': ServerValue.timestamp,
-      });
+        // KHÔNG BAO GỒM is_onboarding_needed và role
+      };
+
+      if (snapshot.exists) {
+        // 🎯 FIX: USER CŨ ĐĂNG NHẬP LẠI (Chỉ update các thông tin mới, giữ nguyên cờ trạng thái)
+        await userRef.update(phoneData);
+      } else {
+        // USER MỚI (Cần set các cờ trạng thái lần đầu)
+        await userRef.set({
+          'phone': userCred.user?.phoneNumber ?? '',
+          'displayName': userCred.user?.displayName ?? '',
+          'photoUrl': userCred.user?.photoURL ?? '',
+          'fcmToken': fcmToken,
+          'bio': '',
+          'is_onboarding_needed': true, // Chỉ set TRUE cho user mới
+          'role': 'UNASSIGNED',
+          'createdAt': ServerValue.timestamp,
+        });
+      }
 
       return userCred;
     } catch (e) {
@@ -208,13 +228,26 @@ class AuthService {
     await _db.child('users/$uid').update(updates);
   }
 
-  // FIXED: Thêm hàm fetchUserData để lấy data từ DB
+  // Hàm mới để kiểm tra trạng thái Onboarding (Lấy dữ liệu từ Backend/DB)
   Future<Map<String, dynamic>> fetchUserData(String uid) async {
     final snapshot = await _db.child('users/$uid').get();
-    if (snapshot.exists) {
-      return snapshot.value as Map<String, dynamic>;
+
+    if (snapshot.exists && snapshot.value != null) {
+      // 🎯 FIX GỐC: Chuyển đổi an toàn kiểu dữ liệu Map<Object?, Object?>
+      final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+      // Đảm bảo các trường cần thiết không null để tránh lỗi Map sau này
+      data['is_onboarding_needed'] ??= true;
+      data['role'] ??= 'UNASSIGNED';
+
+      return data;
     }
-    throw Exception('Không tìm thấy dữ liệu user');
+
+    // Trả về mặc định nếu không tồn tại hoặc lỗi đọc
+    return {
+      'role': 'UNASSIGNED',
+      'is_onboarding_needed': true,
+    };
   }
 
   Stream<User?> get userChanges => _auth.userChanges();
