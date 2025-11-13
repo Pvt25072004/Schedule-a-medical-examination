@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-import '../settings/editprofile.dart';
+import '../profile/editprofile.dart';
 
 class Step6PatientInfo extends StatefulWidget {
   final Function(Map<String, dynamic>) onNext;
