@@ -1,6 +1,6 @@
 import 'package:clinic_booking_system/firebase_options.dart';
 import 'package:clinic_booking_system/screens/home.dart';
-import 'package:clinic_booking_system/screens/dashboard.dart';
+import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/welcome/onboarding.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';

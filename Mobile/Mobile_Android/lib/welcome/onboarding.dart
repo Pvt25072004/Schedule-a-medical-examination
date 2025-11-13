@@ -1,4 +1,4 @@
-import 'package:clinic_booking_system/screens/dashboard.dart';
+import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
