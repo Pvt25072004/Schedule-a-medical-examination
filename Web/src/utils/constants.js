@@ -1,10 +1,18 @@
-// Application constants
-export const USER_ROLES = {
-  PATIENT: 'patient',
-  DOCTOR: 'doctor',
-  ADMIN: 'admin'
+// Pages
+export const PAGES = {
+  HOME: '/',
+  WELCOME: '/welcome',
+  LOGIN: '/login',
+  REGISTER: '/register',
+  BOOKING: '/booking',
+  APPOINTMENTS: '/appointments',
+  CHAT: '/chat',
+  SETTINGS: '/settings',
+  PROFILE: '/profile',
+  YOUR_PAGE: '/your-page'
 };
 
+// Appointment Status
 export const APPOINTMENT_STATUS = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
@@ -12,47 +20,132 @@ export const APPOINTMENT_STATUS = {
   CANCELLED: 'cancelled'
 };
 
-export const PAGES = {
-  WELCOME: 'welcome',
-  LOGIN: 'login',
-  REGISTER: 'register',
-  HOME: 'home',
-  BOOKING: 'booking',
-  APPOINTMENTS: 'appointments',
-  CHAT: 'chat',
-  SETTINGS: 'settings'
+// User Roles
+export const USER_ROLES = {
+  PATIENT: 'patient',
+  DOCTOR: 'doctor',
+  HOSPITAL: 'hospital'
 };
 
+// Cities
 export const CITIES = [
-  { value: 'hcm', label: 'TP. Hồ Chí Minh' },
-  { value: 'hn', label: 'Hà Nội' },
-  { value: 'dn', label: 'Đà Nẵng' },
-  { value: 'hp', label: 'Hải Phòng' },
-  { value: 'ct', label: 'Cần Thơ' }
+  'Hà Nội',
+  'TP. Hồ Chí Minh',
+  'Đà Nẵng',
+  'Hải Phòng',
+  'Cần Thơ',
+  'Biên Hòa',
+  'Nha Trang',
+  'Huế',
+  'Buôn Ma Thuột',
+  'Vũng Tàu'
 ];
 
+// Specialties
+export const SPECIALTIES = [
+  {
+    id: 1,
+    name: 'Tim mạch',
+    icon: '❤️',
+    description: 'Khám và điều trị các bệnh về tim mạch'
+  },
+  {
+    id: 2,
+    name: 'Nội khoa',
+    icon: '🩺',
+    description: 'Khám tổng quát và điều trị nội khoa'
+  },
+  {
+    id: 3,
+    name: 'Nha khoa',
+    icon: '🦷',
+    description: 'Chăm sóc và điều trị răng miệng'
+  },
+  {
+    id: 4,
+    name: 'Da liễu',
+    icon: '💆',
+    description: 'Điều trị các bệnh về da'
+  },
+  {
+    id: 5,
+    name: 'Tai Mũi Họng',
+    icon: '👂',
+    description: 'Khám và điều trị tai mũi họng'
+  },
+  {
+    id: 6,
+    name: 'Mắt',
+    icon: '👁️',
+    description: 'Khám và điều trị các bệnh về mắt'
+  }
+];
+
+// Doctors
 export const DOCTORS = [
-  { id: 'dr1', name: 'BS. Nguyễn Văn A', specialty: 'Tim mạch', avatar: '👨‍⚕️' },
-  { id: 'dr2', name: 'BS. Trần Thị B', specialty: 'Nhi khoa', avatar: '👩‍⚕️' },
-  { id: 'dr3', name: 'BS. Lê Văn C', specialty: 'Da liễu', avatar: '👨‍⚕️' },
-  { id: 'dr4', name: 'BS. Phạm Thị D', specialty: 'Nội tổng quát', avatar: '👩‍⚕️' },
-  { id: 'dr5', name: 'BS. Hoàng Văn E', specialty: 'Tai mũi họng', avatar: '👨‍⚕️' }
+  {
+    id: 1,
+    name: 'BS. Nguyễn Văn An',
+    specialty: 'Tim mạch',
+    avatar: '👨‍⚕️',
+    rating: 4.8,
+    reviews: 256,
+    experience: 15,
+    hospital: 'Bệnh viện Đa khoa Quốc tế',
+    price: 500000
+  },
+  {
+    id: 2,
+    name: 'BS. Trần Thị Bình',
+    specialty: 'Nội khoa',
+    avatar: '👩‍⚕️',
+    rating: 4.9,
+    reviews: 189,
+    experience: 12,
+    hospital: 'Phòng khám Đa khoa Medpro',
+    price: 350000
+  },
+  {
+    id: 3,
+    name: 'BS. Lê Hoàng Cường',
+    specialty: 'Nha khoa',
+    avatar: '👨‍⚕️',
+    rating: 4.7,
+    reviews: 143,
+    experience: 10,
+    hospital: 'Nha khoa Paris',
+    price: 300000
+  }
 ];
 
+// Time Slots
 export const TIME_SLOTS = [
-  '08:00 - 09:00',
-  '09:00 - 10:00', 
-  '10:00 - 11:00',
-  '13:00 - 14:00',
-  '14:00 - 15:00',
-  '15:00 - 16:00',
-  '16:00 - 17:00'
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '13:00', '13:30', '14:00', '14:30',
+  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
 ];
 
+// Health Tips
 export const HEALTH_TIPS = [
-  'Uống đủ 2 lít nước mỗi ngày giúp cơ thể luôn khỏe mạnh và tràn đầy năng lượng!',
-  'Vận động ít nhất 30 phút mỗi ngày để duy trì sức khỏe tim mạch tốt.',
-  'Ngủ đủ 7-8 tiếng mỗi đêm giúp cơ thể phục hồi và tái tạo năng lượng.',
-  'Ăn nhiều rau xanh và trái cây tươi để bổ sung vitamin và khoáng chất.',
-  'Khám sức khỏe định kỳ 6 tháng/lần để phát hiện sớm các vấn đề sức khỏe.'
+  {
+    id: 1,
+    title: 'Uống đủ nước mỗi ngày',
+    description: 'Nên uống ít nhất 2 lít nước mỗi ngày để cơ thể khỏe mạnh',
+    icon: '💧',
+    date: '2025-11-15'
+  },
+  {
+    id: 2,
+    title: 'Tập thể dục đều đặn',
+    description: 'Dành ít nhất 30 phút mỗi ngày cho hoạt động thể chất',
+    icon: '🏃',
+    date: '2025-11-14'
+  },
+  {
+    id: 3,
+    title: 'Ngủ đủ giấc',
+    description: 'Ngủ 7-8 tiếng mỗi đêm giúp cơ thể phục hồi tốt',
+    icon: '😴',
+    date: '2025-11-13'
+  }
 ];

@@ -1,175 +1,312 @@
-import React from 'react';
-import { Calendar, Clock, MessageCircle, User, Activity, Heart, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Clock, MessageCircle, User, Bell, Search, TrendingUp, Activity, Heart, FileText, ArrowRight, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppointments } from '../contexts/AppointmentContext';
-import Layout from '../components/common/Layout';
 import Card from '../components/common/Card';
-import { PAGES, HEALTH_TIPS } from '../utils/constants';
-import { formatDate, getInitials } from '../utils/helpers';
+import Button from '../components/common/Button';
+import { PAGES, HEALTH_TIPS, SPECIALTIES } from '../utils/constants';
+import { formatDate, getInitials, getRelativeDate } from '../utils/helpers';
 
 const HomePage = ({ navigate }) => {
   const { user } = useAuth();
-  const { getUpcomingAppointments } = useAppointments();
-  const upcomingAppointments = getUpcomingAppointments().slice(0, 2);
+  const { getUpcomingAppointments, getStatistics } = useAppointments();
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const upcomingAppointments = getUpcomingAppointments().slice(0, 3);
+  const stats = getStatistics();
   const randomTip = HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)];
 
   const quickActions = [
     {
       icon: Calendar,
       label: 'Đặt lịch khám',
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-50',
-      page: PAGES.BOOKING
+      color: 'blue',
+      page: PAGES.BOOKING,
+      gradient: 'from-blue-500 to-blue-600'
     },
     {
       icon: Clock,
       label: 'Lịch hẹn',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      page: PAGES.APPOINTMENTS
+      color: 'purple',
+      page: PAGES.APPOINTMENTS,
+      gradient: 'from-purple-500 to-purple-600'
     },
     {
       icon: MessageCircle,
-      label: 'Trợ lý ảo',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      page: PAGES.CHAT
+      label: 'Tư vấn online',
+      color: 'green',
+      page: PAGES.CHAT,
+      gradient: 'from-green-500 to-green-600'
     },
     {
-      icon: User,
-      label: 'Hồ sơ',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      page: PAGES.SETTINGS
+      icon: FileText,
+      label: 'Hồ sơ bệnh án',
+      color: 'orange',
+      page: PAGES.SETTINGS,
+      gradient: 'from-orange-500 to-orange-600'
     }
   ];
 
-  const healthStats = [
-    { label: 'Lịch hẹn', value: upcomingAppointments.length, icon: Calendar, color: 'teal' },
-    { label: 'Hoàn thành', value: '12', icon: Activity, color: 'green' },
-    { label: 'Điểm sức khỏe', value: '85', icon: Heart, color: 'red' }
+  const healthMetrics = [
+    { label: 'Lượt khám', value: stats.completed, icon: Activity, color: 'blue', change: '+12%' },
+    { label: 'Lịch hẹn', value: stats.upcoming, icon: Calendar, color: 'purple', change: '+5%' },
+    { label: 'Điểm sức khỏe', value: '85', icon: Heart, color: 'red', change: '+3%' }
   ];
 
   return (
-    <Layout
-      title="Trang chủ"
-      subtitle={`Chào mừng, ${user?.fullName || 'Bạn'}!`}
-      showSettings
-      onSettings={() => navigate(PAGES.SETTINGS)}
-    >
-      {/* Welcome Banner */}
-      <div className="mb-6">
-        <Card className="bg-gradient-to-r from-teal-500 to-blue-500 text-white" padding="lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Xin chào! 👋</h2>
-              <p className="text-teal-50">Hôm nay bạn cảm thấy thế nào?</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">S</span>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">STL Clinic</h1>
+                <p className="text-xs text-gray-500">Dashboard</p>
+              </div>
             </div>
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-teal-600 text-2xl font-bold">
-              {getInitials(user?.fullName || 'U')}
+
+            {/* Search Bar - Desktop */}
+            <div className="hidden md:flex flex-1 max-w-lg mx-8">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm bác sĩ, chuyên khoa..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* User Actions */}
+            <div className="flex items-center gap-3">
+              <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <Bell className="w-6 h-6" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+              
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition"
+                onClick={() => navigate(PAGES.SETTINGS)}
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                  {getInitials(user?.fullName || 'User')}
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-semibold text-gray-900">{user?.fullName || 'Người dùng'}</p>
+                  <p className="text-xs text-gray-500">Bệnh nhân</p>
+                </div>
+              </div>
             </div>
           </div>
-        </Card>
-      </div>
+        </div>
+      </header>
 
-      {/* Health Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {healthStats.map((stat, index) => (
-          <Card key={index} padding="md" className="text-center">
-            <div className={`w-12 h-12 bg-${stat.color}-100 rounded-full flex items-center justify-center mx-auto mb-2`}>
-              <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
-            </div>
-            <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-            <p className="text-xs text-gray-600">{stat.label}</p>
-          </Card>
-        ))}
-      </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Xin chào, {user?.fullName || 'Bạn'}! 👋
+          </h2>
+          <p className="text-gray-600">
+            Hôm nay bạn cảm thấy thế nào? Hãy để chúng tôi chăm sóc sức khỏe của bạn.
+          </p>
+        </div>
 
-      {/* Quick Actions */}
-      <div className="mb-6">
-        <h3 className="text-lg font-bold mb-4 flex items-center">
-          <TrendingUp className="w-5 h-5 text-teal-600 mr-2" />
-          Thao tác nhanh
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => (
-            <Card
-              key={index}
-              hover
-              onClick={() => navigate(action.page)}
-              className="text-center"
-              padding="lg"
-            >
-              <div className={`${action.bgColor} w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3`}>
-                <action.icon className={`w-8 h-8 ${action.color}`} />
+        {/* Health Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {healthMetrics.map((metric, index) => (
+            <Card key={index} className="relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">{metric.label}</p>
+                  <p className="text-3xl font-bold text-gray-900">{metric.value}</p>
+                  <p className={`text-sm font-medium text-${metric.color}-600 mt-2 flex items-center gap-1`}>
+                    <TrendingUp className="w-4 h-4" />
+                    {metric.change} so với tháng trước
+                  </p>
+                </div>
+                <div className={`w-16 h-16 bg-${metric.color}-100 rounded-2xl flex items-center justify-center`}>
+                  <metric.icon className={`w-8 h-8 text-${metric.color}-600`} />
+                </div>
               </div>
-              <span className="font-semibold text-gray-800 text-sm">{action.label}</span>
             </Card>
           ))}
         </div>
-      </div>
 
-      {/* Upcoming Appointments */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold flex items-center">
-            <Clock className="w-5 h-5 text-teal-600 mr-2" />
-            Lịch hẹn sắp tới
-          </h3>
-          <button
-            onClick={() => navigate(PAGES.APPOINTMENTS)}
-            className="text-teal-600 text-sm font-medium hover:text-teal-700"
-          >
-            Xem tất cả
-          </button>
-        </div>
-        
-        {upcomingAppointments.length > 0 ? (
-          <div className="space-y-3">
-            {upcomingAppointments.map(apt => (
-              <Card key={apt.id} padding="md" hover onClick={() => navigate(PAGES.APPOINTMENTS)}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 truncate">{apt.doctorName}</p>
-                    <p className="text-sm text-gray-600">{apt.specialty}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatDate(apt.date)} • {apt.time}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                      {apt.status === 'confirmed' ? 'Đã xác nhận' : 'Chờ xác nhận'}
-                    </span>
-                  </div>
+        {/* Quick Actions */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Thao tác nhanh</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {quickActions.map((action, index) => (
+              <Card
+                key={index}
+                hover
+                onClick={() => navigate(action.page)}
+                className="group cursor-pointer"
+              >
+                <div className={`w-12 h-12 bg-gradient-to-br ${action.gradient} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
+                  <action.icon className="w-6 h-6 text-white" />
                 </div>
+                <p className="font-semibold text-gray-900 text-sm">{action.label}</p>
               </Card>
             ))}
           </div>
-        ) : (
-          <Card padding="lg" className="text-center">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 mb-4">Bạn chưa có lịch hẹn nào</p>
-            <button
-              onClick={() => navigate(PAGES.BOOKING)}
-              className="text-teal-600 font-medium hover:text-teal-700"
-            >
-              Đặt lịch ngay
-            </button>
-          </Card>
-        )}
-      </div>
+        </div>
 
-      {/* Health Tips */}
-      <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white" padding="lg">
-        <h3 className="text-xl font-bold mb-3 flex items-center">
-          💡 Mẹo sức khỏe hôm nay
-        </h3>
-        <p className="leading-relaxed">{randomTip}</p>
-      </Card>
-    </Layout>
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Appointments */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Upcoming Appointments */}
+            <Card>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Clock className="w-6 h-6 text-blue-600" />
+                  Lịch hẹn sắp tới
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(PAGES.APPOINTMENTS)}
+                  icon={ArrowRight}
+                  iconPosition="right"
+                >
+                  Xem tất cả
+                </Button>
+              </div>
+
+              {upcomingAppointments.length > 0 ? (
+                <div className="space-y-4">
+                  {upcomingAppointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="p-4 border-l-4 border-blue-500 bg-blue-50 rounded-lg hover:shadow-md transition cursor-pointer"
+                      onClick={() => navigate(PAGES.APPOINTMENTS)}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow">
+                              <User className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900">{apt.doctorName}</h4>
+                              <p className="text-sm text-blue-600">{apt.specialty}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 ml-13">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {getRelativeDate(apt.date)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {apt.time}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                          Đã xác nhận
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 mb-4">Bạn chưa có lịch hẹn nào</p>
+                  <Button
+                    variant="primary"
+                    onClick={() => navigate(PAGES.BOOKING)}
+                    icon={Plus}
+                  >
+                    Đặt lịch ngay
+                  </Button>
+                </div>
+              )}
+            </Card>
+
+            {/* Specialties */}
+            <Card>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Chuyên khoa phổ biến</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {SPECIALTIES.slice(0, 8).map((specialty) => (
+                  <div
+                    key={specialty.id}
+                    className="p-4 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition cursor-pointer text-center group"
+                    onClick={() => navigate(PAGES.BOOKING)}
+                  >
+                    <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">
+                      {specialty.icon}
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">{specialty.name}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Health Tip */}
+            <Card className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">{randomTip.icon}</span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg mb-1">💡 Mẹo sức khỏe</h4>
+                  <p className="text-sm text-blue-100">{randomTip.category}</p>
+                </div>
+              </div>
+              <p className="text-white/90 leading-relaxed">{randomTip.content}</p>
+            </Card>
+
+            {/* Quick Book */}
+            <Card className="border-2 border-blue-200 bg-blue-50">
+              <h4 className="font-bold text-gray-900 mb-3">Đặt lịch nhanh</h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Đặt lịch khám chỉ trong 30 giây với bác sĩ giỏi nhất
+              </p>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => navigate(PAGES.BOOKING)}
+                icon={Calendar}
+              >
+                Đặt lịch ngay
+              </Button>
+            </Card>
+
+            {/* Support */}
+            <Card>
+              <h4 className="font-bold text-gray-900 mb-3">Cần hỗ trợ?</h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Đội ngũ hỗ trợ 24/7 luôn sẵn sàng giúp bạn
+              </p>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => navigate(PAGES.CHAT)}
+                icon={MessageCircle}
+              >
+                Chat ngay
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 };
 
