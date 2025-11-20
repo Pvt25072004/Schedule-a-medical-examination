@@ -18,10 +18,15 @@ export class FirebaseService implements OnModuleInit {
 
     const serviceAccount = JSON.parse(serviceAccountJson);
 
-    this._admin = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      databaseURL: this.configService.get<string>('DATABASE_URL'),
-    });
+    // FIX: kiểm tra nếu app tồn tại thì dùng lại
+    if (admin.apps.length === 0) {
+      this._admin = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: this.configService.get<string>('DATABASE_URL'),
+      });
+    } else {
+      this._admin = admin.app();
+    }
   }
 
   // Cung cấp Firebase auth() cho các service khác
