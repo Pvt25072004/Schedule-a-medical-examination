@@ -1,4 +1,7 @@
+import { IsEmail, IsNotEmpty } from 'class-validator';
+
 export class RequestResetDto {
-  // Bạn có thể thêm @IsEmail() nếu đã cài class-validator
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty({ message: 'Email là bắt buộc' })
   email: string;
 }

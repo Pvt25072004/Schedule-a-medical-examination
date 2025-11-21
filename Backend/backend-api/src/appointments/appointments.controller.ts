@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -13,7 +22,16 @@ export class AppointmentsController {
   }
 
   @Get()
-  findAll() {
+  findAll(
+    @Query('userId') userId?: string,
+    @Query('doctorId') doctorId?: string,
+  ) {
+    if (userId) {
+      return this.appointmentsService.findByUser(+userId);
+    }
+    if (doctorId) {
+      return this.appointmentsService.findByDoctor(+doctorId);
+    }
     return this.appointmentsService.findAll();
   }
 
@@ -23,8 +41,20 @@ export class AppointmentsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateAppointmentDto: UpdateAppointmentDto,
+  ) {
     return this.appointmentsService.update(+id, updateAppointmentDto);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status')
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected',
+  ) {
+    return this.appointmentsService.updateStatus(+id, status);
   }
 
   @Delete(':id')

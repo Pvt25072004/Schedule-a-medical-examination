@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
@@ -13,8 +22,27 @@ export class SchedulesController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query('doctorId') doctorId?: string, @Query('date') date?: string) {
+    if (doctorId && date) {
+      return this.schedulesService.findByDoctorAndDate(
+        +doctorId,
+        new Date(date),
+      );
+    }
     return this.schedulesService.findAll();
+  }
+
+  @Get('available-slots')
+  findAvailableSlots(
+    @Query('doctorId') doctorId: string,
+    @Query('hospitalId') hospitalId: string,
+    @Query('date') date: string,
+  ) {
+    return this.schedulesService.findAvailableSlots(
+      +doctorId,
+      +hospitalId,
+      new Date(date),
+    );
   }
 
   @Get(':id')
@@ -23,7 +51,10 @@ export class SchedulesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateScheduleDto: UpdateScheduleDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateScheduleDto: UpdateScheduleDto,
+  ) {
     return this.schedulesService.update(+id, updateScheduleDto);
   }
 

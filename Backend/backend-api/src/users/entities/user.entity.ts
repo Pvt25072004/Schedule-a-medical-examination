@@ -21,8 +21,11 @@ export class User {
   @Column({ length: 20, unique: true })
   phone: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   password_hash: string;
+
+  @Column({ length: 255, unique: true, nullable: true })
+  firebase_uid: string;
 
   @Column({ type: 'date', nullable: true })
   date_of_birth: Date;

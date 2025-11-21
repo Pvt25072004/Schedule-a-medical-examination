@@ -24,6 +24,9 @@ export class Appointment {
   @Column()
   hospital_id: number;
 
+  @Column()
+  schedule_id: number;
+
   @Column({ type: 'date' })
   appointment_date: Date;
 

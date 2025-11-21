@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
@@ -13,8 +22,22 @@ export class ReviewsController {
   }
 
   @Get()
-  findAll() {
+  findAll(
+    @Query('doctorId') doctorId?: string,
+    @Query('appointmentId') appointmentId?: string,
+  ) {
+    if (doctorId) {
+      return this.reviewsService.findByDoctor(+doctorId);
+    }
+    if (appointmentId) {
+      return this.reviewsService.findByAppointment(+appointmentId);
+    }
     return this.reviewsService.findAll();
+  }
+
+  @Get('doctor/:doctorId/rating')
+  getDoctorRating(@Param('doctorId') doctorId: string) {
+    return this.reviewsService.getDoctorAverageRating(+doctorId);
   }
 
   @Get(':id')
