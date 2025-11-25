@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Calendar,
   MessageCircle,
@@ -13,7 +13,29 @@ import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import { PAGES, DOCTORS, SPECIALTIES } from "../utils/constants";
 
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL ?? "http://localhost:8080";
+const APPOINTMENTS_ENDPOINT = `${API_BASE_URL}/appointments`;
+const DEFAULT_APPOINTMENT_FORM = Object.freeze({
+  user_id: "",
+  doctor_id: "",
+  hospital_id: "",
+  schedule_id: "",
+  appointment_date: "",
+  appointment_time: "",
+  examination_type: "online",
+  symptoms: "",
+});
+
 const WelcomePage = ({ navigate }) => {
+  const [appointments, setAppointments] = useState([]);
+  const [formData, setFormData] = useState({ ...DEFAULT_APPOINTMENT_FORM });
+  const [listLoading, setListLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [alert, setAlert] = useState(null);
+
   const features = [
     {
       icon: Calendar,
@@ -47,6 +69,192 @@ const WelcomePage = ({ navigate }) => {
     { number: "20+", label: "Chuyên khoa" },
     { number: "4.8/5", label: "Đánh giá trung bình" },
   ];
+
+  const showAlert = useCallback((type, message) => {
+    setAlert({ type, message });
+    setTimeout(() => {
+      setAlert((current) => {
+        if (current?.message === message) {
+          return null;
+        }
+        return current;
+      });
+    }, 4000);
+  }, []);
+
+  const fetchAppointments = useCallback(async () => {
+    setListLoading(true);
+    try {
+      const response = await fetch(APPOINTMENTS_ENDPOINT);
+      if (!response.ok) {
+        throw new Error("Không thể tải danh sách lịch hẹn");
+      }
+      const data = await response.json();
+      setAppointments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      showAlert("error", error.message || "Đã xảy ra lỗi không xác định");
+    } finally {
+      setListLoading(false);
+    }
+  }, [showAlert]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({ ...DEFAULT_APPOINTMENT_FORM });
+  };
+
+  const formatDateForInput = (value) => {
+    if (!value) return "";
+    if (typeof value === "string" && value.length === 10) {
+      return value;
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
+  };
+
+  const formatTimeForInput = (value) => {
+    if (!value) return "";
+    if (typeof value === "string" && value.length === 5) {
+      return value;
+    }
+    return value?.split(":").slice(0, 2).join(":") ?? "";
+  };
+
+  const displayDate = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleDateString("vi-VN");
+  };
+
+  const displayTime = (value) => {
+    if (!value) return "—";
+    return value.split(":").slice(0, 2).join(":");
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const requiredFields = [
+      "user_id",
+      "doctor_id",
+      "hospital_id",
+      "schedule_id",
+      "appointment_date",
+      "appointment_time",
+      "examination_type",
+    ];
+    const labels = {
+      user_id: "ID bệnh nhân",
+      doctor_id: "ID bác sĩ",
+      hospital_id: "ID bệnh viện",
+      schedule_id: "ID lịch làm việc",
+      appointment_date: "Ngày khám",
+      appointment_time: "Giờ khám",
+      examination_type: "Hình thức khám",
+    };
+    const missingField = requiredFields.find((field) => !formData[field]);
+    if (missingField) {
+      showAlert("error", `Vui lòng nhập ${labels[missingField]}`);
+      return;
+    }
+
+    const payload = {
+      user_id: Number(formData.user_id),
+      doctor_id: Number(formData.doctor_id),
+      hospital_id: Number(formData.hospital_id),
+      schedule_id: Number(formData.schedule_id),
+      appointment_date: formData.appointment_date,
+      appointment_time: formData.appointment_time,
+      examination_type: formData.examination_type,
+    };
+
+    if (formData.symptoms) {
+      payload.symptoms = formData.symptoms;
+    }
+
+    setFormLoading(true);
+    try {
+      const response = await fetch(
+        editingId
+          ? `${APPOINTMENTS_ENDPOINT}/${editingId}`
+          : `${APPOINTMENTS_ENDPOINT}`,
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          editingId ? "Không thể cập nhật lịch hẹn" : "Không thể tạo lịch hẹn"
+        );
+      }
+
+      showAlert(
+        "success",
+        editingId ? "Cập nhật lịch hẹn thành công" : "Tạo lịch hẹn thành công"
+      );
+      resetForm();
+      await fetchAppointments();
+    } catch (error) {
+      showAlert("error", error.message || "Đã xảy ra lỗi không xác định");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleEdit = (appointment) => {
+    setEditingId(appointment.id);
+    setFormData({
+      user_id: String(appointment.user_id ?? ""),
+      doctor_id: String(appointment.doctor_id ?? ""),
+      hospital_id: String(appointment.hospital_id ?? ""),
+      schedule_id: String(appointment.schedule_id ?? ""),
+      appointment_date: formatDateForInput(appointment.appointment_date),
+      appointment_time: formatTimeForInput(appointment.appointment_time),
+      examination_type: appointment.examination_type ?? "online",
+      symptoms: appointment.symptoms ?? "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bạn chắc chắn muốn xóa lịch hẹn này?")) {
+      return;
+    }
+    setDeletingId(id);
+    try {
+      const response = await fetch(`${APPOINTMENTS_ENDPOINT}/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Không thể xóa lịch hẹn");
+      }
+      showAlert("success", "Đã xóa lịch hẹn");
+      await fetchAppointments();
+      if (editingId === id) {
+        resetForm();
+      }
+    } catch (error) {
+      showAlert("error", error.message || "Đã xảy ra lỗi không xác định");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -345,6 +553,261 @@ const WelcomePage = ({ navigate }) => {
                 </h3>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Appointments CRUD Section */}
+      <section id="appointments" className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Quản lý lịch hẹn trực tuyến
+            </h2>
+            <p className="text-xl text-gray-600">
+              Thử CRUD trực tiếp với API NestJS `/appointments`
+            </p>
+          </div>
+
+          {alert && (
+            <div
+              className={`mb-8 rounded-xl px-5 py-4 text-sm font-medium ${
+                alert.type === "success"
+                  ? "bg-green-50 text-green-700 border border-green-200"
+                  : "bg-red-50 text-red-700 border border-red-200"
+              }`}
+            >
+              {alert.message}
+            </div>
+          )}
+
+          <div className="grid gap-10 lg:grid-cols-2">
+            <Card shadow="lg" className="border-blue-100">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+                {editingId ? "Chỉnh sửa lịch hẹn" : "Tạo lịch hẹn mới"}
+              </h3>
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ID bệnh nhân
+                    </label>
+                    <input
+                      type="number"
+                      name="user_id"
+                      value={formData.user_id}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      placeholder="VD: 1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ID bác sĩ
+                    </label>
+                    <input
+                      type="number"
+                      name="doctor_id"
+                      value={formData.doctor_id}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      placeholder="VD: 2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ID bệnh viện
+                    </label>
+                    <input
+                      type="number"
+                      name="hospital_id"
+                      value={formData.hospital_id}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      placeholder="VD: 3"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ID lịch làm việc
+                    </label>
+                    <input
+                      type="number"
+                      name="schedule_id"
+                      value={formData.schedule_id}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      placeholder="VD: 5"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      Ngày khám
+                    </label>
+                    <input
+                      type="date"
+                      name="appointment_date"
+                      value={formData.appointment_date}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      Giờ khám
+                    </label>
+                    <input
+                      type="time"
+                      name="appointment_time"
+                      value={formData.appointment_time}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Hình thức khám
+                  </label>
+                  <select
+                    name="examination_type"
+                    value={formData.examination_type}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Triệu chứng (tùy chọn)
+                  </label>
+                  <textarea
+                    name="symptoms"
+                    value={formData.symptoms}
+                    onChange={handleInputChange}
+                    rows="3"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    placeholder="Mô tả nhanh triệu chứng..."
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    loading={formLoading}
+                    fullWidth
+                  >
+                    {editingId ? "Cập nhật lịch hẹn" : "Tạo lịch hẹn"}
+                  </Button>
+                  {editingId && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="lg"
+                      onClick={resetForm}
+                      fullWidth
+                    >
+                      Hủy chỉnh sửa
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </Card>
+
+            <Card shadow="lg" className="border-green-100">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-2xl font-semibold text-gray-900">
+                    Danh sách lịch hẹn
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Đồng bộ dữ liệu trực tiếp từ API backend
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchAppointments}
+                  loading={listLoading}
+                >
+                  Làm mới
+                </Button>
+              </div>
+
+              {listLoading ? (
+                <p className="text-center text-gray-500">Đang tải dữ liệu...</p>
+              ) : appointments.length === 0 ? (
+                <p className="text-center text-gray-500">
+                  Chưa có lịch hẹn nào. Hãy tạo mới ở bên cạnh nhé!
+                </p>
+              ) : (
+                <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-1">
+                  {appointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="rounded-xl border border-gray-200 p-4"
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-lg font-semibold text-gray-900">
+                            Lịch #{appointment.id}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {displayDate(appointment.appointment_date)} ·{" "}
+                            {displayTime(appointment.appointment_time)} ·{" "}
+                            {appointment.examination_type}
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                          {appointment.status || "pending"}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-2">
+                        <p>Người bệnh: #{appointment.user_id}</p>
+                        <p>Bác sĩ: #{appointment.doctor_id}</p>
+                        <p>Bệnh viện: #{appointment.hospital_id}</p>
+                        <p>Lịch làm việc: #{appointment.schedule_id || "—"}</p>
+                      </div>
+
+                      {appointment.symptoms && (
+                        <p className="mt-3 text-sm italic text-gray-600">
+                          Triệu chứng: {appointment.symptoms}
+                        </p>
+                      )}
+
+                      <div className="mt-4 flex flex-wrap gap-3 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(appointment)}
+                          disabled={deletingId === appointment.id}
+                        >
+                          Sửa
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDelete(appointment.id)}
+                          loading={deletingId === appointment.id}
+                        >
+                          Xóa
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
           </div>
         </div>
       </section>
