@@ -1,42 +1,51 @@
-import React from 'react';
-import { Calendar, MessageCircle, Users, Shield, Clock, MapPin, Phone, Mail } from 'lucide-react';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
-import { PAGES, DOCTORS, SPECIALTIES } from '../utils/constants';
+import React from "react";
+import {
+  Calendar,
+  MessageCircle,
+  Users,
+  Shield,
+  Clock,
+  MapPin,
+  Phone,
+  Mail,
+} from "lucide-react";
+import Button from "../components/common/Button";
+import Card from "../components/common/Card";
+import { PAGES, DOCTORS, SPECIALTIES } from "../utils/constants";
 
 const WelcomePage = ({ navigate }) => {
   const features = [
     {
       icon: Calendar,
-      title: 'Đặt lịch Online',
-      description: 'Đặt lịch khám bệnh nhanh chóng, tiện lợi 24/7',
-      color: 'blue'
+      title: "Đặt lịch Online",
+      description: "Đặt lịch khám bệnh nhanh chóng, tiện lợi 24/7",
+      color: "blue",
     },
     {
       icon: Users,
-      title: 'Đội ngũ Bác sĩ',
-      description: 'Bác sĩ giàu kinh nghiệm, tận tâm chuyên nghiệp',
-      color: 'green'
+      title: "Đội ngũ Bác sĩ",
+      description: "Bác sĩ giàu kinh nghiệm, tận tâm chuyên nghiệp",
+      color: "green",
     },
     {
       icon: Shield,
-      title: 'An toàn - Bảo mật',
-      description: 'Thông tin bệnh nhân được bảo mật tuyệt đối',
-      color: 'purple'
+      title: "An toàn - Bảo mật",
+      description: "Thông tin bệnh nhân được bảo mật tuyệt đối",
+      color: "purple",
     },
     {
       icon: MessageCircle,
-      title: 'Tư vấn Online',
-      description: 'Tư vấn sức khỏe từ xa qua video call',
-      color: 'orange'
-    }
+      title: "Tư vấn Online",
+      description: "Tư vấn sức khỏe từ xa qua video call",
+      color: "orange",
+    },
   ];
 
   const stats = [
-    { number: '50K+', label: 'Bệnh nhân tin tưởng' },
-    { number: '100+', label: 'Bác sĩ chuyên khoa' },
-    { number: '20+', label: 'Chuyên khoa' },
-    { number: '4.8/5', label: 'Đánh giá trung bình' }
+    { number: "50K+", label: "Bệnh nhân tin tưởng" },
+    { number: "100+", label: "Bác sĩ chuyên khoa" },
+    { number: "20+", label: "Chuyên khoa" },
+    { number: "4.8/5", label: "Đánh giá trung bình" },
   ];
 
   return (
@@ -52,16 +61,38 @@ const WelcomePage = ({ navigate }) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">STL Clinic</h1>
-                <p className="text-xs text-gray-500">Chăm sóc sức khỏe toàn diện</p>
+                <p className="text-xs text-gray-500">
+                  Chăm sóc sức khỏe toàn diện
+                </p>
               </div>
             </div>
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-700 hover:text-blue-600 font-medium transition">Tính năng</a>
-              <a href="#doctors" className="text-gray-700 hover:text-blue-600 font-medium transition">Bác sĩ</a>
-              <a href="#specialties" className="text-gray-700 hover:text-blue-600 font-medium transition">Chuyên khoa</a>
-              <a href="#contact" className="text-gray-700 hover:text-blue-600 font-medium transition">Liên hệ</a>
+              <a
+                href="#features"
+                className="text-gray-700 hover:text-blue-600 font-medium transition"
+              >
+                Tính năng
+              </a>
+              <a
+                href="#doctors"
+                className="text-gray-700 hover:text-blue-600 font-medium transition"
+              >
+                Bác sĩ
+              </a>
+              <a
+                href="#specialties"
+                className="text-gray-700 hover:text-blue-600 font-medium transition"
+              >
+                Chuyên khoa
+              </a>
+              <a
+                href="#contact"
+                className="text-gray-700 hover:text-blue-600 font-medium transition"
+              >
+                Liên hệ
+              </a>
             </nav>
 
             {/* Auth Buttons */}
@@ -104,8 +135,8 @@ const WelcomePage = ({ navigate }) => {
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed">
-                Kết nối bạn với các bác sĩ chuyên khoa hàng đầu. 
-                Đặt lịch online, khám bệnh dễ dàng, tiết kiệm thời gian.
+                Kết nối bạn với các bác sĩ chuyên khoa hàng đầu. Đặt lịch
+                online, khám bệnh dễ dàng, tiết kiệm thời gian.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -132,7 +163,9 @@ const WelcomePage = ({ navigate }) => {
               <div className="flex items-center gap-8 pt-4">
                 {stats.map((stat, index) => (
                   <div key={index} className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{stat.number}</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {stat.number}
+                    </div>
                     <div className="text-sm text-gray-600">{stat.label}</div>
                   </div>
                 ))}
@@ -147,7 +180,7 @@ const WelcomePage = ({ navigate }) => {
                   alt="Doctor"
                   className="rounded-2xl shadow-2xl w-full"
                 />
-                
+
                 {/* Floating Cards */}
                 <div className="absolute -left-6 top-20 animate-float">
                   <Card className="p-4 bg-white shadow-xl">
@@ -157,20 +190,27 @@ const WelcomePage = ({ navigate }) => {
                       </div>
                       <div>
                         <div className="font-bold text-gray-900">An toàn</div>
-                        <div className="text-sm text-gray-500">100% bảo mật</div>
+                        <div className="text-sm text-gray-500">
+                          100% bảo mật
+                        </div>
                       </div>
                     </div>
                   </Card>
                 </div>
 
-                <div className="absolute -right-6 bottom-20 animate-float" style={{ animationDelay: '1s' }}>
+                <div
+                  className="absolute -right-6 bottom-20 animate-float"
+                  style={{ animationDelay: "1s" }}
+                >
                   <Card className="p-4 bg-white shadow-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                         <Clock className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900">Nhanh chóng</div>
+                        <div className="font-bold text-gray-900">
+                          Nhanh chóng
+                        </div>
                         <div className="text-sm text-gray-500">Chỉ 30 giây</div>
                       </div>
                     </div>
@@ -200,20 +240,18 @@ const WelcomePage = ({ navigate }) => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card
-                key={index}
-                hover
-                className="text-center group"
-              >
-                <div className={`w-16 h-16 bg-${feature.color}-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className={`w-8 h-8 text-${feature.color}-600`} />
+              <Card key={index} hover className="text-center group">
+                <div
+                  className={`w-16 h-16 bg-${feature.color}-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}
+                >
+                  <feature.icon
+                    className={`w-8 h-8 text-${feature.color}-600`}
+                  />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
+                <p className="text-gray-600">{feature.description}</p>
               </Card>
             ))}
           </div>
@@ -234,11 +272,7 @@ const WelcomePage = ({ navigate }) => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {DOCTORS.slice(0, 6).map((doctor) => (
-              <Card
-                key={doctor.id}
-                hover
-                className="group"
-              >
+              <Card key={doctor.id} hover className="group">
                 <div className="flex items-start gap-4">
                   <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 group-hover:scale-110 transition-transform">
                     {doctor.avatar}
@@ -318,9 +352,7 @@ const WelcomePage = ({ navigate }) => {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-4">
-            Sẵn sàng bắt đầu?
-          </h2>
+          <h2 className="text-4xl font-bold mb-4">Sẵn sàng bắt đầu?</h2>
           <p className="text-xl mb-8 text-blue-100">
             Đặt lịch khám ngay hôm nay để nhận được sự chăm sóc tốt nhất
           </p>
@@ -359,20 +391,52 @@ const WelcomePage = ({ navigate }) => {
             <div>
               <h4 className="font-semibold mb-4">Liên kết</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition">Về chúng tôi</a></li>
-                <li><a href="#" className="hover:text-white transition">Bác sĩ</a></li>
-                <li><a href="#" className="hover:text-white transition">Chuyên khoa</a></li>
-                <li><a href="#" className="hover:text-white transition">Tin tức</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Về chúng tôi
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Bác sĩ
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Chuyên khoa
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Tin tức
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4">Hỗ trợ</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition">Câu hỏi thường gặp</a></li>
-                <li><a href="#" className="hover:text-white transition">Hướng dẫn đặt lịch</a></li>
-                <li><a href="#" className="hover:text-white transition">Chính sách bảo mật</a></li>
-                <li><a href="#" className="hover:text-white transition">Điều khoản sử dụng</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Câu hỏi thường gặp
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Hướng dẫn đặt lịch
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Chính sách bảo mật
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Điều khoản sử dụng
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -414,7 +478,8 @@ const WelcomePage = ({ navigate }) => {
 
       <style jsx>{`
         @keyframes float {
-          0%, 100% {
+          0%,
+          100% {
             transform: translateY(0);
           }
           50% {

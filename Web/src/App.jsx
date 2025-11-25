@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AppointmentProvider } from './contexts/AppointmentContext';
+import React, { useState } from "react";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AppointmentProvider } from "./contexts/AppointmentContext";
 
 // Pages
-import WelcomePage from './pages/WelcomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
-import BookingPage from './pages/BookingPage';
-import AppointmentsPage from './pages/AppointmentsPage';
-import ChatPage from './pages/ChatPage';
-import SettingsPage from './pages/SettingsPage';
+import WelcomePage from "./pages/WelcomePage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import HomePage from "./pages/HomePage";
+import BookingPage from "./pages/BookingPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
+import ChatPage from "./pages/ChatPage";
+import SettingsPage from "./pages/SettingsPage";
 
-import { PAGES } from './utils/constants';
-import './index.css';
+import { PAGES } from "./utils/constants";
+import "./index.css";
 
 const AppContent = () => {
   const [currentPage, setCurrentPage] = useState(PAGES.WELCOME);
@@ -26,7 +26,10 @@ const AppContent = () => {
 
   // Redirect to welcome if not authenticated
   React.useEffect(() => {
-    if (!isAuthenticated && ![PAGES.WELCOME, PAGES.LOGIN, PAGES.REGISTER].includes(currentPage)) {
+    if (
+      !isAuthenticated &&
+      ![PAGES.WELCOME, PAGES.LOGIN, PAGES.REGISTER].includes(currentPage)
+    ) {
       setCurrentPage(PAGES.WELCOME);
     }
   }, [isAuthenticated, currentPage]);
@@ -48,7 +51,7 @@ const AppContent = () => {
       case PAGES.CHAT:
         return <ChatPage navigate={navigate} />;
       case PAGES.YOUR_PAGE:
-        return ;
+        return <YourPage navigate={navigate} />;
       case PAGES.SETTINGS:
         return <SettingsPage navigate={navigate} />;
       default:
@@ -56,11 +59,7 @@ const AppContent = () => {
     }
   };
 
-  return (
-    <div className="font-sans">
-      {renderPage()}
-    </div>
-  );
+  return <div className="font-sans">{renderPage()}</div>;
 };
 
 function App() {
