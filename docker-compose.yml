@@ -26,7 +26,7 @@ services:
 
   frontend:
     image: phamvantien/clinic-fe:latest
-    container_name: clinic-fe
+    container_name: clinic-frontend
     # build:
     #   context: ./Web
     #   dockerfile: Dockerfile

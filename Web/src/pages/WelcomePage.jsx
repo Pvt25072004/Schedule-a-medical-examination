@@ -12,9 +12,12 @@ import {
 import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import { PAGES, DOCTORS, SPECIALTIES } from "../utils/constants";
-
-const API_BASE_URL = "/api";
-const APPOINTMENTS_ENDPOINT = `${API_BASE_URL}/appointments`;
+import {
+  getAppointments,
+  createAppointment,
+  updateAppointment,
+  deleteAppointment,
+} from "../services/appointments.api";
 const DEFAULT_APPOINTMENT_FORM = Object.freeze({
   user_id: "",
   doctor_id: "",
@@ -84,11 +87,7 @@ const WelcomePage = ({ navigate }) => {
   const fetchAppointments = useCallback(async () => {
     setListLoading(true);
     try {
-      const response = await fetch(APPOINTMENTS_ENDPOINT);
-      if (!response.ok) {
-        throw new Error("Không thể tải danh sách lịch hẹn");
-      }
-      const data = await response.json();
+      const data = await getAppointments();
       setAppointments(Array.isArray(data) ? data : []);
     } catch (error) {
       showAlert("error", error.message || "Đã xảy ra lỗi không xác định");
@@ -184,25 +183,11 @@ const WelcomePage = ({ navigate }) => {
 
     setFormLoading(true);
     try {
-      const response = await fetch(
-        editingId
-          ? `${APPOINTMENTS_ENDPOINT}/${editingId}`
-          : `${APPOINTMENTS_ENDPOINT}`,
-        {
-          method: editingId ? "PATCH" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          editingId ? "Không thể cập nhật lịch hẹn" : "Không thể tạo lịch hẹn"
-        );
+      if (editingId) {
+        await updateAppointment(editingId, payload);
+      } else {
+        await createAppointment(payload);
       }
-
       showAlert(
         "success",
         editingId ? "Cập nhật lịch hẹn thành công" : "Tạo lịch hẹn thành công"
@@ -237,12 +222,7 @@ const WelcomePage = ({ navigate }) => {
     }
     setDeletingId(id);
     try {
-      const response = await fetch(`${APPOINTMENTS_ENDPOINT}/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error("Không thể xóa lịch hẹn");
-      }
+      await deleteAppointment(id);
       showAlert("success", "Đã xóa lịch hẹn");
       await fetchAppointments();
       if (editingId === id) {
