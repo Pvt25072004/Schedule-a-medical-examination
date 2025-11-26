@@ -13,8 +13,7 @@ import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import { PAGES, DOCTORS, SPECIALTIES } from "../utils/constants";
 
-const API_BASE_URL =
-  import.meta.env.VITE_BACKEND_URL ?? "http://localhost:8080";
+const API_BASE_URL = "/api";
 const APPOINTMENTS_ENDPOINT = `${API_BASE_URL}/appointments`;
 const DEFAULT_APPOINTMENT_FORM = Object.freeze({
   user_id: "",
