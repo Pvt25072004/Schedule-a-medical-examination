@@ -344,7 +344,7 @@ const WelcomePage = ({ navigate }) => {
 
               <p className="text-xl text-gray-600 leading-relaxed">
                 Kết nối bạn với các bác sĩ chuyên khoa hàng đầu. Đặt lịch
-                online, khám bệnh dễ dàng, tiết kiệm thời gian..
+                online, khám bệnh dễ dàng, tiết kiệm thời gian...
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">

@@ -16,6 +16,7 @@ services:
       - DB_DATABASE=booking_db
       - DB_SYNC=true
       - PORT=8080
+      - FRONTEND_URL=${FRONTEND_URL}
     ports:
       - "8080:8080"
     depends_on:
@@ -24,8 +25,8 @@ services:
       - app-network
 
   frontend:
-    image: phamvantien/medical-fe:latest
-    container_name: medical-web
+    image: phamvantien/clinic-fe:latest
+    container_name: clinic-web
     build:
       context: ./Web
       dockerfile: Dockerfile
