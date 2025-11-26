@@ -65,10 +65,10 @@ jobs:
             echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
 
             # Pull image mới nhất về
-            docker-compose pull
+            docker compose pull
 
             # Restart containers (chỉ update những cái thay đổi)
-            docker-compose up -d --remove-orphans
+            docker compose up -d --remove-orphans
 
             # Dọn dẹp image cũ cho đỡ tốn dung lượng
             docker image prune -f
