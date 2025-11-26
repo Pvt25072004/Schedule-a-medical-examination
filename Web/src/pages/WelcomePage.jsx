@@ -439,7 +439,7 @@ const WelcomePage = ({ navigate }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Tại sao chọn STL Clinic?
+              Tại sao chọn STL Clinic??
             </h2>
             <p className="text-xl text-gray-600">
               Chúng tôi cam kết mang đến trải nghiệm khám chữa bệnh tốt nhất
