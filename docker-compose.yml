@@ -3,9 +3,9 @@ services:
   backend:
     image: phamvantien/clinic-be:latest
     container_name: clinic-backend
-    build:
-      context: ./Backend/backend-api
-      dockerfile: Dockerfile
+    # build:
+    #   context: ./Backend/backend-api
+    #   dockerfile: Dockerfile
     restart: always
     environment:
       - DB_TYPE=mysql
@@ -27,9 +27,9 @@ services:
   frontend:
     image: phamvantien/clinic-fe:latest
     container_name: clinic-fe
-    build:
-      context: ./Web
-      dockerfile: Dockerfile
+    # build:
+    #   context: ./Web
+    #   dockerfile: Dockerfile
     restart: always
     ports:
       - "80:80"
