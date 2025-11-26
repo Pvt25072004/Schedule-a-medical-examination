@@ -1,34 +1,17 @@
+# Stage 1: Build React
 FROM node:18-alpine as build
-
 WORKDIR /app
-
-# Copy package.json trước để tận dụng cache
 COPY package*.json ./
-
-# Cài đặt dependencies
 RUN npm install
-
-# Copy toàn bộ code (Lúc này nhờ .dockerignore nên nó sẽ KHÔNG copy node_modules từ ngoài vào)
 COPY . .
-
-# --- FIX LỖI Ở ĐÂY ---
-# Đôi khi esbuild trên Alpine bị lỗi permission, ta rebuild lại cho chắc
-RUN npm rebuild esbuild
-
-# Cấp quyền thực thi cho các file binary trong node_modules (phòng hờ)
-RUN chmod +x node_modules/.bin/vite
-
-# Chạy build
+# Khi build cần truyền biến môi trường API (nếu không dùng proxy Nginx)
 RUN npm run build
 
-# --- GIAI ĐOẠN RUN ---
+# Stage 2: Serve bằng Nginx
 FROM nginx:alpine
-
-# Copy kết quả build sang Nginx
-# Lưu ý: check kỹ xem project bạn build ra 'dist' hay 'build'.
-# Với Vite mặc định là 'dist'.
-COPY --from=build /app/dist/ /usr/share/nginx/html
-
+# Copy file build từ stage 1 vào thư mục nginx
+COPY --from=build /app/build /usr/share/nginx/html
+# Copy file config nginx (sẽ tạo ở bước dưới)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
