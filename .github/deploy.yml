@@ -21,7 +21,7 @@ jobs:
       - name: Build and Push Backend
         uses: docker/build-push-action@v4
         with:
-          context: ./Backend
+          context: ./Backend/backend-api
           push: true
           tags: phamvantien/clinic-be:latest
 
