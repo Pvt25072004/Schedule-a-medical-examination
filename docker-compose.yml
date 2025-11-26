@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   backend:
-    # image: phamvantien/clinic-be:latest
+    image: phamvantien/clinic-be:latest
     build:
       context: ./Backend/backend-api
       dockerfile: Dockerfile
