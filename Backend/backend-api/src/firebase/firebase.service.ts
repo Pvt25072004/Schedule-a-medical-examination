@@ -13,7 +13,14 @@ export class FirebaseService implements OnModuleInit {
     const serviceAccountJson =
       this.configService.get<string>('GOOGLE_CREDENTIALS');
     if (!serviceAccountJson) {
-      throw new Error('GOOGLE_CREDENTIALS is not defined in .env');
+      // Không cấu hình Firebase thì bỏ qua, tránh làm crash toàn bộ app
+      // Nếu service khác gọi FirebaseService.auth khi chưa init sẽ lỗi,
+      // nhưng trong đồ án hiện tại bạn không dùng tới thì an toàn.
+      // eslint-disable-next-line no-console
+      console.warn(
+        'GOOGLE_CREDENTIALS is not defined. Firebase will not be initialized.',
+      );
+      return;
     }
 
     const serviceAccount = JSON.parse(serviceAccountJson);
