@@ -22,18 +22,16 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./Backend
-          file: ./Backend/backend-api/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/clinic-be:latest
+          tags: phamvantien/clinic-be:latest
 
       # Build & Push Frontend
       - name: Build and Push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./Web
-          file: ./Web/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/clinic-fe:latest
+          tags: phamvantien/clinic-fe:latest
 
   deploy-to-ec2:
     needs: build-and-push
@@ -50,7 +48,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker-compose.yml"
-          target: "/home/${{ secrets.EC2_USER }}/app/"
+          target: "/home/ubuntu/app/"
 
       # SSH into server và run command deploy
       - name: Deploy on EC2
@@ -60,17 +58,17 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/${{ secrets.EC2_USER }}/app
+            cd /home/ubuntu/app
 
             # Tạo file .env từ secrets để docker-compose đọc
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env
             echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
 
             # Pull image mới nhất về
-            docker compose pull
+            docker-compose pull
 
             # Restart containers (chỉ update những cái thay đổi)
-            docker compose up -d --remove-orphans
+            docker-compose up -d --remove-orphans
 
             # Dọn dẹp image cũ cho đỡ tốn dung lượng
             docker image prune -f
