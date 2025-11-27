@@ -1,27 +1,44 @@
-import React, { useState } from 'react';
-import { Mail, Lock, User, Calendar, MapPin, Phone, FileText, ArrowLeft, ArrowRight, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Card from '../components/common/Card';
-import { PAGES, USER_ROLES, CITIES } from '../utils/constants';
-import { validateEmail, validatePhone, validatePassword } from '../utils/helpers';
+import React, { useState } from "react";
+import {
+  Mail,
+  Lock,
+  User,
+  Calendar,
+  MapPin,
+  Phone,
+  FileText,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import Button from "../components/common/Button";
+import Input from "../components/common/Input";
+import Card from "../components/common/Card";
+import { PAGES, USER_ROLES, CITIES } from "../utils/constants";
+import {
+  validateEmail,
+  validatePhone,
+  validatePassword,
+} from "../utils/helpers";
 
 const RegisterPage = ({ navigate }) => {
   const { register } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: '',
-    dateOfBirth: '',
-    gender: '',
-    phone: '',
-    city: '',
-    address: '',
-    conditions: '',
-    role: USER_ROLES.PATIENT
+    email: "",
+    password: "",
+    confirmPassword: "",
+    fullName: "",
+    dateOfBirth: "",
+    gender: "",
+    phone: "",
+    city: "",
+    address: "",
+    conditions: "",
+    role: USER_ROLES.PATIENT,
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -30,9 +47,9 @@ const RegisterPage = ({ navigate }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -40,20 +57,20 @@ const RegisterPage = ({ navigate }) => {
     const newErrors = {};
 
     if (currentStep === 1) {
-      if (!formData.role) newErrors.role = 'Vui lòng chọn vai trò';
+      if (!formData.role) newErrors.role = "Vui lòng chọn vai trò";
     }
 
     if (currentStep === 2) {
       if (!formData.fullName) {
-        newErrors.fullName = 'Vui lòng nhập họ tên';
+        newErrors.fullName = "Vui lòng nhập họ tên";
       } else if (formData.fullName.length < 2) {
-        newErrors.fullName = 'Họ tên quá ngắn';
+        newErrors.fullName = "Họ tên quá ngắn";
       }
 
       if (!formData.email) {
-        newErrors.email = 'Vui lòng nhập email';
+        newErrors.email = "Vui lòng nhập email";
       } else if (!validateEmail(formData.email)) {
-        newErrors.email = 'Email không hợp lệ';
+        newErrors.email = "Email không hợp lệ";
       }
 
       const passwordValidation = validatePassword(formData.password);
@@ -62,24 +79,26 @@ const RegisterPage = ({ navigate }) => {
       }
 
       if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Mật khẩu không khớp';
+        newErrors.confirmPassword = "Mật khẩu không khớp";
       }
 
       if (!formData.dateOfBirth) {
-        newErrors.dateOfBirth = 'Vui lòng chọn ngày sinh';
+        newErrors.dateOfBirth = "Vui lòng chọn ngày sinh";
       }
 
       if (!formData.gender) {
-        newErrors.gender = 'Vui lòng chọn giới tính';
+        newErrors.gender = "Vui lòng chọn giới tính";
       }
     }
 
     if (currentStep === 3) {
-      if (formData.phone && !validatePhone(formData.phone)) {
-        newErrors.phone = 'Số điện thoại không hợp lệ';
+      if (!formData.phone) {
+        newErrors.phone = "Vui lòng nhập số điện thoại";
+      } else if (!validatePhone(formData.phone)) {
+        newErrors.phone = "Số điện thoại không hợp lệ (10-11 chữ số)";
       }
-      if (!formData.city) newErrors.city = 'Vui lòng chọn tỉnh/thành phố';
-      if (!formData.address) newErrors.address = 'Vui lòng nhập địa chỉ';
+      if (!formData.city) newErrors.city = "Vui lòng chọn tỉnh/thành phố";
+      if (!formData.address) newErrors.address = "Vui lòng nhập địa chỉ";
     }
 
     return newErrors;
@@ -100,26 +119,35 @@ const RegisterPage = ({ navigate }) => {
     }
   };
 
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const handleSubmit = async () => {
     setIsLoading(true);
-    
+
     try {
       await register(formData);
+      setShowSuccess(true);
       setTimeout(() => {
         navigate(PAGES.HOME);
-      }, 1000);
+      }, 1500);
     } catch (error) {
-      setErrors({ general: 'Đăng ký thất bại. Vui lòng thử lại.' });
+      // Hiển thị error message chi tiết từ backend
+      const errorMessage =
+        error?.message || "Đăng ký thất bại. Vui lòng thử lại.";
+      setErrors({ general: errorMessage });
+      console.error("Register error:", error);
+      // Scroll lên đầu để user thấy error message
+      window.scrollTo(0, 0);
     } finally {
       setIsLoading(false);
     }
   };
 
   const steps = [
-    { number: 1, title: 'Vai trò', icon: User },
-    { number: 2, title: 'Thông tin', icon: FileText },
-    { number: 3, title: 'Địa chỉ', icon: MapPin },
-    { number: 4, title: 'Hoàn tất', icon: CheckCircle }
+    { number: 1, title: "Vai trò", icon: User },
+    { number: 2, title: "Thông tin", icon: FileText },
+    { number: 3, title: "Địa chỉ", icon: MapPin },
+    { number: 4, title: "Hoàn tất", icon: CheckCircle },
   ];
 
   return (
@@ -127,11 +155,13 @@ const RegisterPage = ({ navigate }) => {
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <button
-          onClick={() => step > 1 ? setStep(step - 1) : navigate(PAGES.WELCOME)}
+          onClick={() =>
+            step > 1 ? setStep(step - 1) : navigate(PAGES.WELCOME)
+          }
           className="flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 transition"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span>{step > 1 ? 'Quay lại' : 'Trang chủ'}</span>
+          <span>{step > 1 ? "Quay lại" : "Trang chủ"}</span>
         </button>
 
         {/* Progress Steps */}
@@ -143,8 +173,8 @@ const RegisterPage = ({ navigate }) => {
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
                       step >= s.number
-                        ? 'bg-blue-600 text-white scale-110 shadow-lg'
-                        : 'bg-gray-200 text-gray-500'
+                        ? "bg-blue-600 text-white scale-110 shadow-lg"
+                        : "bg-gray-200 text-gray-500"
                     }`}
                   >
                     {step > s.number ? (
@@ -153,14 +183,20 @@ const RegisterPage = ({ navigate }) => {
                       <s.icon className="w-6 h-6" />
                     )}
                   </div>
-                  <p className={`text-sm mt-2 font-medium ${step >= s.number ? 'text-blue-600' : 'text-gray-500'}`}>
+                  <p
+                    className={`text-sm mt-2 font-medium ${
+                      step >= s.number ? "text-blue-600" : "text-gray-500"
+                    }`}
+                  >
                     {s.title}
                   </p>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`flex-1 h-1 mx-2 transition-all duration-300 ${
-                    step > s.number ? 'bg-blue-600' : 'bg-gray-200'
-                  }`} />
+                  <div
+                    className={`flex-1 h-1 mx-2 transition-all duration-300 ${
+                      step > s.number ? "bg-blue-600" : "bg-gray-200"
+                    }`}
+                  />
                 )}
               </React.Fragment>
             ))}
@@ -172,26 +208,38 @@ const RegisterPage = ({ navigate }) => {
           {step === 1 && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Chọn vai trò của bạn</h2>
-                <p className="text-gray-600">Bạn muốn đăng ký với vai trò nào?</p>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  Chọn vai trò của bạn
+                </h2>
+                <p className="text-gray-600">
+                  Bạn muốn đăng ký với vai trò nào?
+                </p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 <Card
                   hover
-                  onClick={() => handleChange({ target: { name: 'role', value: USER_ROLES.PATIENT } })}
+                  onClick={() =>
+                    handleChange({
+                      target: { name: "role", value: USER_ROLES.PATIENT },
+                    })
+                  }
                   className={`cursor-pointer border-2 transition-all ${
                     formData.role === USER_ROLES.PATIENT
-                      ? 'border-blue-500 bg-blue-50 shadow-lg scale-105'
-                      : 'border-gray-200'
+                      ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
+                      : "border-gray-200"
                   }`}
                 >
                   <div className="text-center p-6">
                     <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <User className="w-10 h-10 text-blue-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Bệnh nhân</h3>
-                    <p className="text-gray-600 mb-4">Đặt lịch khám, quản lý sức khỏe cá nhân</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      Bệnh nhân
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Đặt lịch khám, quản lý sức khỏe cá nhân
+                    </p>
                     <ul className="text-sm text-gray-600 space-y-2 text-left">
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-600" />
@@ -211,19 +259,27 @@ const RegisterPage = ({ navigate }) => {
 
                 <Card
                   hover
-                  onClick={() => handleChange({ target: { name: 'role', value: USER_ROLES.DOCTOR } })}
+                  onClick={() =>
+                    handleChange({
+                      target: { name: "role", value: USER_ROLES.DOCTOR },
+                    })
+                  }
                   className={`cursor-pointer border-2 transition-all ${
                     formData.role === USER_ROLES.DOCTOR
-                      ? 'border-blue-500 bg-blue-50 shadow-lg scale-105'
-                      : 'border-gray-200'
+                      ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
+                      : "border-gray-200"
                   }`}
                 >
                   <div className="text-center p-6">
                     <div className="w-20 h-20 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <User className="w-10 h-10 text-green-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Bác sĩ</h3>
-                    <p className="text-gray-600 mb-4">Quản lý lịch làm việc, tư vấn bệnh nhân</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      Bác sĩ
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Quản lý lịch làm việc, tư vấn bệnh nhân
+                    </p>
                     <ul className="text-sm text-gray-600 space-y-2 text-left">
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-600" />
@@ -243,7 +299,9 @@ const RegisterPage = ({ navigate }) => {
               </div>
 
               {errors.role && (
-                <p className="text-red-600 text-sm text-center">{errors.role}</p>
+                <p className="text-red-600 text-sm text-center">
+                  {errors.role}
+                </p>
               )}
             </div>
           )}
@@ -252,9 +310,18 @@ const RegisterPage = ({ navigate }) => {
           {step === 2 && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Thông tin cá nhân</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  Thông tin cá nhân
+                </h2>
                 <p className="text-gray-600">Vui lòng điền đầy đủ thông tin</p>
               </div>
+
+              {/* Error Message */}
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {errors.general}
+                </div>
+              )}
 
               <Input
                 type="text"
@@ -283,7 +350,7 @@ const RegisterPage = ({ navigate }) => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="relative">
                   <Input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     label="Mật khẩu"
                     placeholder="Tối thiểu 6 ký tự"
@@ -298,13 +365,17 @@ const RegisterPage = ({ navigate }) => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
 
                 <div className="relative">
                   <Input
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
                     label="Xác nhận mật khẩu"
                     placeholder="Nhập lại mật khẩu"
@@ -319,7 +390,11 @@ const RegisterPage = ({ navigate }) => {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -346,8 +421,8 @@ const RegisterPage = ({ navigate }) => {
                     onChange={handleChange}
                     className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
                       errors.gender
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
-                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                     }`}
                   >
                     <option value="">Chọn giới tính</option>
@@ -355,7 +430,9 @@ const RegisterPage = ({ navigate }) => {
                     <option value="female">Nữ</option>
                     <option value="other">Khác</option>
                   </select>
-                  {errors.gender && <p className="text-red-600 text-sm mt-1">{errors.gender}</p>}
+                  {errors.gender && (
+                    <p className="text-red-600 text-sm mt-1">{errors.gender}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -365,9 +442,18 @@ const RegisterPage = ({ navigate }) => {
           {step === 3 && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Thông tin liên hệ</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  Thông tin liên hệ
+                </h2>
                 <p className="text-gray-600">Địa chỉ và số điện thoại</p>
               </div>
+
+              {/* Error Message */}
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {errors.general}
+                </div>
+              )}
 
               <Input
                 type="tel"
@@ -391,16 +477,20 @@ const RegisterPage = ({ navigate }) => {
                   onChange={handleChange}
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
                     errors.city
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                   }`}
                 >
                   <option value="">Chọn tỉnh/thành phố</option>
-                  {CITIES.map(city => (
-                    <option key={city.value} value={city.value}>{city.label}</option>
+                  {CITIES.map((city) => (
+                    <option key={city.value} value={city.value}>
+                      {city.label}
+                    </option>
                   ))}
                 </select>
-                {errors.city && <p className="text-red-600 text-sm mt-1">{errors.city}</p>}
+                {errors.city && (
+                  <p className="text-red-600 text-sm mt-1">{errors.city}</p>
+                )}
               </div>
 
               <Input
@@ -421,9 +511,30 @@ const RegisterPage = ({ navigate }) => {
           {step === 4 && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Thông tin sức khỏe</h2>
-                <p className="text-gray-600">Giúp bác sĩ hiểu rõ hơn về tình trạng của bạn</p>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  Thông tin sức khỏe
+                </h2>
+                <p className="text-gray-600">
+                  Giúp bác sĩ hiểu rõ hơn về tình trạng của bạn
+                </p>
               </div>
+
+              {/* Success Message */}
+              {showSuccess && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <p className="text-sm">
+                    Đăng ký thành công! Đang chuyển hướng...
+                  </p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {errors.general}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -444,26 +555,34 @@ const RegisterPage = ({ navigate }) => {
 
               {/* Summary */}
               <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
-                <h3 className="font-bold text-gray-900 mb-4">Tóm tắt thông tin đăng ký:</h3>
+                <h3 className="font-bold text-gray-900 mb-4">
+                  Tóm tắt thông tin đăng ký:
+                </h3>
                 <div className="grid md:grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-gray-600">Họ tên:</span>
-                    <span className="font-medium text-gray-900 ml-2">{formData.fullName}</span>
+                    <span className="font-medium text-gray-900 ml-2">
+                      {formData.fullName}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Email:</span>
-                    <span className="font-medium text-gray-900 ml-2">{formData.email}</span>
+                    <span className="font-medium text-gray-900 ml-2">
+                      {formData.email}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Vai trò:</span>
                     <span className="font-medium text-gray-900 ml-2">
-                      {formData.role === USER_ROLES.PATIENT ? 'Bệnh nhân' : 'Bác sĩ'}
+                      {formData.role === USER_ROLES.PATIENT
+                        ? "Bệnh nhân"
+                        : "Bác sĩ"}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Địa chỉ:</span>
                     <span className="font-medium text-gray-900 ml-2">
-                      {CITIES.find(c => c.value === formData.city)?.label}
+                      {CITIES.find((c) => c.value === formData.city)?.label}
                     </span>
                   </div>
                 </div>
@@ -494,14 +613,14 @@ const RegisterPage = ({ navigate }) => {
               iconPosition="right"
               className="flex-1"
             >
-              {step === 4 ? 'Hoàn tất đăng ký' : 'Tiếp tục'}
+              {step === 4 ? "Hoàn tất đăng ký" : "Tiếp tục"}
             </Button>
           </div>
 
           {/* Login Link */}
           {step === 1 && (
             <p className="text-center text-gray-600 mt-6">
-              Đã có tài khoản?{' '}
+              Đã có tài khoản?{" "}
               <button
                 onClick={() => navigate(PAGES.LOGIN)}
                 className="text-blue-600 font-semibold hover:text-blue-700"
@@ -515,8 +634,14 @@ const RegisterPage = ({ navigate }) => {
 
       <style jsx>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         .animate-fade-in {
           animation: fadeIn 0.3s ease-out;
