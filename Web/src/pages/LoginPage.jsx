@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/authofcontext';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Card from '../components/common/Card';
@@ -47,28 +47,44 @@ const LoginPage = ({ navigate }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     setIsLoading(true);
-    
+    setErrors({});
+
     try {
-      await login(formData, rememberMe);
+      const res = await login(formData, rememberMe);
+
       setShowSuccess(true);
-      
+
       setTimeout(() => {
         navigate(PAGES.HOME);
       }, 1000);
+
     } catch (error) {
-      setErrors({ general: 'Đăng nhập thất bại. Vui lòng thử lại.' });
+      let message = "Đăng nhập thất bại. Vui lòng thử lại.";
+
+      // Laravel API
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+
+      // Node / NestJS API
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      }
+
+      setErrors({ general: message });
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">

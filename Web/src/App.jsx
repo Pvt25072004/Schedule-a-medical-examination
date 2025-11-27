@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/authofcontext";
 import { AppointmentProvider } from "./contexts/AppointmentContext";
 
 // Pages
@@ -17,7 +17,9 @@ import "./index.css";
 
 const AppContent = () => {
   const [currentPage, setCurrentPage] = useState(PAGES.WELCOME);
-  const { isAuthenticated } = useAuth();
+  const { currentUser } = useAuth();
+  const isAuthenticated = !!currentUser;
+
 
   // Navigation handler
   const navigate = (page) => {

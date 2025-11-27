@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User as UserIcon, Phone, Video, MoreVertical, ArrowLeft, Paperclip, Smile } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/authofcontext';
 import Button from '../components/common/Button';
 import { PAGES } from '../utils/constants';
 import { formatTime } from '../utils/helpers';

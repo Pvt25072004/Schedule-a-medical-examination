@@ -13,7 +13,7 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/authofcontext";
 import { useAppointments } from "../contexts/AppointmentContext";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
