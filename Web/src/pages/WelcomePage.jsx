@@ -541,11 +541,9 @@ const WelcomePage = ({ navigate }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Quản lý lịch hẹn trực tuyến
+              Tạo lịch hẹn trực tuyến
             </h2>
-            <p className="text-xl text-gray-600">
-              Thử CRUD trực tiếp với API NestJS `/appointments`
-            </p>
+            <p className="text-xl text-gray-600">Thử đặt lịch ngay nào</p>
           </div>
 
           {alert && (
