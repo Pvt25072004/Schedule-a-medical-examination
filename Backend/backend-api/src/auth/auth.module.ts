@@ -1,21 +1,29 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { FirebaseService } from '../firebase/firebase.service'; // <-- Import
-import { EmailService } from '../email/email.service'; // <-- Import
-// ... các import khác của bạn (JwtStrategy, UsersModule...)
+import { UsersModule } from '../users/users.module';
+import { EmailService } from '../email/email.service';
 
 @Module({
   imports: [
-    HttpModule, // <-- Thêm HttpModule (cho axios)
-    // ... các module khác của bạn (UsersModule, JwtModule...)
+    HttpModule,
+    UsersModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production',
+        signOptions: {
+          expiresIn: '7d',
+        },
+      }),
+      inject: [ConfigService],
+    }),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    FirebaseService, // <-- Đăng ký làm provider
-    EmailService, // <-- Đăng ký làm provider
-  ],
+  providers: [AuthService, EmailService],
+  exports: [AuthService],
 })
 export class AuthModule {}

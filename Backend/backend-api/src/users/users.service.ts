@@ -19,13 +19,26 @@ export class UsersService {
   findOne(id: number) {
     return this.usersRepository.findOneBy({ id });
   }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
+  async findByPhone(phone: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { phone } });
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = this.usersRepository.create(createUserDto);
     return await this.usersRepository.save(user);
   }
 
   async update(id: number, dto: UpdateUserDto): Promise<User> {
-    const user = (await this.findOne(id)) as User;
+    const user = await this.findOne(id);
+
+    if (!user) {
+      throw new ConflictException(`User with ID ${id} not found`);
+    }
 
     // if (dto.email && dto.email !== user.email) {
     //   const exists = await this.usersRepository.findOne({

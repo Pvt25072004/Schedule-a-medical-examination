@@ -1,18 +1,25 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RequestResetDto } from '../auth/dto/request-reset.dto'; // <-- Import DTO
-import { VerifyResetDto } from '../auth/dto/verify-reset.dto'; // <-- Import DTO
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { RequestResetDto } from './dto/request-reset.dto';
+import { VerifyResetDto } from './dto/verify-reset.dto';
 
-// Controller này đã có @Controller('api/auth') hoặc @Controller('auth')
-// Tôi giả sử là @Controller('api/auth')
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
-  // AuthService có sẵn của bạn được tiêm (inject) vào
   constructor(private authService: AuthService) {}
 
-  // ... các route login, register... của bạn ở đây
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async register(@Body() registerDto: RegisterDto) {
+    return await this.authService.register(registerDto);
+  }
 
-  // === THÊM LOGIC MỚI VÀO ĐÂY ===
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginDto) {
+    return await this.authService.login(loginDto);
+  }
 
   @Post('request-reset')
   @HttpCode(HttpStatus.OK)

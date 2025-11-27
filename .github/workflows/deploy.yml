@@ -63,6 +63,9 @@ jobs:
             # Tạo file .env từ secrets để docker-compose đọc
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env
             echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
+            # JWT_SECRET là optional - nếu không có trong secrets, backend sẽ dùng fallback
+            # Nếu có JWT_SECRET trong secrets thì thêm vào, không thì bỏ qua
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env || true
 
             # Pull image mới nhất về
             docker compose pull
