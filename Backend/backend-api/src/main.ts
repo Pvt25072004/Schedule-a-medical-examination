@@ -29,7 +29,7 @@ async function bootstrap() {
 
   // Cấu hình đường dẫn hiển thị Swagger
   // 'docs' kết hợp với useGlobalPrefix: true => đường dẫn sẽ là /api/docs
-  SwaggerModule.setup('docs', app, document, {
+  SwaggerModule.setup('swagger', app, document, {
     useGlobalPrefix: true,
   });
   // ------------------------------------

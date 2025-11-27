@@ -706,9 +706,9 @@ const WelcomePage = ({ navigate }) => {
                   <h3 className="text-2xl font-semibold text-gray-900">
                     Danh sách lịch hẹn
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  {/* <p className="text-sm text-gray-500">
                     Đồng bộ dữ liệu trực tiếp từ API backend
-                  </p>
+                  </p> */}
                 </div>
                 <Button
                   variant="outline"
