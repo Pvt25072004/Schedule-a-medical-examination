@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Thêm nếu cần custom animation */
+@layer utilities {
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+  }
+}
+@keyframes scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 * {
   margin: 0;
   padding: 0;

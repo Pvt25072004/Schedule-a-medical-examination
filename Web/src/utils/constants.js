@@ -28,7 +28,7 @@ export const USER_ROLES = {
 };
 
 // Cities
-export const CITIES = [
+export const AREAS = [
   'Hà Nội',
   'TP. Hồ Chí Minh',
   'Đà Nẵng',
@@ -39,6 +39,14 @@ export const CITIES = [
   'Huế',
   'Buôn Ma Thuột',
   'Vũng Tàu'
+];
+
+export const HOSPITALS = [
+  'Bệnh viện Đa khoa Quốc tế',
+  'Phòng khám Đa khoa Medpro',
+  'Nha khoa Paris',
+  'Bệnh viện Đại học Y Dược',
+  'Bệnh viện Vinmec'
 ];
 
 // Specialties

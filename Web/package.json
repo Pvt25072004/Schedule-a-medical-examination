@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "STL Clinic - Medical Appointment Booking Website",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

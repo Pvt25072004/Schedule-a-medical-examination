@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Card from '../components/common/Card';
-import { PAGES, USER_ROLES, CITIES } from '../utils/constants';
+import { PAGES, USER_ROLES, AREAS } from '../utils/constants';
 import { validateEmail, validatePhone, validatePassword } from '../utils/helpers';
 
 const RegisterPage = ({ navigate }) => {
@@ -18,7 +18,7 @@ const RegisterPage = ({ navigate }) => {
     dateOfBirth: '',
     gender: '',
     phone: '',
-    city: '',
+    area: '',
     address: '',
     conditions: '',
     role: USER_ROLES.PATIENT
