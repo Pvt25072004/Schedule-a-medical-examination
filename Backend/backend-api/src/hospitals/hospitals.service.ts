@@ -75,4 +75,11 @@ export class HospitalsService {
     const hospital = await this.findOne(id);
     await this.hospitalsRepository.remove(hospital);
   }
+
+  async findByArea(areaId: number): Promise<Hospital[]> {
+    return this.hospitalsRepository.find({
+      where: { area_id: areaId, is_active: true },
+      order: { name: 'ASC' },
+    });
+  }
 }

@@ -1,11 +1,15 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
-import { Doctor } from 'src/doctors/doctor.entity';
-import { Schedule } from 'src/schedules/entities/schedule.entity';
+import { Area } from 'src/areas/entities/area.entity';
+import { Doctor } from 'src/doctors/entities/doctor.entity';
+import { Specialty } from 'src/specialties/entities/specialty.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -40,9 +44,20 @@ export class Hospital {
   @UpdateDateColumn()
   updated_at: Date;
 
+  @Column()
+  area_id: number;
+
   @OneToMany(() => Appointment, (appointment) => appointment.hospital)
   appointments: Appointment[];
 
   @ManyToMany(() => Doctor, (doctor) => doctor.hospitals)
   doctors: Doctor[];
+
+  @ManyToOne(() => Area, (area) => area.hospitals)
+  @JoinColumn({ name: 'area_id' })
+  area: Area;
+
+  @ManyToMany(() => Specialty, (specialty) => specialty.hospitals)
+  @JoinTable({ name: 'hospital_specialties' })
+  specialties: Specialty[];
 }

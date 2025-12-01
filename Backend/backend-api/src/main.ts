@@ -31,8 +31,8 @@ async function bootstrap() {
   );
 
   // Global JWT guard (có thể override bằng @Public decorator)
-  const reflector = app.get(Reflector);
-  app.useGlobalGuards(new JwtAuthGuard(reflector));
+  // const reflector = app.get(Reflector);
+  // app.useGlobalGuards(new JwtAuthGuard(reflector));
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

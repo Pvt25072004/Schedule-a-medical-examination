@@ -11,6 +11,7 @@ import {
 import { SchedulesService } from './schedules.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
+import { time } from 'console';
 
 @Controller('schedules')
 export class SchedulesController {
@@ -32,16 +33,16 @@ export class SchedulesController {
     return this.schedulesService.findAll();
   }
 
-  @Get('available-slots')
-  findAvailableSlots(
-    @Query('doctorId') doctorId: string,
-    @Query('hospitalId') hospitalId: string,
+  @Get('available-doctors')
+  findAvailableDoctors(
+    @Query('specialtyId') specialtyId: string,
     @Query('date') date: string,
+    @Query('time') time: string,
   ) {
-    return this.schedulesService.findAvailableSlots(
-      +doctorId,
-      +hospitalId,
-      new Date(date),
+    return this.schedulesService.findAvailableDoctors(
+      +specialtyId,
+      date,
+      time,
     );
   }
 

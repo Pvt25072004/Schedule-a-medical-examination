@@ -24,9 +24,15 @@ export class DoctorsController {
   @Get()
   findAll(@Query('specialty') specialty?: string) {
     if (specialty) {
-      return this.doctorsService.findBySpecialty(specialty);
+      return this.doctorsService.findBySpecialtyId(+specialty);
     }
     return this.doctorsService.findAll();
+  }
+
+  @Get('details')
+  findDetails(@Query('ids') ids: string) {
+    const doctorIds = ids.split(',').map((id) => parseInt(id.trim(), 10)).filter((id) => !isNaN(id));
+    return this.doctorsService.findByIds(doctorIds);
   }
 
   @Get(':id')

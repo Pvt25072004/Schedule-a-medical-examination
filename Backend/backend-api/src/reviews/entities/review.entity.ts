@@ -1,5 +1,5 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
-import { Doctor } from 'src/doctors/doctor.entity';
+import { Doctor } from 'src/doctors/entities/doctor.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
   Column,

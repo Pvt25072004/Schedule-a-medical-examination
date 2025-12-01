@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { HospitalsService } from './hospitals.service';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
@@ -21,7 +22,11 @@ export class HospitalsController {
   }
 
   @Get()
-  findAll() {
+  findAll(
+    @Query('area_id') areaId?: string,) {
+      if (areaId) {
+        return this.hospitalsService.findByArea(+areaId);
+      }
     return this.hospitalsService.findAll();
   }
 

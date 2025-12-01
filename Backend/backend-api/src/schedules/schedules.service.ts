@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { Schedule } from './entities/schedule.entity';
+import { Appointment } from 'src/appointments/entities/appointment.entity';
 
 @Injectable()
 export class SchedulesService {
@@ -88,6 +89,34 @@ export class SchedulesService {
     return schedule;
   }
 
+  async findAvailableDoctors(
+    specialtyId: number,
+    date: string,
+    requestedTime: string,
+  ): Promise<number[]> {
+    const availableDoctorsQuery = this.schedulesRepository
+      .createQueryBuilder('schedule')
+      .innerJoin('schedule.doctor', 'doctor')
+      .innerJoin('doctor.specialties', 'specialty', 'specialty.id = :specialtyId', { specialtyId })
+      
+      .andWhere('schedule.work_date = :date', { date })
+      .andWhere('schedule.start_time <= :requestedTime', { requestedTime })
+      .andWhere('schedule.end_time >= :requestedTime', { requestedTime })
+      
+      .leftJoin(Appointment, 'appointment', 
+        'appointment.doctor_id = schedule.doctor_id AND appointment.appointment_date = :date AND appointment.appointment_time = :requestedTime AND (appointment.status = :statusConfirmed OR appointment.status = :statusPending)',
+        { date, requestedTime, statusConfirmed: 'confirmed', statusPending: 'pending' } // Kiểm tra cả confirmed và pending
+      )
+      .andWhere('appointment.id IS NULL') // Chỉ lấy những lịch không có cuộc hẹn trùng,
+      .select('doctor.id', 'doctorId')
+      .distinct(true)
+      .getRawMany();
+
+    const doctorIds = (await availableDoctorsQuery).map(result => result.doctorId);
+    
+    return doctorIds;
+  }
+
   async findByDoctorAndDate(doctorId: number, date: Date): Promise<Schedule[]> {
     return await this.schedulesRepository.find({
       where: {
@@ -97,30 +126,6 @@ export class SchedulesService {
       },
       relations: ['hospital'],
     });
-  }
-
-  async findAvailableSlots(
-    doctorId: number,
-    hospitalId: number,
-    date: Date,
-  ): Promise<Schedule[]> {
-    const schedules = await this.schedulesRepository.find({
-      where: {
-        doctor_id: doctorId,
-        hospital_id: hospitalId,
-        work_date: date,
-        is_available: true,
-      },
-      relations: ['doctor', 'hospital'],
-    });
-
-    // Return schedules with available slots info
-    // Note: In production, you'd count actual appointments here
-    return schedules.map((schedule) => ({
-      ...schedule,
-      available_slots: schedule.max_patients,
-      booked_slots: 0,
-    }));
   }
 
   async update(

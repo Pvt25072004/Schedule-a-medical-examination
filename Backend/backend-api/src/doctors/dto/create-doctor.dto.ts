@@ -1,19 +1,19 @@
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsNotEmpty,
   IsEmail,
   IsOptional,
   Matches,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { RelationIdDto } from 'src/common/dto/relation-id.dto';
 
 export class CreateDoctorDto {
   @IsString()
   @IsNotEmpty()
   name: string;
-
-  @IsString()
-  @IsNotEmpty()
-  specialty: string;
 
   @IsEmail()
   @IsNotEmpty()
@@ -38,4 +38,16 @@ export class CreateDoctorDto {
 
   @IsOptional()
   is_active?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RelationIdDto)
+  specialties?: RelationIdDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RelationIdDto)
+  hospitals?: RelationIdDto[];
 }

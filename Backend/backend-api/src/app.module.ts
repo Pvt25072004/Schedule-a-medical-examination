@@ -13,9 +13,10 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { AuthModule } from './auth/auth.module';
 import { FirebaseService } from './firebase/firebase.service';
-// import { EmailService } from './email/email.service';
 import { EmailController } from './email/email.controller';
 import { EmailModule } from './email/email.module';
+import { AreasModule } from './areas/areas.module';
+import { SpecialtiesModule } from './specialties/specialties.module';
 
 @Module({
   imports: [
@@ -52,6 +53,8 @@ import { EmailModule } from './email/email.module';
     SchedulesModule,
     AuthModule,
     EmailModule,
+    AreasModule,
+    SpecialtiesModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],

@@ -1,4 +1,5 @@
-import { Doctor } from 'src/doctors/doctor.entity';
+import { Appointment } from 'src/appointments/entities/appointment.entity';
+import { Doctor } from 'src/doctors/entities/doctor.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import {
   Column,
@@ -6,7 +7,10 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  JoinColumn,
+  OneToMany,
 } from 'typeorm';
+
 @Entity('schedules')
 export class Schedule {
   @PrimaryGeneratedColumn()
@@ -37,8 +41,14 @@ export class Schedule {
   created_at: Date;
 
   @ManyToOne(() => Doctor, (doctor) => doctor.schedules)
+  @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor | null;
 
   @ManyToOne(() => Hospital)
+  @JoinColumn({ name: 'hospital_id' })
   hospital?: Hospital | null;
+
+  @OneToMany(() => Appointment, (appointment) => appointment.schedule)
+  appointments: Appointment[];
+
 }

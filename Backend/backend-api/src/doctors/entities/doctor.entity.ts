@@ -1,6 +1,7 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Schedule } from 'src/schedules/entities/schedule.entity';
+import { Specialty } from 'src/specialties/entities/specialty.entity';
 import {
   Entity,
   Column,
@@ -19,9 +20,6 @@ export class Doctor {
 
   @Column({ length: 255 })
   name: string;
-
-  @Column({ length: 100 })
-  specialty: string;
 
   @Column({ default: true })
   is_active: boolean;
@@ -52,6 +50,14 @@ export class Doctor {
 
   @OneToMany(() => Schedule, (schedule) => schedule.doctor)
   schedules: Schedule[];
+
+  @ManyToMany(() => Specialty, (specialty) => specialty.doctors)
+  @JoinTable({
+    name: 'doctor_specialty',
+    joinColumn: { name: 'doctor_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'specialty_id', referencedColumnName: 'id' },
+  })
+  specialties: Specialty[];
 
   @ManyToMany(() => Hospital, (hospital) => hospital.doctors)
   @JoinTable({
