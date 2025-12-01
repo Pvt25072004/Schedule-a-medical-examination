@@ -1,11 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'; // <--- 1. Thêm import này
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json, urlencoded } from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Prefix toàn cục là /api
+  // Tăng giới hạn kích thước body để nhận được ảnh base64 (avatar, CCCD)
+  app.use(
+    json({
+      limit: '5mb', // mặc định ~100kb, nâng lên 5MB
+    }),
+  );
+  app.use(
+    urlencoded({
+      extended: true,
+      limit: '5mb',
+    }),
+  );
+
+  // Prefix global /api
   app.setGlobalPrefix('api');
 
   const allowedOrigins = process.env.FRONTEND_URL
@@ -17,7 +31,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // --- 2. BẮT ĐẦU CẤU HÌNH SWAGGER ---
+  // start swagger config
   const config = new DocumentBuilder()
     .setTitle('Clinic Appointment API')
     .setDescription('Tài liệu API quản lý lịch khám bệnh')
@@ -27,12 +41,10 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  // Cấu hình đường dẫn hiển thị Swagger
-  // 'docs' kết hợp với useGlobalPrefix: true => đường dẫn sẽ là /api/docs
+  // config swagger with url /api/swagger
   SwaggerModule.setup('swagger', app, document, {
     useGlobalPrefix: true,
   });
-  // ------------------------------------
 
   await app.listen(process.env.PORT ?? 8080);
 }

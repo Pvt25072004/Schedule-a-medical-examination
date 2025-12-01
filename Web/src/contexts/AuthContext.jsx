@@ -1,5 +1,9 @@
 import React, { createContext, useState, useContext } from "react";
-import { login as apiLogin, register as apiRegister } from "../services/api";
+import {
+  login as apiLogin,
+  register as apiRegister,
+  updateUser as apiUpdateUser,
+} from "../services/api";
 
 const AuthContext = createContext();
 
@@ -23,19 +27,25 @@ export const AuthProvider = ({ children }) => {
       const userData = response.user;
       const token = response.access_token;
 
-      setUser(userData);
+      // Chuẩn hóa dữ liệu user cho frontend (dùng fullName thay vì full_name)
+      const normalizedUser = {
+        ...userData,
+        fullName: userData.fullName || userData.full_name || "",
+      };
+
+      setUser(normalizedUser);
       setIsAuthenticated(true);
-      
+
       // Store token and user data
       if (rememberMe) {
         localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(normalizedUser));
       } else {
         sessionStorage.setItem("token", token);
-        sessionStorage.setItem("user", JSON.stringify(userData));
+        sessionStorage.setItem("user", JSON.stringify(normalizedUser));
       }
-      
-      return { user: userData, token };
+
+      return { user: normalizedUser, token };
     } catch (error) {
       throw error;
     } finally {
@@ -63,22 +73,27 @@ export const AuthProvider = ({ children }) => {
         password: userData.password,
         date_of_birth: userData.dateOfBirth,
         gender: userData.gender,
-        address: userData.address || '',
-        city: userData.city || '',
+        address: userData.address || "",
+        city: userData.city || "",
       };
 
       const response = await apiRegister(registerData);
-      const user = response.user;
+      const userFromApi = response.user;
       const token = response.access_token;
 
-      setUser(user);
+      const normalizedUser = {
+        ...userFromApi,
+        fullName: userFromApi.fullName || userFromApi.full_name || "",
+      };
+
+      setUser(normalizedUser);
       setIsAuthenticated(true);
-      
+
       // Store token and user data
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      
-      return { user, token };
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
+
+      return { user: normalizedUser, token };
     } catch (error) {
       throw error;
     } finally {
@@ -86,21 +101,61 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateProfile = (updates) => {
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+  const updateProfile = async (updates) => {
+    if (!user?.id) {
+      // Không có id thì chỉ cập nhật local
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      const savedUser = sessionStorage.getItem("user");
+      if (savedUser) {
+        sessionStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+      return updatedUser;
+    }
+
+    // Map dữ liệu frontend sang backend (UserEntity)
+    const payload = {
+      full_name: updates.fullName ?? user.fullName ?? user.full_name,
+      email: updates.email ?? user.email,
+      phone: updates.phone ?? user.phone,
+      date_of_birth:
+        updates.dateOfBirth ?? user.dateOfBirth ?? user.date_of_birth,
+      gender: updates.gender ?? user.gender,
+      address: updates.address ?? user.address,
+      // Bổ sung các trường CCCD + avatar
+      id_card_number: updates.id_card_number ?? user.id_card_number ?? null,
+      avatar_url: updates.avatar_url ?? user.avatar_url ?? null,
+      id_card_front_url:
+        updates.id_card_front_url ?? user.id_card_front_url ?? null,
+      id_card_back_url:
+        updates.id_card_back_url ?? user.id_card_back_url ?? null,
+    };
+
+    const updatedFromApi = await apiUpdateUser(user.id, payload);
+
+    const normalizedUser = {
+      ...updatedFromApi,
+      fullName: updatedFromApi.fullName || updatedFromApi.full_name || "",
+    };
+
+    setUser(normalizedUser);
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
     const savedUser = sessionStorage.getItem("user");
     if (savedUser) {
-      sessionStorage.setItem("user", JSON.stringify(updatedUser));
+      sessionStorage.setItem("user", JSON.stringify(normalizedUser));
     }
+
+    return normalizedUser;
   };
 
   // Khôi phục session khi load lại trang
   React.useEffect(() => {
-    const savedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
-    const savedToken = localStorage.getItem("token") || sessionStorage.getItem("token");
-    
+    const savedUser =
+      localStorage.getItem("user") || sessionStorage.getItem("user");
+    const savedToken =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
+
     if (savedUser && savedToken) {
       try {
         const userData = JSON.parse(savedUser);

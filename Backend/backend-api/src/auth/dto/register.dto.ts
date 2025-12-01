@@ -44,4 +44,3 @@ export class RegisterDto {
   @IsOptional()
   city?: string;
 }
-

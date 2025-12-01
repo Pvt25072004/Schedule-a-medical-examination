@@ -36,13 +36,16 @@ export class User {
   @Column({ length: 20, nullable: true })
   id_card_number: string;
 
-  @Column({ length: 500, nullable: true })
+  // Lưu dữ liệu ảnh (URL dài hoặc data URL base64) - dùng longtext cho an toàn
+  @Column({ type: 'longtext', nullable: true })
   avatar_url: string;
 
-  @Column({ length: 500, nullable: true })
+  // Lưu ảnh CCCD mặt trước
+  @Column({ type: 'longtext', nullable: true })
   id_card_front_url: string;
 
-  @Column({ length: 500, nullable: true })
+  // Lưu ảnh CCCD mặt sau
+  @Column({ type: 'longtext', nullable: true })
   id_card_back_url: string;
 
   @Column({ default: false })

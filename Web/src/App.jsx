@@ -1,4 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppointmentProvider } from "./contexts/AppointmentContext";
 
@@ -15,58 +22,114 @@ import SettingsPage from "./pages/SettingsPage";
 import { PAGES } from "./utils/constants";
 import "./index.css";
 
-const AppContent = () => {
-  const [currentPage, setCurrentPage] = useState(PAGES.WELCOME);
+// Component chứa toàn bộ routes, sử dụng React Router
+const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  // Navigation handler
-  const navigate = (page) => {
-    setCurrentPage(page);
+  // Giữ API navigate(page) như cũ để không phải sửa các page
+  const navigateTo = (page) => {
+    navigate(page);
   };
 
-  // Redirect to welcome if not authenticated
-  React.useEffect(() => {
-    if (
-      !isAuthenticated &&
-      ![PAGES.WELCOME, PAGES.LOGIN, PAGES.REGISTER].includes(currentPage)
-    ) {
-      setCurrentPage(PAGES.WELCOME);
-    }
-  }, [isAuthenticated, currentPage]);
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route
+        path={PAGES.WELCOME}
+        element={
+          isAuthenticated ? (
+            <Navigate to={PAGES.HOME} replace />
+          ) : (
+            <WelcomePage navigate={navigateTo} />
+          )
+        }
+      />
+      <Route path={PAGES.LOGIN} element={<LoginPage navigate={navigateTo} />} />
+      <Route
+        path={PAGES.REGISTER}
+        element={<RegisterPage navigate={navigateTo} />}
+      />
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case PAGES.WELCOME:
-        return <WelcomePage navigate={navigate} />;
-      case PAGES.LOGIN:
-        return <LoginPage navigate={navigate} />;
-      case PAGES.REGISTER:
-        return <RegisterPage navigate={navigate} />;
-      case PAGES.HOME:
-        return <HomePage navigate={navigate} />;
-      case PAGES.BOOKING:
-        return <BookingPage navigate={navigate} />;
-      case PAGES.APPOINTMENTS:
-        return <AppointmentsPage navigate={navigate} />;
-      case PAGES.CHAT:
-        return <ChatPage navigate={navigate} />;
-      case PAGES.YOUR_PAGE:
-        return <YourPage navigate={navigate} />;
-      case PAGES.SETTINGS:
-        return <SettingsPage navigate={navigate} />;
-      default:
-        return <WelcomePage navigate={navigate} />;
-    }
-  };
+      {/* Protected routes - yêu cầu đã đăng nhập */}
+      <Route
+        path={PAGES.HOME}
+        element={
+          isAuthenticated ? (
+            <HomePage navigate={navigateTo} />
+          ) : (
+            <Navigate to={PAGES.WELCOME} replace />
+          )
+        }
+      />
+      <Route
+        path={PAGES.BOOKING}
+        element={
+          isAuthenticated ? (
+            <BookingPage navigate={navigateTo} />
+          ) : (
+            <Navigate to={PAGES.WELCOME} replace />
+          )
+        }
+      />
+      <Route
+        path={PAGES.APPOINTMENTS}
+        element={
+          isAuthenticated ? (
+            <AppointmentsPage navigate={navigateTo} />
+          ) : (
+            <Navigate to={PAGES.WELCOME} replace />
+          )
+        }
+      />
+      <Route
+        path={PAGES.CHAT}
+        element={
+          isAuthenticated ? (
+            <ChatPage navigate={navigateTo} />
+          ) : (
+            <Navigate to={PAGES.WELCOME} replace />
+          )
+        }
+      />
+      <Route
+        path={PAGES.SETTINGS}
+        element={
+          isAuthenticated ? (
+            <SettingsPage navigate={navigateTo} />
+          ) : (
+            <Navigate to={PAGES.WELCOME} replace />
+          )
+        }
+      />
 
-  return <div className="font-sans">{renderPage()}</div>;
+      {/* Redirect root "/" về WELCOME (hoặc HOME nếu đã login) */}
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to={PAGES.HOME} replace />
+          ) : (
+            <Navigate to={PAGES.WELCOME} replace />
+          )
+        }
+      />
+
+      {/* Catch-all: về trang welcome */}
+      <Route path="*" element={<Navigate to={PAGES.WELCOME} replace />} />
+    </Routes>
+  );
 };
 
 function App() {
   return (
     <AuthProvider>
       <AppointmentProvider>
-        <AppContent />
+        <BrowserRouter>
+          <div className="font-sans">
+            <AppRoutes />
+          </div>
+        </BrowserRouter>
       </AppointmentProvider>
     </AuthProvider>
   );

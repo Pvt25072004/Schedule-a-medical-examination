@@ -126,9 +126,17 @@ const HomePage = ({ navigate }) => {
                 className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition"
                 onClick={() => navigate(PAGES.SETTINGS)}
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                  {getInitials(user?.fullName || "User")}
-                </div>
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt="Avatar"
+                    className="w-10 h-10 rounded-full object-cover shadow-lg border"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                    {getInitials(user?.fullName || "User")}
+                  </div>
+                )}
                 <div className="hidden sm:block">
                   <p className="text-sm font-semibold text-gray-900">
                     {user?.fullName || "Người dùng"}

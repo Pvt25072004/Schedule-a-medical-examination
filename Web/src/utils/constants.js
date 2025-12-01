@@ -27,18 +27,18 @@ export const USER_ROLES = {
   HOSPITAL: "hospital",
 };
 
-// Cities
+// Cities (value + label để dễ dùng cho select)
 export const CITIES = [
-  "Hà Nội",
-  "TP. Hồ Chí Minh",
-  "Đà Nẵng",
-  "Hải Phòng",
-  "Cần Thơ",
-  "Biên Hòa",
-  "Nha Trang",
-  "Huế",
-  "Buôn Ma Thuột",
-  "Vũng Tàu",
+  { value: "ha-noi", label: "Hà Nội" },
+  { value: "ho-chi-minh", label: "TP. Hồ Chí Minh" },
+  { value: "da-nang", label: "Đà Nẵng" },
+  { value: "hai-phong", label: "Hải Phòng" },
+  { value: "can-tho", label: "Cần Thơ" },
+  { value: "bien-hoa", label: "Biên Hòa" },
+  { value: "nha-trang", label: "Nha Trang" },
+  { value: "hue", label: "Huế" },
+  { value: "buon-ma-thuot", label: "Buôn Ma Thuột" },
+  { value: "vung-tau", label: "Vũng Tàu" },
 ];
 
 // Specialties

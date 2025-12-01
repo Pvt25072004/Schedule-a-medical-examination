@@ -12,6 +12,7 @@ import {
 import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import { PAGES, DOCTORS, SPECIALTIES } from "../utils/constants";
+import { useAuth } from "../contexts/AuthContext";
 import {
   getAppointments,
   createAppointment,
@@ -30,6 +31,7 @@ const DEFAULT_APPOINTMENT_FORM = Object.freeze({
 });
 
 const WelcomePage = ({ navigate }) => {
+  const { isAuthenticated } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [formData, setFormData] = useState({ ...DEFAULT_APPOINTMENT_FORM });
   const [listLoading, setListLoading] = useState(false);
@@ -71,6 +73,16 @@ const WelcomePage = ({ navigate }) => {
     { number: "20+", label: "Chuyên khoa" },
     { number: "4.8/5", label: "Đánh giá trung bình" },
   ];
+
+  // Helper: yêu cầu đăng nhập trước khi dùng các dịch vụ
+  const requireAuthAndNavigate = (page) => {
+    if (!isAuthenticated) {
+      // Có thể điều hướng sang LOGIN hoặc REGISTER, ở đây ưu tiên LOGIN
+      navigate(PAGES.LOGIN);
+    } else {
+      navigate(page);
+    }
+  };
 
   const showAlert = useCallback((type, message) => {
     setAlert({ type, message });
@@ -330,7 +342,7 @@ const WelcomePage = ({ navigate }) => {
                 <Button
                   variant="primary"
                   size="lg"
-                  onClick={() => navigate(PAGES.REGISTER)}
+                  onClick={() => requireAuthAndNavigate(PAGES.BOOKING)}
                   icon={Calendar}
                   className="text-lg"
                 >
@@ -484,7 +496,7 @@ const WelcomePage = ({ navigate }) => {
                   size="sm"
                   fullWidth
                   className="mt-4"
-                  onClick={() => navigate(PAGES.BOOKING)}
+                  onClick={() => requireAuthAndNavigate(PAGES.BOOKING)}
                 >
                   Đặt lịch khám
                 </Button>
@@ -522,7 +534,7 @@ const WelcomePage = ({ navigate }) => {
                 key={specialty.id}
                 hover
                 className="text-center cursor-pointer group"
-                onClick={() => navigate(PAGES.BOOKING)}
+                onClick={() => requireAuthAndNavigate(PAGES.BOOKING)}
               >
                 <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">
                   {specialty.icon}
@@ -537,16 +549,21 @@ const WelcomePage = ({ navigate }) => {
       </section>
 
       {/* Appointments CRUD Section */}
+      {/* CRUD lịch hẹn thử nghiệm - chỉ cho xem/ dùng khi đã đăng nhập */}
       <section id="appointments" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Tạo lịch hẹn trực tuyến
             </h2>
-            <p className="text-xl text-gray-600">Thử đặt lịch ngay nào</p>
+            <p className="text-xl text-gray-600">
+              {isAuthenticated
+                ? "Thử đặt lịch ngay nào"
+                : "Vui lòng đăng nhập để sử dụng chức năng đặt lịch"}
+            </p>
           </div>
 
-          {alert && (
+          {alert && isAuthenticated && (
             <div
               className={`mb-8 rounded-xl px-5 py-4 text-sm font-medium ${
                 alert.type === "success"
@@ -558,234 +575,250 @@ const WelcomePage = ({ navigate }) => {
             </div>
           )}
 
-          <div className="grid gap-10 lg:grid-cols-2">
-            <Card shadow="lg" className="border-blue-100">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-6">
-                {editingId ? "Chỉnh sửa lịch hẹn" : "Tạo lịch hẹn mới"}
-              </h3>
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      ID bệnh nhân
-                    </label>
-                    <input
-                      type="number"
-                      name="user_id"
-                      value={formData.user_id}
-                      onChange={handleInputChange}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="VD: 1"
-                    />
+          {isAuthenticated ? (
+            <div className="grid gap-10 lg:grid-cols-2">
+              <Card shadow="lg" className="border-blue-100">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+                  {editingId ? "Chỉnh sửa lịch hẹn" : "Tạo lịch hẹn mới"}
+                </h3>
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        ID bệnh nhân
+                      </label>
+                      <input
+                        type="number"
+                        name="user_id"
+                        value={formData.user_id}
+                        onChange={handleInputChange}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="VD: 1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        ID bác sĩ
+                      </label>
+                      <input
+                        type="number"
+                        name="doctor_id"
+                        value={formData.doctor_id}
+                        onChange={handleInputChange}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="VD: 2"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        ID bệnh viện
+                      </label>
+                      <input
+                        type="number"
+                        name="hospital_id"
+                        value={formData.hospital_id}
+                        onChange={handleInputChange}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="VD: 3"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        ID lịch làm việc
+                      </label>
+                      <input
+                        type="number"
+                        name="schedule_id"
+                        value={formData.schedule_id}
+                        onChange={handleInputChange}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="VD: 5"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      ID bác sĩ
-                    </label>
-                    <input
-                      type="number"
-                      name="doctor_id"
-                      value={formData.doctor_id}
-                      onChange={handleInputChange}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="VD: 2"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      ID bệnh viện
-                    </label>
-                    <input
-                      type="number"
-                      name="hospital_id"
-                      value={formData.hospital_id}
-                      onChange={handleInputChange}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="VD: 3"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      ID lịch làm việc
-                    </label>
-                    <input
-                      type="number"
-                      name="schedule_id"
-                      value={formData.schedule_id}
-                      onChange={handleInputChange}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="VD: 5"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        Ngày khám
+                      </label>
+                      <input
+                        type="date"
+                        name="appointment_date"
+                        value={formData.appointment_date}
+                        onChange={handleInputChange}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        Giờ khám
+                      </label>
+                      <input
+                        type="time"
+                        name="appointment_time"
+                        value={formData.appointment_time}
+                        onChange={handleInputChange}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-sm font-medium text-gray-700">
-                      Ngày khám
+                      Hình thức khám
                     </label>
-                    <input
-                      type="date"
-                      name="appointment_date"
-                      value={formData.appointment_date}
+                    <select
+                      name="examination_type"
+                      value={formData.examination_type}
                       onChange={handleInputChange}
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
+                    >
+                      <option value="online">Online</option>
+                      <option value="offline">Offline</option>
+                    </select>
                   </div>
+
                   <div>
                     <label className="text-sm font-medium text-gray-700">
-                      Giờ khám
+                      Triệu chứng (tùy chọn)
                     </label>
-                    <input
-                      type="time"
-                      name="appointment_time"
-                      value={formData.appointment_time}
+                    <textarea
+                      name="symptoms"
+                      value={formData.symptoms}
                       onChange={handleInputChange}
+                      rows="3"
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      placeholder="Mô tả nhanh triệu chứng..."
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Hình thức khám
-                  </label>
-                  <select
-                    name="examination_type"
-                    value={formData.examination_type}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="online">Online</option>
-                    <option value="offline">Offline</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Triệu chứng (tùy chọn)
-                  </label>
-                  <textarea
-                    name="symptoms"
-                    value={formData.symptoms}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    placeholder="Mô tả nhanh triệu chứng..."
-                  />
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="lg"
-                    loading={formLoading}
-                    fullWidth
-                  >
-                    {editingId ? "Cập nhật lịch hẹn" : "Tạo lịch hẹn"}
-                  </Button>
-                  {editingId && (
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <Button
-                      type="button"
-                      variant="secondary"
+                      type="submit"
+                      variant="primary"
                       size="lg"
-                      onClick={resetForm}
+                      loading={formLoading}
                       fullWidth
                     >
-                      Hủy chỉnh sửa
+                      {editingId ? "Cập nhật lịch hẹn" : "Tạo lịch hẹn"}
                     </Button>
-                  )}
-                </div>
-              </form>
-            </Card>
+                    {editingId && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="lg"
+                        onClick={resetForm}
+                        fullWidth
+                      >
+                        Hủy chỉnh sửa
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </Card>
 
-            <Card shadow="lg" className="border-green-100">
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-2xl font-semibold text-gray-900">
-                    Danh sách lịch hẹn
-                  </h3>
-                  {/* <p className="text-sm text-gray-500">
+              <Card shadow="lg" className="border-green-100">
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-2xl font-semibold text-gray-900">
+                      Danh sách lịch hẹn
+                    </h3>
+                    {/* <p className="text-sm text-gray-500">
                     Đồng bộ dữ liệu trực tiếp từ API backend
                   </p> */}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchAppointments}
+                    loading={listLoading}
+                  >
+                    Làm mới
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchAppointments}
-                  loading={listLoading}
-                >
-                  Làm mới
-                </Button>
-              </div>
 
-              {listLoading ? (
-                <p className="text-center text-gray-500">Đang tải dữ liệu...</p>
-              ) : appointments.length === 0 ? (
-                <p className="text-center text-gray-500">
-                  Chưa có lịch hẹn nào. Hãy tạo mới ở bên cạnh nhé!
-                </p>
-              ) : (
-                <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-1">
-                  {appointments.map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="rounded-xl border border-gray-200 p-4"
-                    >
-                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <p className="text-lg font-semibold text-gray-900">
-                            Lịch #{appointment.id}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {displayDate(appointment.appointment_date)} ·{" "}
-                            {displayTime(appointment.appointment_time)} ·{" "}
-                            {appointment.examination_type}
+                {listLoading ? (
+                  <p className="text-center text-gray-500">
+                    Đang tải dữ liệu...
+                  </p>
+                ) : appointments.length === 0 ? (
+                  <p className="text-center text-gray-500">
+                    Chưa có lịch hẹn nào. Hãy tạo mới ở bên cạnh nhé!
+                  </p>
+                ) : (
+                  <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-1">
+                    {appointments.map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="rounded-xl border border-gray-200 p-4"
+                      >
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-lg font-semibold text-gray-900">
+                              Lịch #{appointment.id}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {displayDate(appointment.appointment_date)} ·{" "}
+                              {displayTime(appointment.appointment_time)} ·{" "}
+                              {appointment.examination_type}
+                            </p>
+                          </div>
+                          <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                            {appointment.status || "pending"}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-2">
+                          <p>Người bệnh: #{appointment.user_id}</p>
+                          <p>Bác sĩ: #{appointment.doctor_id}</p>
+                          <p>Bệnh viện: #{appointment.hospital_id}</p>
+                          <p>
+                            Lịch làm việc: #{appointment.schedule_id || "—"}
                           </p>
                         </div>
-                        <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-                          {appointment.status || "pending"}
-                        </span>
-                      </div>
 
-                      <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-2">
-                        <p>Người bệnh: #{appointment.user_id}</p>
-                        <p>Bác sĩ: #{appointment.doctor_id}</p>
-                        <p>Bệnh viện: #{appointment.hospital_id}</p>
-                        <p>Lịch làm việc: #{appointment.schedule_id || "—"}</p>
-                      </div>
+                        {appointment.symptoms && (
+                          <p className="mt-3 text-sm italic text-gray-600">
+                            Triệu chứng: {appointment.symptoms}
+                          </p>
+                        )}
 
-                      {appointment.symptoms && (
-                        <p className="mt-3 text-sm italic text-gray-600">
-                          Triệu chứng: {appointment.symptoms}
-                        </p>
-                      )}
-
-                      <div className="mt-4 flex flex-wrap gap-3 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(appointment)}
-                          disabled={deletingId === appointment.id}
-                        >
-                          Sửa
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDelete(appointment.id)}
-                          loading={deletingId === appointment.id}
-                        >
-                          Xóa
-                        </Button>
+                        <div className="mt-4 flex flex-wrap gap-3 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(appointment)}
+                            disabled={deletingId === appointment.id}
+                          >
+                            Sửa
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDelete(appointment.id)}
+                            loading={deletingId === appointment.id}
+                          >
+                            Xóa
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
+          ) : (
+            <div className="text-center">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => navigate(PAGES.LOGIN)}
+              >
+                Đăng nhập để đặt lịch
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -910,7 +943,7 @@ const WelcomePage = ({ navigate }) => {
         <Button
           variant="primary"
           size="lg"
-          onClick={() => navigate(PAGES.CHAT)}
+          onClick={() => requireAuthAndNavigate(PAGES.CHAT)}
           icon={MessageCircle}
           className="rounded-full shadow-2xl w-14 h-14 p-0"
         />

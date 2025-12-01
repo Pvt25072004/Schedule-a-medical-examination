@@ -1,30 +1,54 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, User, MapPin, Phone, X, Edit, Search, Filter, Plus, ChevronDown } from 'lucide-react';
-import { useAppointments } from '../contexts/AppointmentContext';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import { PAGES, APPOINTMENT_STATUS } from '../utils/constants';
-import { formatDate, getStatusColor, getStatusText, getRelativeDate } from '../utils/helpers';
+import React, { useState } from "react";
+import {
+  Calendar,
+  Clock,
+  User,
+  MapPin,
+  Phone,
+  X,
+  Edit,
+  Search,
+  Filter,
+  Plus,
+  ChevronDown,
+} from "lucide-react";
+import { useAppointments } from "../contexts/AppointmentContext";
+import Card from "../components/common/Card";
+import Button from "../components/common/Button";
+import { PAGES, APPOINTMENT_STATUS } from "../utils/constants";
+import {
+  formatDate,
+  getStatusColor,
+  getStatusText,
+  getRelativeDate,
+} from "../utils/helpers";
 
 const AppointmentsPage = ({ navigate }) => {
   const { appointments, cancelAppointment, getStatistics } = useAppointments();
-  const [filter, setFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
+  const [cancelReason, setCancelReason] = useState("");
 
   const stats = getStatistics();
 
-  const filteredAppointments = appointments.filter(apt => {
-    const matchesSearch = apt.doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         apt.specialty.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (filter === 'all') return matchesSearch;
-    if (filter === 'upcoming') return (apt.status === 'pending' || apt.status === 'confirmed') && matchesSearch;
-    if (filter === 'completed') return apt.status === 'completed' && matchesSearch;
-    if (filter === 'cancelled') return apt.status === 'cancelled' && matchesSearch;
-    
+  const filteredAppointments = appointments.filter((apt) => {
+    const matchesSearch =
+      apt.doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      apt.specialty.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (filter === "all") return matchesSearch;
+    if (filter === "upcoming")
+      return (
+        (apt.status === "pending" || apt.status === "confirmed") &&
+        matchesSearch
+      );
+    if (filter === "completed")
+      return apt.status === "completed" && matchesSearch;
+    if (filter === "cancelled")
+      return apt.status === "cancelled" && matchesSearch;
+
     return matchesSearch;
   });
 
@@ -33,15 +57,25 @@ const AppointmentsPage = ({ navigate }) => {
       await cancelAppointment(selectedAppointment.id, cancelReason);
       setShowCancelModal(false);
       setSelectedAppointment(null);
-      setCancelReason('');
+      setCancelReason("");
     }
   };
 
   const filterTabs = [
-    { key: 'all', label: 'Tất cả', count: stats.total, color: 'blue' },
-    { key: 'upcoming', label: 'Sắp tới', count: stats.upcoming, color: 'green' },
-    { key: 'completed', label: 'Hoàn thành', count: stats.completed, color: 'purple' },
-    { key: 'cancelled', label: 'Đã hủy', count: stats.cancelled, color: 'red' }
+    { key: "all", label: "Tất cả", count: stats.total, color: "blue" },
+    {
+      key: "upcoming",
+      label: "Sắp tới",
+      count: stats.upcoming,
+      color: "green",
+    },
+    {
+      key: "completed",
+      label: "Hoàn thành",
+      count: stats.completed,
+      color: "purple",
+    },
+    { key: "cancelled", label: "Đã hủy", count: stats.cancelled, color: "red" },
   ];
 
   return (
@@ -57,7 +91,7 @@ const AppointmentsPage = ({ navigate }) => {
               <Calendar className="w-5 h-5" />
               <span className="font-semibold">Lịch hẹn của tôi</span>
             </button>
-            
+
             <Button
               variant="primary"
               size="sm"
@@ -81,14 +115,20 @@ const AppointmentsPage = ({ navigate }) => {
               className={`cursor-pointer border-2 transition-all ${
                 filter === tab.key
                   ? `border-${tab.color}-500 bg-${tab.color}-50`
-                  : 'border-gray-200'
+                  : "border-gray-200"
               }`}
             >
               <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900 mb-1">{tab.count}</p>
-                <p className={`text-sm font-medium ${
-                  filter === tab.key ? `text-${tab.color}-600` : 'text-gray-600'
-                }`}>
+                <p className="text-3xl font-bold text-gray-900 mb-1">
+                  {tab.count}
+                </p>
+                <p
+                  className={`text-sm font-medium ${
+                    filter === tab.key
+                      ? `text-${tab.color}-600`
+                      : "text-gray-600"
+                  }`}
+                >
                   {tab.label}
                 </p>
               </div>
@@ -109,7 +149,7 @@ const AppointmentsPage = ({ navigate }) => {
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
+
             <div className="flex gap-2">
               <Button variant="outline" size="md" icon={Filter}>
                 Lọc
@@ -134,22 +174,32 @@ const AppointmentsPage = ({ navigate }) => {
                     <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
                       👨‍⚕️
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
-                          <h3 className="font-bold text-lg text-gray-900">{apt.doctorName}</h3>
-                          <p className="text-blue-600 text-sm font-medium">{apt.specialty}</p>
+                          <h3 className="font-bold text-lg text-gray-900">
+                            {apt.doctorName}
+                          </h3>
+                          <p className="text-blue-600 text-sm font-medium">
+                            {apt.specialty}
+                          </p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(apt.status)}`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(
+                            apt.status
+                          )}`}
+                        >
                           {getStatusText(apt.status)}
                         </span>
                       </div>
-                      
+
                       <div className="space-y-2 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-gray-400" />
-                          <span>{getRelativeDate(apt.date)} - {formatDate(apt.date)}</span>
+                          <span>
+                            {getRelativeDate(apt.date)} - {formatDate(apt.date)}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-gray-400" />
@@ -173,7 +223,7 @@ const AppointmentsPage = ({ navigate }) => {
                   </div>
 
                   {/* Actions */}
-                  {(apt.status === 'pending' || apt.status === 'confirmed') && (
+                  {(apt.status === "pending" || apt.status === "confirmed") && (
                     <div className="flex md:flex-col gap-2">
                       <Button
                         variant="outline"
@@ -181,7 +231,7 @@ const AppointmentsPage = ({ navigate }) => {
                         icon={Phone}
                         onClick={(e) => {
                           e.stopPropagation();
-                          alert('Gọi: 1900-xxxx');
+                          alert("Gọi: 1900-xxxx");
                         }}
                         className="flex-1 md:flex-none"
                       >
@@ -224,7 +274,9 @@ const AppointmentsPage = ({ navigate }) => {
               <Calendar className="w-12 h-12 text-gray-400" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {filter === 'all' ? 'Chưa có lịch hẹn nào' : `Không có lịch hẹn ${getStatusText(filter).toLowerCase()}`}
+              {filter === "all"
+                ? "Chưa có lịch hẹn nào"
+                : `Không có lịch hẹn ${getStatusText(filter).toLowerCase()}`}
             </h3>
             <p className="text-gray-600 mb-6">
               Đặt lịch ngay để được bác sĩ chăm sóc tốt nhất
@@ -256,7 +308,8 @@ const AppointmentsPage = ({ navigate }) => {
             </div>
 
             <p className="text-gray-600 mb-4">
-              Bạn có chắc chắn muốn hủy lịch hẹn với <strong>{selectedAppointment?.doctorName}</strong>?
+              Bạn có chắc chắn muốn hủy lịch hẹn với{" "}
+              <strong>{selectedAppointment?.doctorName}</strong>?
             </p>
 
             <div className="mb-6">
