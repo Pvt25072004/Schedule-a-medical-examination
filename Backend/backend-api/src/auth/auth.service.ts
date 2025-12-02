@@ -54,7 +54,7 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(String(password), 10);
 
-    // Create user in database
+    // Create user in database (role sẽ dùng default 'patient' từ UserEntity)
     const user = await this.usersService.create({
       full_name,
       email,
@@ -73,7 +73,7 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role };
     const access_token = this.jwtService.sign(payload);
 
     // Return user without password
@@ -103,6 +103,14 @@ export class AuthService {
       );
     }
 
+    // Không cho đăng nhập nếu tài khoản bị tạm ngưng
+    if (user.is_active === false) {
+      throw new HttpException(
+        'Tài khoản của bạn đang bị tạm ngưng, vui lòng liên hệ admin',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
@@ -114,7 +122,7 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role };
     const access_token = this.jwtService.sign(payload);
 
     // Return user without password
@@ -192,5 +200,42 @@ export class AuthService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async changePassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    if (!userId) {
+      throw new HttpException('Thiếu thông tin người dùng', HttpStatus.UNAUTHORIZED);
+    }
+    if (!currentPassword || !newPassword) {
+      throw new HttpException('Thiếu mật khẩu', HttpStatus.BAD_REQUEST);
+    }
+
+    const user = (await this.usersService.findOne(userId)) as User | null;
+    if (!user?.id || !user.password_hash) {
+      throw new HttpException('Không tìm thấy tài khoản', HttpStatus.NOT_FOUND);
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash,
+    );
+
+    if (!isPasswordValid) {
+      throw new HttpException(
+        'Mật khẩu hiện tại không chính xác',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.usersService.update(user.id, {
+      password_hash: passwordHash,
+    } as any);
+
+    return { success: true };
   }
 }

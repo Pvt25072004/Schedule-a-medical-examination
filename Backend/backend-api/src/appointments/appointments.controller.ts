@@ -6,10 +6,12 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
 // 1. Import thư viện Swagger
 import {
   ApiTags,
@@ -48,6 +50,21 @@ export class AppointmentsController {
     return this.appointmentsService.findAll();
   }
 
+  @Get('/user/:userId')
+  @ApiOperation({ summary: 'Lấy danh sách lịch hẹn theo bệnh nhân' })
+  findByUser(@Param('userId') userId: string) {
+    return this.appointmentsService.findByUser(+userId);
+  }
+
+  @Get('/doctor/:doctorId')
+  @ApiOperation({ summary: 'Lấy danh sách lịch hẹn theo bác sĩ' })
+  findByDoctor(
+    @Param('doctorId') doctorId: string,
+    @Query('date') date?: string,
+  ) {
+    return this.appointmentsService.findByDoctor(+doctorId, date);
+  }
+
   @Get('/:id')
   @ApiOperation({ summary: 'Lấy chi tiết một lịch hẹn' })
   @ApiParam({
@@ -79,6 +96,19 @@ export class AppointmentsController {
     @Body() updateAppointmentDto: UpdateAppointmentDto,
   ) {
     return this.appointmentsService.update(+id, updateAppointmentDto);
+  }
+
+  @Patch('/:id/status')
+  @ApiOperation({ summary: 'Cập nhật trạng thái lịch hẹn (bác sĩ / hệ thống)' })
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateStatusDto: UpdateAppointmentStatusDto,
+  ) {
+    return this.appointmentsService.updateStatus(
+      +id,
+      updateStatusDto.status,
+      updateStatusDto.reason,
+    );
   }
 
   @Delete('/:id')

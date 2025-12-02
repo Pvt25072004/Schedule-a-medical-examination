@@ -91,15 +91,15 @@ const HomePage = ({ navigate }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center gap-3">
+            <a href={PAGES.HOME} className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">S</span>
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-900">STL Clinic</h1>
-                <p className="text-xs text-gray-500">Dashboard</p>
+                {/* <p className="text-xs text-gray-500">Dashboard</p> */}
               </div>
-            </div>
+            </a>
 
             {/* Search Bar - Desktop */}
             <div className="hidden md:flex flex-1 max-w-lg mx-8">

@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAppointments } from "../contexts/AppointmentContext";
+import { useAuth } from "../contexts/AuthContext";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { PAGES, APPOINTMENT_STATUS } from "../utils/constants";
@@ -22,18 +23,39 @@ import {
   getStatusText,
   getRelativeDate,
 } from "../utils/helpers";
+import { createReview } from "../services/reviews.api";
 
 const AppointmentsPage = ({ navigate }) => {
-  const { appointments, cancelAppointment, getStatistics } = useAppointments();
+  const {
+    appointments,
+    cancelAppointment,
+    getStatistics,
+    getPastAppointments,
+    updateAppointment,
+  } = useAppointments();
+  const { user } = useAuth();
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
-  const stats = getStatistics();
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewAppointment, setReviewAppointment] = useState(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  const filteredAppointments = appointments.filter((apt) => {
+  const stats = getStatistics();
+  const pastAppointments = getPastAppointments();
+
+  const sortedAppointments = [...appointments].sort(
+    (a, b) =>
+      new Date(`${b.date}T${b.time || "00:00"}`) -
+      new Date(`${a.date}T${a.time || "00:00"}`)
+  );
+
+  const filteredAppointments = sortedAppointments.filter((apt) => {
     const matchesSearch =
       apt.doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       apt.specialty.toLowerCase().includes(searchQuery.toLowerCase());
@@ -48,6 +70,8 @@ const AppointmentsPage = ({ navigate }) => {
       return apt.status === "completed" && matchesSearch;
     if (filter === "cancelled")
       return apt.status === "cancelled" && matchesSearch;
+    if (filter === "rejected")
+      return apt.status === APPOINTMENT_STATUS.REJECTED && matchesSearch;
 
     return matchesSearch;
   });
@@ -58,6 +82,43 @@ const AppointmentsPage = ({ navigate }) => {
       setShowCancelModal(false);
       setSelectedAppointment(null);
       setCancelReason("");
+    }
+  };
+
+  const openReviewModal = (apt) => {
+    setReviewAppointment(apt);
+    setReviewRating(5);
+    setReviewComment("");
+    setShowReviewModal(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewAppointment || !user?.id) {
+      alert("Thiếu thông tin để gửi đánh giá");
+      return;
+    }
+    if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
+      alert("Vui lòng chọn điểm đánh giá từ 1 đến 5");
+      return;
+    }
+    try {
+      setIsSubmittingReview(true);
+      await createReview({
+        appointment_id: reviewAppointment.backendId || reviewAppointment.id,
+        user_id: user.id,
+        doctor_id: reviewAppointment.doctorId,
+        rating: Number(reviewRating),
+        comment: reviewComment,
+      });
+      // Đánh dấu lịch hẹn đã được đánh giá trong context
+      updateAppointment(reviewAppointment.id, { hasReview: true });
+      setShowReviewModal(false);
+      setReviewAppointment(null);
+      alert("Cảm ơn bạn đã đánh giá bác sĩ!");
+    } catch (e) {
+      alert(e.message || "Không thể gửi đánh giá");
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -75,7 +136,18 @@ const AppointmentsPage = ({ navigate }) => {
       count: stats.completed,
       color: "purple",
     },
-    { key: "cancelled", label: "Đã hủy", count: stats.cancelled, color: "red" },
+    {
+      key: "rejected",
+      label: "Bị từ chối",
+      count: stats.rejected,
+      color: "red",
+    },
+    {
+      key: "cancelled",
+      label: "Đã hủy",
+      count: stats.cancelled,
+      color: "gray",
+    },
   ];
 
   return (
@@ -214,11 +286,23 @@ const AppointmentsPage = ({ navigate }) => {
                       {apt.type && (
                         <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                           <p className="text-sm text-gray-700">
-                            <span className="font-semibold">Lý do: </span>
+                            <span className="font-semibold">Lý do khám: </span>
                             {apt.type}
                           </p>
                         </div>
                       )}
+
+                      {apt.status === APPOINTMENT_STATUS.REJECTED &&
+                        apt.cancelReason && (
+                          <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-100">
+                            <p className="text-sm text-red-700">
+                              <span className="font-semibold">
+                                Lịch hẹn bị bác sĩ từ chối:
+                              </span>{" "}
+                              {apt.cancelReason}
+                            </p>
+                          </div>
+                        )}
                     </div>
                   </div>
 
@@ -291,6 +375,45 @@ const AppointmentsPage = ({ navigate }) => {
             </Button>
           </Card>
         )}
+
+        {/* Lịch sử khám bệnh (hoàn thành) */}
+        {pastAppointments.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Lịch sử khám bệnh
+            </h2>
+            <div className="space-y-3">
+              {pastAppointments.map((apt) => (
+                <Card key={`history-${apt.id}`} className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">
+                        {formatDate(apt.date)} · {apt.time}
+                      </p>
+                      <p className="font-semibold text-gray-900">
+                        {apt.doctorName}
+                      </p>
+                      <p className="text-sm text-gray-600">{apt.specialty}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                        Đã khám xong
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={apt.hasReview}
+                        onClick={() => openReviewModal(apt)}
+                      >
+                        {apt.hasReview ? "Đã đánh giá" : "Đánh giá bác sĩ"}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Cancel Modal */}
@@ -341,6 +464,83 @@ const AppointmentsPage = ({ navigate }) => {
                 className="flex-1"
               >
                 Xác nhận hủy
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && reviewAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full animate-scale-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Đánh giá bác sĩ
+              </h3>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-4">
+              Bạn đang đánh giá{" "}
+              <strong>{reviewAppointment?.doctorName}</strong> cho buổi khám{" "}
+              {formatDate(reviewAppointment?.date)} lúc{" "}
+              {reviewAppointment?.time}.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Điểm đánh giá (1 - 5)
+              </label>
+              <select
+                value={reviewRating}
+                onChange={(e) => setReviewRating(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n} sao
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nhận xét (tùy chọn)
+              </label>
+              <textarea
+                placeholder="Chia sẻ trải nghiệm khám bệnh của bạn..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows="4"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setShowReviewModal(false)}
+                className="flex-1"
+              >
+                Đóng
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSubmitReview}
+                loading={isSubmittingReview}
+                disabled={isSubmittingReview}
+                className="flex-1"
+              >
+                Gửi đánh giá
               </Button>
             </div>
           </Card>

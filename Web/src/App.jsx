@@ -18,18 +18,50 @@ import BookingPage from "./pages/BookingPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 
 import { PAGES } from "./utils/constants";
 import "./index.css";
 
 // Component chứa toàn bộ routes, sử dụng React Router
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, isAuthReady } = useAuth();
   const navigate = useNavigate();
 
   // Giữ API navigate(page) như cũ để không phải sửa các page
   const navigateTo = (page) => {
     navigate(page);
+  };
+
+  const RoleProtectedRoute = ({ roles, children }) => {
+    // Chờ khởi tạo Auth (đọc từ localStorage / sessionStorage) xong rồi mới quyết định redirect
+    if (!isAuthReady) {
+      return null;
+    }
+
+    if (!isAuthenticated) {
+      return <Navigate to={PAGES.WELCOME} replace />;
+    }
+
+    if (!roles || roles.length === 0) {
+      return children;
+    }
+
+    const normalizedRole =
+      (
+        user?.role ||
+        user?.userRole ||
+        user?.user_role ||
+        user?.roles?.[0] ||
+        "patient"
+      )?.toLowerCase() ?? "patient";
+
+    if (!roles.map((r) => r.toLowerCase()).includes(normalizedRole)) {
+      return <Navigate to={PAGES.HOME} replace />;
+    }
+
+    return children;
   };
 
   return (
@@ -100,6 +132,24 @@ const AppRoutes = () => {
           ) : (
             <Navigate to={PAGES.WELCOME} replace />
           )
+        }
+      />
+
+      {/* Role-based routes */}
+      <Route
+        path={PAGES.ADMIN_DASHBOARD}
+        element={
+          <RoleProtectedRoute roles={["admin"]}>
+            <AdminDashboardPage navigate={navigateTo} />
+          </RoleProtectedRoute>
+        }
+      />
+      <Route
+        path={PAGES.DOCTOR_DASHBOARD}
+        element={
+          <RoleProtectedRoute roles={["doctor"]}>
+            <DoctorDashboardPage navigate={navigateTo} />
+          </RoleProtectedRoute>
         }
       />
 

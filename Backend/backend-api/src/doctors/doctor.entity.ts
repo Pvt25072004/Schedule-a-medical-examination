@@ -1,6 +1,7 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Schedule } from 'src/schedules/entities/schedule.entity';
+import { Category } from 'src/categories/entities/category.entity';
 import {
   Entity,
   Column,
@@ -10,6 +11,8 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('doctors')
@@ -60,4 +63,8 @@ export class Doctor {
     inverseJoinColumn: { name: 'hospital_id', referencedColumnName: 'id' },
   })
   hospitals: Hospital[];
+
+  @ManyToOne(() => Category, { nullable: true })
+  @JoinColumn({ name: 'category_id' })
+  category: Category;
 }

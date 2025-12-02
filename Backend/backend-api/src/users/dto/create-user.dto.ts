@@ -58,4 +58,11 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   id_card_back_url?: string;
+
+  @IsEnum(['patient', 'doctor', 'admin'])
+  @IsOptional()
+  role?: string;
+
+  @IsOptional()
+  is_active?: boolean;
 }

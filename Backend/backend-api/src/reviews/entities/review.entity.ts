@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('reviews')
@@ -33,11 +34,14 @@ export class Review {
   created_at: Date;
 
   @ManyToOne(() => Appointment)
+  @JoinColumn({ name: 'appointment_id' })
   appointment?: Appointment | null;
 
   @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id' })
   user?: User | null;
 
   @ManyToOne(() => Doctor)
+  @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor | null;
 }

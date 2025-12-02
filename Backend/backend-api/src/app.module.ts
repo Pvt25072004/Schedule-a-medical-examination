@@ -11,6 +11,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SchedulesModule } from './schedules/schedules.module';
+import { CategoriesModule } from './categories/categories.module';
 import { AuthModule } from './auth/auth.module';
 import { FirebaseService } from './firebase/firebase.service';
 import { EmailService } from './email/email.service';
@@ -50,6 +51,7 @@ import { EmailModule } from './email/email.module';
     PaymentsModule,
     ReviewsModule,
     SchedulesModule,
+    CategoriesModule,
     AuthModule,
     EmailModule,
   ],

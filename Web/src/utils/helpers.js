@@ -50,6 +50,7 @@ export const getStatusColor = (status) => {
     confirmed: "green",
     completed: "blue",
     cancelled: "red",
+    rejected: "red",
   };
   return colors[status] || "gray";
 };
@@ -61,6 +62,7 @@ export const getStatusText = (status) => {
     confirmed: "Đã xác nhận",
     completed: "Hoàn thành",
     cancelled: "Đã hủy",
+    rejected: "Bị từ chối",
   };
   return texts[status] || status;
 };

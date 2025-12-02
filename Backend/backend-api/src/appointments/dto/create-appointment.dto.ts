@@ -39,13 +39,13 @@ export class CreateAppointmentDto {
   hospital_id: number;
 
   // --- SCHEDULE ID ---
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 20,
-    description: 'ID lịch làm việc của bác sĩ',
+    description: 'ID lịch làm việc của bác sĩ (tùy chọn)',
   })
   @IsInt()
-  @IsNotEmpty()
-  schedule_id: number;
+  @IsOptional()
+  schedule_id?: number;
 
   // --- DATE ---
   @ApiProperty({

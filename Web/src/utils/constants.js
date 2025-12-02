@@ -10,6 +10,8 @@ export const PAGES = {
   SETTINGS: "/settings",
   PROFILE: "/profile",
   YOUR_PAGE: "/your-page",
+  ADMIN_DASHBOARD: "/admin",
+  DOCTOR_DASHBOARD: "/doctor",
 };
 
 // Appointment Status
@@ -18,13 +20,14 @@ export const APPOINTMENT_STATUS = {
   CONFIRMED: "confirmed",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
+  REJECTED: "rejected",
 };
 
 // User Roles
 export const USER_ROLES = {
   PATIENT: "patient",
   DOCTOR: "doctor",
-  HOSPITAL: "hospital",
+  ADMIN: "admin",
 };
 
 // Cities (value + label để dễ dùng cho select)
