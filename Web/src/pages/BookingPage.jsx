@@ -1,71 +1,274 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, FileText, CheckCircle, Search, Star, Award, ArrowLeft, ArrowRight, MapPin, Home, Mail, Phone, Heart } from 'lucide-react';
 import { useAppointments } from '../contexts/AppointmentContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
-import { PAGES, DOCTORS, TIME_SLOTS, AREAS, HOSPITALS, SPECIALTIES } from '../utils/constants';
 import { formatDate, formatCurrency } from '../utils/helpers';
-
-// Dữ liệu giả lập người dùng đã xác thực (Autofill)
+import { PAGES } from '../utils/constants';
+const API_BASE_URL = 'http://localhost:8080';
+// Dữ liệu giả lập người dùng đã xác thực (Autofill) - Giữ mock cho user
 const MOCK_USER_DATA = {
     fullName: 'Lê Văn Khách',
     email: 'le.v.khach@gmail.com',
     phone: '0987654321',
+    // Giả sử có firebaseUid: 'user-firebase-uid-123'
 };
-
 const BookingPage = ({ navigate }) => {
-    const { addAppointment, isSlotAvailable } = useAppointments();
+    const { addAppointment } = useAppointments();
     const [step, setStep] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
-   
+
+    // --- STATE DỮ LIỆU ĐỘNG (Từ API MySQL) ---
+    const [areasData, setAreasData] = useState([]);
+    const [hospitalsData, setHospitalsData] = useState([]);
+    const [specialtiesData, setSpecialtiesData] = useState([]);
+    const [availableDoctorsData, setAvailableDoctorsData] = useState([]);
+
+    const [isLoading, setIsLoading] = useState(false);
     // Mở rộng formData để chứa tất cả 8 bước
     const [formData, setFormData] = useState({
-        // B1-B3: Lọc Địa lý
-        areaId: '',
-        hospitalId: '',
-        specialtyId: '',
-       
-        // B4-B5: Lọc Giờ & Bác sĩ
-        date: '',
-        time: '',
-        doctorId: '',
-       
-        // B6: Thông tin BN (Autofill)
+        areaId: '', hospitalId: '', specialtyId: '',
+        date: '', time: '', doctorId: '',
+    
+        // B6: Thông tin BN (Autofill) - Giữ mock, có thể update từ GET /users/me sau
         fullName: MOCK_USER_DATA.fullName,
         email: MOCK_USER_DATA.email,
         phone: MOCK_USER_DATA.phone,
-        type: '', // Lý do khám (mục type cũ)
+        type: '',
         notes: ''
     });
     const [errors, setErrors] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false); // Step 8: Hoàn tất
-    const selectedDoctor = DOCTORS.find(d => d.id === formData.doctorId);
-    const filteredHospitals = HOSPITALS.filter(h => h.areaId === formData.areaId);
-    const filteredSpecialties = SPECIALTIES.filter(s => s.hospitalId === formData.hospitalId);
-   
-    // Giả lập danh sách bác sĩ rảnh sau khi chọn giờ (từ Step 4) - lọc theo specialty
-    const availableDoctors = DOCTORS.filter(d => d.specialtyId === formData.specialtyId);
-
-    // Filtered doctors cho search ở Step 5
-    const filteredDoctors = availableDoctors.filter(doctor =>
-        doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase())
+    // Dữ liệu hỗ trợ từ API
+    const selectedDoctor = availableDoctorsData.find(d => d.id === formData.doctorId);
+    const filteredDoctors = availableDoctorsData.filter(doctor =>
+        doctor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doctor.specialty?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    const handleChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        setErrors(prev => ({ ...prev, [field]: '' }));
-        // Logic reset dữ liệu phụ thuộc
-        if (field === 'areaId') {
-            setFormData(prev => ({ ...prev, hospitalId: '', specialtyId: '', doctorId: '' }));
-        } else if (field === 'hospitalId') {
-            setFormData(prev => ({ ...prev, specialtyId: '', doctorId: '' }));
-        } else if (field === 'specialtyId') {
-             // Sau khi chọn chuyên khoa, reset giờ và bác sĩ nếu cần
-            setFormData(prev => ({ ...prev, date: '', time: '', doctorId: '' }));
+    // Function generate possible time slots (30 phút intervals từ 7:00 đến 17:30)
+    const generateTimeSlots = () => {
+        const slots = [];
+        for (let hour = 7; hour <= 17; hour++) {
+            for (let minute = 0; minute < 60; minute += 30) {
+                const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                slots.push({ time });
+            }
         }
+        return slots;
+    };
+    // Helper to format time for API (append :00)
+    const formatTimeForAPI = (time) => encodeURIComponent(time);
+    // --- LOGIC GỌI API THỰC TẾ (Từ MySQL) ---
+    // B1: Load Khu vực khi component mount
+    useEffect(() => {
+        const fetchAreas = async () => {
+            try {
+                // Gọi API GET /areas từ MySQL
+                const response = await fetch(`${API_BASE_URL}/areas`);
+                if (!response.ok) throw new Error('API error');
+                const data = await response.json();
+                setAreasData(data); // Đổ dữ liệu từ MySQL vào state
+            } catch (error) {
+                console.error("Lỗi tải Khu vực:", error);
+                setAreasData([]); // Không fallback mock, để trống nếu lỗi
+            }
+        };
+        fetchAreas();
+    }, []);
+    // B2: Load Bệnh viện khi areaId thay đổi
+    useEffect(() => {
+        if (formData.areaId) {
+            const fetchHospitals = async () => {
+                try {
+                    // Gọi API GET /hospitals?area_id=X từ MySQL
+                    const response = await fetch(`${API_BASE_URL}/hospitals?area_id=${formData.areaId}`);
+                    if (!response.ok) throw new Error('API error');
+                    const data = await response.json();
+                    setHospitalsData(data);
+                } catch (error) {
+                    console.error("Lỗi tải Bệnh viện:", error);
+                    setHospitalsData([]);
+                }
+            };
+            fetchHospitals();
+        } else {
+            setHospitalsData([]);
+        }
+    }, [formData.areaId]);
+
+    // B3: Load Chuyên khoa khi hospitalId thay đổi
+    useEffect(() => {
+        if (formData.hospitalId) {
+            const fetchSpecialties = async () => {
+                try {
+                    // Gọi API GET /specialties?hospital_id=Y từ MySQL
+                    const response = await fetch(`${API_BASE_URL}/specialties?hospital_id=${formData.hospitalId}`);
+                    if (!response.ok) throw new Error('API error');
+                    const data = await response.json();
+                    setSpecialtiesData(data);
+                } catch (error) {
+                    console.error("Lỗi tải Chuyên khoa:", error);
+                    setSpecialtiesData([]);
+                }
+            };
+            fetchSpecialties();
+        } else {
+            setSpecialtiesData([]);
+        }
+    }, [formData.hospitalId]);
+
+    // --- useEffect gọi API khi đủ dữ liệu ---
+    useEffect(() => {
+        if (formData.specialtyId && formData.date && formData.time) {
+            fetchAndLoadDoctors(formData.date, formData.time);
+        } else {
+            setAvailableDoctorsData([]); // Reset nếu thiếu dữ liệu
+        }
+    }, [formData.specialtyId, formData.date, formData.time]);
+
+    // --- B4-B5: Load bác sĩ rảnh theo chuyên khoa/Ngày/Giờ ---
+    const fetchAndLoadDoctors = async (date, time) => {
+        if (!formData.specialtyId || !date || !time) {
+            console.log('Skip fetch: missing params', { specialtyId: formData.specialtyId, date, time });
+            setAvailableDoctorsData([]);
+            return;
+        }
+
+        const encodedTime = encodeURIComponent(time);  // Sau fix encode
+        const apiUrl = `${API_BASE_URL}/schedules/available-doctors?specialtyId=${formData.specialtyId}&date=${date}&time=${encodedTime}`;
+        console.log('Calling schedules API:', apiUrl);
+        console.log('Params raw:', { specialtyId: formData.specialtyId, date, time });
+
+        try {
+            setIsLoading(true);
+
+            const scheduleResponse = await fetch(apiUrl);
+            console.log('Schedules response status:', scheduleResponse.status);
+            if (!scheduleResponse.ok) throw new Error(`Schedules API error: ${scheduleResponse.status}`);
+            const scheduleData = await scheduleResponse.json();
+            console.log('scheduleData raw:', scheduleData);  // Check: [{doctorId:1}] hay [{doctor_id:1}]? Empty?
+
+            if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
+                console.log('No schedules found');
+                setAvailableDoctorsData([]);
+                return;
+            }
+
+            // **FIX: scheduleData là array schedule IDs (e.g. [1]), cần fetch full schedules để lấy doctor_id**
+            const scheduleIds = scheduleData.join(',');  // e.g. '1' hoặc '1,2'
+            console.log('scheduleIds from API:', scheduleIds);
+
+            if (scheduleIds.length > 0) {
+                // 1. Gọi API để lấy full schedules theo IDs (giả sử endpoint /schedules?ids=... tồn tại và trả full objects)
+                const fullSchedulesUrl = `${API_BASE_URL}/schedules?ids=${scheduleIds}`;
+                console.log('Calling full schedules API:', fullSchedulesUrl);
+
+                const fullSchedulesResponse = await fetch(fullSchedulesUrl);
+                if (!fullSchedulesResponse.ok) throw new Error(`Full schedules API error: ${fullSchedulesResponse.status}`);
+                const fullSchedulesData = await fullSchedulesResponse.json();
+                console.log('fullSchedulesData raw:', fullSchedulesData);  // Nên là [{id:1, doctor_id: X, ...}]
+
+                if (!Array.isArray(fullSchedulesData) || fullSchedulesData.length === 0) {
+                    console.log('No full schedules data');
+                    setAvailableDoctorsData([]);
+                    return;
+                }
+
+                // 2. Extract unique doctor_ids từ full schedules
+                const doctorIdsRaw = Array.from(
+                    new Set(fullSchedulesData.map(schedule => schedule.doctor_id).filter(Boolean))
+                );
+                const doctorIds = doctorIdsRaw.join(',');
+                console.log('doctorIds extracted:', doctorIds);  // e.g. '1'
+
+                if (doctorIds.length > 0) {
+                    // 3. Gọi API doctors để lấy chi tiết
+                    const doctorsUrl = `${API_BASE_URL}/doctors/details?ids=${doctorIds}`;
+                    console.log('Calling doctors API:', doctorsUrl);
+
+                    const doctorsResponse = await fetch(doctorsUrl);
+                    console.log('Doctors response status:', doctorsResponse.status);
+                    if (!doctorsResponse.ok) throw new Error(`Doctors API error: ${doctorsResponse.status}`);
+                    const doctorsData = await doctorsResponse.json();
+                    console.log('doctorsData raw:', doctorsData);  // Array doctors hay empty? Structure?
+
+                    setAvailableDoctorsData(doctorsData || []);  // Fallback empty
+                } else {
+                    console.log('No doctorIds from schedules, setting empty');
+                    setAvailableDoctorsData([]);
+                }
+            } else {
+                console.log('No scheduleIds, setting empty');
+                setAvailableDoctorsData([]);
+            }
+        } catch (error) {
+            console.error("Lỗi tải Bác sĩ rảnh:", error);
+            setAvailableDoctorsData([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // --- handleChange chuẩn ---
+    const handleChange = (field, value) => {
+        setFormData(prev => {
+            const updated = { ...prev };
+
+            switch(field) {
+                case 'areaId':
+                    updated.areaId = value;
+                    updated.hospitalId = '';
+                    updated.specialtyId = '';
+                    updated.date = '';
+                    updated.time = '';
+                    updated.doctorId = '';
+                    setHospitalsData([]);
+                    setSpecialtiesData([]);
+                    setAvailableDoctorsData([]);
+                    break;
+
+                case 'hospitalId':
+                    updated.hospitalId = value;
+                    updated.specialtyId = '';
+                    updated.date = '';
+                    updated.time = '';
+                    updated.doctorId = '';
+                    setSpecialtiesData([]);
+                    setAvailableDoctorsData([]);
+                    break;
+
+                case 'specialtyId':
+                    updated.specialtyId = value;
+                    updated.date = '';
+                    updated.time = '';
+                    updated.doctorId = '';
+                    setAvailableDoctorsData([]);
+                    break;
+
+                case 'date':
+                    updated.date = value;
+                    updated.time = '';
+                    updated.doctorId = '';
+                    setAvailableDoctorsData([]);
+                    break;
+
+                case 'time':
+                    updated.time = value;
+                    updated.doctorId = '';
+                    break;
+
+                case 'doctorId':
+                    updated.doctorId = Number(value); // Ép kiểu number
+                    break;
+
+                default:
+                    updated[field] = value;
+            }
+
+            return updated;
+        });
+
+        setErrors(prev => ({ ...prev, [field]: '' }));
     };
 
     // Bảng định nghĩa 8 bước (cho UI)
@@ -79,53 +282,63 @@ const BookingPage = ({ navigate }) => {
         { number: 7, title: 'Thanh toán', icon: CheckCircle },
         { number: 8, title: 'Hoàn tất', icon: CheckCircle },
     ];
-
     const validateAndNext = () => {
         const newErrors = {};
         switch (step) {
             case 1: if (!formData.areaId) newErrors.areaId = 'Vui lòng chọn Tỉnh thành.'; break;
             case 2: if (!formData.hospitalId) newErrors.hospitalId = 'Vui lòng chọn Bệnh viện.'; break;
             case 3: if (!formData.specialtyId) newErrors.specialtyId = 'Vui lòng chọn Chuyên khoa.'; break;
-            case 4: if (!formData.date || !formData.time) newErrors.time = 'Vui lòng chọn Ngày và Giờ.'; break;
+            case 4:
+                if (!formData.date || !formData.time) {
+                    newErrors.time = 'Vui lòng chọn Ngày và Giờ.';
+                } else if (availableDoctorsData.length === 0 && !isLoading) {
+                    // Nếu đã chọn Giờ/Ngày, nhưng API Doctors trả về rỗng -> ngoài khung giờ hoặc hết slot
+                    newErrors.time = 'Không tìm thấy bác sĩ rảnh vào khung giờ này (có thể ngoài giờ làm hoặc hết slot). Chọn giờ khác.';
+                }
+                break;
             case 5: if (!formData.doctorId) newErrors.doctorId = 'Vui lòng chọn Bác sĩ.'; break;
             case 6: if (!formData.type || !formData.fullName) newErrors.type = 'Vui lòng điền Lý do khám.'; break;
-            case 7: // Bước thanh toán - gọi submit
-                handleSubmit();
-                return;
+            case 7: handleSubmit(); return;
             default: break;
         }
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
         }
-       
-        // Chuyển sang bước kế tiếp
         setStep(step + 1);
         window.scrollTo(0, 0);
     };
-
     const handleSubmit = async () => {
-        // BƯỚC 7: XỬ LÝ THANH TOÁN (Mô phỏng gọi API POST /appointments/initiate)
+        // BƯỚC 7: GỌI API THANH TOÁN THỰC TẾ (Giữ mock simulate, nhưng có thể POST real sau)
         setIsLoading(true);
-        setTimeout(() => {
-            // Sau khi backend trả về paymentUrl, ta mô phỏng thanh toán thành công
-            // Thông báo cho Backend (nếu cần) và chuyển sang hoàn tất.
-           
-            // Logik addAppointment cũ
-            const doctor = DOCTORS.find(d => d.id === formData.doctorId);
-            addAppointment({ ...formData, doctorName: doctor.name, specialty: doctor.specialty });
+        try {
+            // THỰC TẾ: Gửi formData full lên POST /appointments từ MySQL
+            // Backend sẽ: insert appointment, update count patients cho schedule (trừ 1 remaining)
+            const appointmentData = { ...formData, doctorName: selectedDoctor?.name, specialty: selectedDoctor?.specialty };
+            // const response = await fetch(`${API_BASE_URL}/appointments`, {
+            //     method: 'POST',
+            //     body: JSON.stringify(appointmentData),
+            //     headers: { 'Content-Type': 'application/json' }
+            // });
+            // if (!response.ok) throw new Error('Submit error');
+        
+            addAppointment(appointmentData); // Từ context (simulate)
+        } catch (error) {
+            console.error('Lỗi submit:', error);
+            // Handle error UI nếu cần (ví dụ: hết slot -> conflict)
+        } finally {
             setIsLoading(false);
-            setStep(8); // Chuyển sang BƯỚC 8: Hoàn tất
-        }, 1500);
+            setStep(8);
+        }
     };
-   
+
     const getMinDate = () => {
         const today = new Date();
         return today.toISOString().split('T')[0];
     };
-
     // Nếu đã hoàn tất (Step 8), hiển thị Success Modal
     if (step === 8) {
+        const selectedHospital = hospitalsData.find(h => h.id === formData.hospitalId);
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <Card className="max-w-md w-full text-center animate-scale-in">
@@ -134,9 +347,9 @@ const BookingPage = ({ navigate }) => {
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 mb-3">Đặt lịch thành công!</h2>
                     <p className="text-gray-600 mb-6">
-                        Lịch hẹn của bạn đã được xác nhận và thanh toán (Mô phỏng).
+                        Lịch hẹn của bạn đã được xác nhận và thanh toán (Mô phỏng). Số slot còn lại đã được cập nhật.
                     </p>
-                   
+                
                     <div className="bg-blue-50 rounded-xl p-4 mb-6 text-left">
                         <div className="space-y-3 text-sm">
                             <div className="flex items-center gap-2">
@@ -153,11 +366,11 @@ const BookingPage = ({ navigate }) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-blue-600" />
-                                <span>{HOSPITALS.find(h => h.id === formData.hospitalId)?.name || 'Bệnh viện'}</span>
+                                <span>{selectedHospital?.name || 'Bệnh viện'}</span>
                             </div>
                         </div>
                     </div>
-       
+    
                     <Button variant="primary" size="lg" fullWidth onClick={() => navigate(PAGES.APPOINTMENTS)}>
                         Xem lịch hẹn
                     </Button>
@@ -165,7 +378,7 @@ const BookingPage = ({ navigate }) => {
             </div>
         );
     }
-   
+
     // Giao diện chính (Steps 1-7)
     return (
         <div className="min-h-screen bg-gray-50">
@@ -180,13 +393,12 @@ const BookingPage = ({ navigate }) => {
                             <ArrowLeft className="w-5 h-5" />
                             <span>{step > 1 ? 'Quay lại' : 'Trang chủ'}</span>
                         </button>
-                        
+                    
                         <h1 className="text-xl font-bold text-gray-900">Đặt lịch khám</h1>
                         <div className="w-20"></div>
                     </div>
                 </div>
             </header>
-
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Progress Steps */}
                 <Card className="mb-8">
@@ -220,30 +432,28 @@ const BookingPage = ({ navigate }) => {
                         ))}
                     </div>
                 </Card>
-
-                {/* --- START: 8 BƯỚC UI RIÊNG BIỆT --- */}
-                {/* Step 1: Chọn Khu vực (API: GET /areas) */}
+                {/* Step 1: Chọn Khu vực (Từ API) */}
                 {step === 1 && (
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">1. Chọn Khu vực</h2>
-                            <select 
-                                value={formData.areaId} 
-                                onChange={(e) => handleChange('areaId', e.target.value)} 
+                            <select
+                                value={formData.areaId}
+                                onChange={(e) => handleChange('areaId', e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={areasData.length === 0}
                             >
                                 <option value="">-- Chọn Tỉnh thành --</option>
-                                {AREAS.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                {areasData.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                             {errors.areaId && <p className="text-red-600 mt-2">{errors.areaId}</p>}
                         </Card>
-
                         <Button
                             variant="primary"
                             size="lg"
                             fullWidth
                             onClick={validateAndNext}
-                            disabled={!formData.areaId}
+                            disabled={!formData.areaId || areasData.length === 0}
                             icon={ArrowRight}
                             iconPosition="right"
                         >
@@ -251,24 +461,22 @@ const BookingPage = ({ navigate }) => {
                         </Button>
                     </div>
                 )}
-
-                {/* Step 2: Chọn Bệnh viện (API: GET /hospitals?areaId=X) */}
+                {/* Step 2: Chọn Bệnh viện (Từ API) */}
                 {step === 2 && (
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">2. Chọn Bệnh viện</h2>
-                            <select 
-                                value={formData.hospitalId} 
-                                onChange={(e) => handleChange('hospitalId', e.target.value)} 
-                                disabled={!formData.areaId} 
+                            <select
+                                value={formData.hospitalId}
+                                onChange={(e) => handleChange('hospitalId', e.target.value)}
+                                disabled={!formData.areaId || hospitalsData.length === 0}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                             >
                                 <option value="">-- Chọn Bệnh viện --</option>
-                                {filteredHospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                {hospitalsData.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
                             </select>
                             {errors.hospitalId && <p className="text-red-600 mt-2">{errors.hospitalId}</p>}
                         </Card>
-
                         <div className="flex gap-4">
                             <Button
                                 variant="outline"
@@ -293,24 +501,23 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-               
-                {/* Step 3: Chọn Chuyên khoa (API: GET /specialties?hospitalId=Y) */}
+            
+                {/* Step 3: Chọn Chuyên khoa (Từ API) */}
                 {step === 3 && (
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">3. Chọn Chuyên khoa</h2>
-                            <select 
-                                value={formData.specialtyId} 
-                                onChange={(e) => handleChange('specialtyId', e.target.value)} 
-                                disabled={!formData.hospitalId} 
+                            <select
+                                value={formData.specialtyId}
+                                onChange={(e) => handleChange('specialtyId', e.target.value)}
+                                disabled={!formData.hospitalId || specialtiesData.length === 0}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                             >
                                 <option value="">-- Chọn Chuyên khoa --</option>
-                                {filteredSpecialties.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                {specialtiesData.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                             {errors.specialtyId && <p className="text-red-600 mt-2">{errors.specialtyId}</p>}
                         </Card>
-
                         <div className="flex gap-4">
                             <Button
                                 variant="outline"
@@ -335,66 +542,55 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-
-                {/* Step 4: Chọn Ngày/Giờ (API: GET /schedules/available-doctors) */}
+                {/* Step 4: Chọn Ngày/Giờ (Tất cả slots generated đều selectable, không check availability trước) */}
                 {step === 4 && (
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">4. Chọn Ngày và Giờ</h2>
                             {/* Date Selection */}
                             <div className="mb-6">
-                                <Input 
-                                    type="date" 
-                                    label="Chọn ngày khám" 
-                                    value={formData.date} 
-                                    onChange={(e) => handleChange('date', e.target.value)} 
-                                    min={getMinDate()} 
-                                    error={errors.date} 
-                                    icon={Calendar} 
-                                    required 
+                                <Input
+                                    type="date"
+                                    label="Chọn ngày khám"
+                                    value={formData.date}
+                                    onChange={(e) => handleChange('date', e.target.value)}
+                                    min={getMinDate()}
+                                    error={errors.date}
+                                    icon={Calendar}
+                                    required
                                     helperText="Chọn ngày bạn muốn đến khám"
                                 />
                             </div>
-
-                            {/* Time Slots UI */}
+                            {/* Time Slots UI (Generated 30min slots, tất cả selectable - filter doctors sau) */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Chọn khung giờ <span className="text-red-500">*</span>
-                                </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                                Chọn khung giờ <span className="text-red-500">*</span>
+                            </label>
+                            
+                            {!formData.date ? (
+                                <p className="text-gray-500 text-sm">Vui lòng chọn ngày trước để xem khung giờ.</p>
+                            ) : (
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                    {TIME_SLOTS.map((slot) => {
-                                        const available = formData.date ? isSlotAvailable(formData.doctorId || 'default', formData.date, slot.time) : true;
-                                        return (
-                                            <button
-                                                key={slot.time}
-                                                onClick={() => available && handleChange('time', slot.time)}
-                                                disabled={!available}
-                                                className={`py-3 px-4 rounded-lg border-2 transition-all font-medium text-sm ${
-                                                    formData.time === slot.time
-                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
-                                                        : available
-                                                        ? 'border-gray-200 hover:border-blue-500 hover:shadow-md'
-                                                        : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
-                                                }`}
-                                            >
-                                                <Clock className="w-4 h-4 inline mr-1" />
-                                                {slot.time}
-                                                {slot.popular && available && (
-                                                    <span className="block text-xs mt-1 text-orange-500">Phổ biến</span>
-                                                )}
-                                                {!available && (
-                                                    <span className="block text-xs mt-1">Đã đầy</span>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
+                                    {generateTimeSlots().map((slot) => (
+                                        <button
+                                            key={slot.time}
+                                            onClick={() => handleChange('time', slot.time)}
+                                            disabled={isLoading}
+                                            className={`py-3 px-4 rounded-lg border-2 transition-all font-medium text-sm ${
+                                                formData.time === slot.time
+                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                                                    : 'border-gray-200 hover:border-blue-500 hover:shadow-md'
+                                            }`}
+                                        >
+                                            <Clock className="w-4 h-4 inline mr-1" /> {slot.time}
+                                        </button>
+                                    ))}
                                 </div>
-                                {errors.time && (
-                                    <p className="text-red-600 text-sm mt-2">{errors.time}</p>
-                                )}
-                            </div>
+                            )}
+                            
+                            {errors.time && (<p className="text-red-600 text-sm mt-2">{errors.time}</p>)}
+                        </div>
                         </Card>
-
                         <div className="flex gap-4">
                             <Button
                                 variant="outline"
@@ -409,7 +605,7 @@ const BookingPage = ({ navigate }) => {
                                 variant="primary"
                                 size="lg"
                                 onClick={validateAndNext}
-                                disabled={!formData.date || !formData.time}
+                                disabled={!formData.date || !formData.time || isLoading}
                                 icon={ArrowRight}
                                 iconPosition="right"
                                 className="flex-1"
@@ -419,13 +615,12 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-
-                {/* Step 5: Chọn Bác sĩ (API: GET /doctors/details?ids=...) */}
+                {/* Step 5: Chọn Bác sĩ (Từ API, đã filter theo schedule: khung giờ + remaining patients > 0) */}
                 {step === 5 && (
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">5. Chọn Bác sĩ</h2>
-                            
+                        
                             {/* Search */}
                             <div className="mb-6">
                                 <div className="relative">
@@ -439,62 +634,69 @@ const BookingPage = ({ navigate }) => {
                                     />
                                 </div>
                             </div>
-
-                            {/* Doctors List */}
+                            {/* Doctors List (Từ availableDoctorsData - đã filter theo khung giờ và max_patients) */}
                             <div className="grid md:grid-cols-2 gap-4">
-                                {filteredDoctors.map((doctor) => (
-                                    <Card
-                                        key={doctor.id}
-                                        hover
-                                        onClick={() => handleChange('doctorId', doctor.id)}
-                                        className={`cursor-pointer border-2 transition-all ${
-                                            formData.doctorId === doctor.id
-                                                ? 'border-blue-500 bg-blue-50 shadow-lg'
-                                                : 'border-gray-200'
-                                        }`}
-                                    >
-                                        <div className="flex gap-4">
-                                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 shadow-lg">
-                                                {doctor.avatar}
-                                            </div>
+                                {isLoading ? (
+                                    <p className="text-blue-600 col-span-full text-center py-8">Đang tải danh sách bác sĩ rảnh...</p>
+                                ) : filteredDoctors.length === 0 ? (
+                                    <p className="text-gray-500 col-span-full text-center py-8">
+                                        {searchQuery ? 'Không tìm thấy bác sĩ phù hợp.' : 'Không tìm thấy bác sĩ nào rảnh vào khung giờ này (ngoài giờ làm hoặc hết slot).'}
+                                    </p>
+                                ) : (
+                                    filteredDoctors.map((doctor) => (
+                                        <Card
+                                            key={doctor.id}
+                                            hover
+                                            onClick={() => handleChange('doctorId', Number(doctor.id))}
+                                            className={`cursor-pointer border-2 transition-all ${
+                                                formData.doctorId === Number(doctor.id)
+                                                    ? 'border-blue-500 bg-blue-50 shadow-lg'
+                                                    : 'border-gray-200'
+                                            }`}
+                                        >
+                                            <div className="flex gap-4">
+                                                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 shadow-lg">
+                                                    {doctor.avatar || '👨‍⚕️'}
+                                                </div>
                                             
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-bold text-lg text-gray-900 mb-1">{doctor.name}</h3>
-                                                <p className="text-blue-600 font-medium text-sm mb-2">{doctor.specialty}</p>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-bold text-lg text-gray-900 mb-1">{doctor.name}</h3>
+                                                    <p className="text-blue-600 font-medium text-sm mb-2">{doctor.specialty}</p>
                                                 
-                                                <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                                                    <span className="flex items-center gap-1">
-                                                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                                        {doctor.rating}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Award className="w-4 h-4" />
-                                                        {doctor.experience} năm
-                                                    </span>
-                                                </div>
-                                                
-                                                <p className="text-sm font-medium text-gray-900">
-                                                    {formatCurrency(doctor.consultationFee)}
-                                                </p>
-                                            </div>
-
-                                            {formData.doctorId === doctor.id && (
-                                                <div className="flex-shrink-0">
-                                                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                                                        <CheckCircle className="w-5 h-5 text-white" />
+                                                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                                                        <span className="flex items-center gap-1">
+                                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                            {doctor.rating || 4.5}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Award className="w-4 h-4" />
+                                                            {doctor.experience || 10} năm
+                                                        </span>
                                                     </div>
+                                                    {/* Có thể hiển thị remaining slots nếu API trả về */}
+                                                    {doctor.remainingPatients !== undefined && (
+                                                        <p className="text-xs text-gray-500">Còn {doctor.remainingPatients} slot</p>
+                                                    )}
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {formatCurrency(doctor.consultationFee || 0)}
+                                                    </p>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </Card>
-                                ))}
+                                                {formData.doctorId === doctor.id && (
+                                                    <div className="flex-shrink-0">
+                                                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                                            <CheckCircle className="w-5 h-5 text-white" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </Card>
+                                    ))
+                                )}
                             </div>
-
                             {errors.doctorId && (
                                 <p className="text-red-600 text-sm mt-4">{errors.doctorId}</p>
                             )}
                         </Card>
-
                         <div className="flex gap-4">
                             <Button
                                 variant="outline"
@@ -509,7 +711,7 @@ const BookingPage = ({ navigate }) => {
                                 variant="primary"
                                 size="lg"
                                 onClick={validateAndNext}
-                                disabled={!formData.doctorId}
+                                disabled={!formData.doctorId || availableDoctorsData.length === 0 || isLoading}
                                 icon={ArrowRight}
                                 iconPosition="right"
                                 className="flex-1"
@@ -519,47 +721,47 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-               
-                {/* Step 6: Điền Thông tin Bệnh nhân (API: GET /users/me) */}
+            
+                {/* Step 6: Điền Thông tin Bệnh nhân (Mock) */}
                 {step === 6 && (
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">6. Thông tin Bệnh nhân</h2>
                             <p className="text-sm text-gray-600 mb-4">Thông tin được tự động điền từ hồ sơ cá nhân của bạn.</p>
                             {/* Autofill Fields */}
-                            <Input 
-                                label="Họ và Tên" 
-                                value={formData.fullName} 
-                                onChange={(e) => handleChange('fullName', e.target.value)} 
-                                error={errors.fullName} 
-                                icon={User} 
-                                required 
+                            <Input
+                                label="Họ và Tên"
+                                value={formData.fullName}
+                                onChange={(e) => handleChange('fullName', e.target.value)}
+                                error={errors.fullName}
+                                icon={User}
+                                required
                             />
-                            <Input 
-                                type="email" 
-                                label="Email" 
-                                value={formData.email} 
-                                disabled 
-                                icon={Mail} 
+                            <Input
+                                type="email"
+                                label="Email"
+                                value={formData.email}
+                                disabled
+                                icon={Mail}
                             />
-                            <Input 
-                                label="Số điện thoại" 
-                                value={formData.phone} 
-                                onChange={(e) => handleChange('phone', e.target.value)} 
-                                icon={Phone} 
-                                required 
+                            <Input
+                                label="Số điện thoại"
+                                value={formData.phone}
+                                onChange={(e) => handleChange('phone', e.target.value)}
+                                icon={Phone}
+                                required
                             />
                             {/* Required reason for consultation */}
-                            <Input 
-                                label="Lý do khám bệnh" 
-                                placeholder="Ví dụ: Khám tổng quát, đau đầu..." 
-                                value={formData.type} 
-                                onChange={(e) => handleChange('type', e.target.value)} 
-                                error={errors.type} 
-                                icon={FileText} 
-                                required 
+                            <Input
+                                label="Lý do khám bệnh"
+                                placeholder="Ví dụ: Khám tổng quát, đau đầu..."
+                                value={formData.type}
+                                onChange={(e) => handleChange('type', e.target.value)}
+                                error={errors.type}
+                                icon={FileText}
+                                required
                             />
-                           
+                        
                             {/* Optional notes */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -574,7 +776,6 @@ const BookingPage = ({ navigate }) => {
                                 />
                             </div>
                         </Card>
-
                         <div className="flex gap-4">
                             <Button
                                 variant="outline"
@@ -599,20 +800,18 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-
-                {/* Step 7: Xác nhận & Thanh toán (API: POST /appointments/initiate) */}
+                {/* Step 7: Xác nhận & Thanh toán */}
                 {step === 7 && (
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">7. Xác nhận & Thanh toán</h2>
-
                             {/* Summary */}
                             <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl mb-6">
                                 <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                                     <CheckCircle className="w-5 h-5 text-blue-600" />
                                     Tóm tắt đặt lịch
                                 </h3>
-                                
+                            
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
                                         <User className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -622,7 +821,6 @@ const BookingPage = ({ navigate }) => {
                                             <p className="text-sm text-blue-600">{selectedDoctor?.specialty}</p>
                                         </div>
                                     </div>
-
                                     <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
                                         <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
                                         <div>
@@ -630,7 +828,6 @@ const BookingPage = ({ navigate }) => {
                                             <p className="font-semibold text-gray-900">{formatDate(formData.date)}</p>
                                         </div>
                                     </div>
-
                                     <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
                                         <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
                                         <div>
@@ -638,15 +835,13 @@ const BookingPage = ({ navigate }) => {
                                             <p className="font-semibold text-gray-900">{formData.time}</p>
                                         </div>
                                     </div>
-
                                     <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
                                         <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
                                         <div>
                                             <p className="text-sm text-gray-600">Địa điểm</p>
-                                            <p className="font-semibold text-gray-900">{HOSPITALS.find(h => h.id === formData.hospitalId)?.name || 'Bệnh viện'}</p>
+                                            <p className="font-semibold text-gray-900">{hospitalsData.find(h => h.id === formData.hospitalId)?.name || 'Bệnh viện'}</p>
                                         </div>
                                     </div>
-
                                     <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
                                         <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
                                         <div>
@@ -656,21 +851,18 @@ const BookingPage = ({ navigate }) => {
                                     </div>
                                 </div>
                             </div>
-
                             {/* Payment Info */}
                             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
                                 <p className="text-sm text-yellow-800">
                                     <strong>Phí khám:</strong> {formatCurrency(selectedDoctor?.consultationFee || 0)} (Thanh toán trực tuyến an toàn)
                                 </p>
                             </div>
-
                             <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                 <p className="text-sm text-gray-700">
                                     <strong>Lưu ý:</strong> Vui lòng đến trước giờ hẹn 15 phút. Mang theo CMND/CCCD và sổ khám bệnh (nếu có).
                                 </p>
                             </div>
                         </Card>
-
                         <div className="flex gap-4">
                             <Button
                                 variant="outline"
@@ -696,10 +888,8 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-                {/* --- END: 8 BƯỚC UI RIÊNG BIỆT --- */}
             </main>
         </div>
     );
 };
-
 export default BookingPage;

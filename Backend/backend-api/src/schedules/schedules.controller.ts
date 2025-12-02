@@ -11,7 +11,6 @@ import {
 import { SchedulesService } from './schedules.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
-import { time } from 'console';
 
 @Controller('schedules')
 export class SchedulesController {

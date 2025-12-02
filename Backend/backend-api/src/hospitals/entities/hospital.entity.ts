@@ -58,6 +58,5 @@ export class Hospital {
   area: Area;
 
   @ManyToMany(() => Specialty, (specialty) => specialty.hospitals)
-  @JoinTable({ name: 'hospital_specialties' })
   specialties: Specialty[];
 }

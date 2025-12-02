@@ -34,7 +34,7 @@ const AppContent = () => {
   const renderPage = () => {
     switch (currentPage) {
       case PAGES.WELCOME:
-        return <WelcomePage navigate={navigate} />;
+        return <BookingPage navigate={navigate} />;
       case PAGES.LOGIN:
         return <LoginPage navigate={navigate} />;
       case PAGES.REGISTER:
@@ -52,7 +52,7 @@ const AppContent = () => {
       case PAGES.SETTINGS:
         return <SettingsPage navigate={navigate} />;
       default:
-        return <WelcomePage navigate={navigate} />;
+        return <BookingPage navigate={navigate} />;
     }
   };
 
