@@ -16,6 +16,7 @@ export class Specialty {
   // Mối quan hệ: Một Chuyên khoa có nhiều Bệnh viện
   @ManyToMany(() => Hospital, (hospital) => hospital.specialties)
   @JoinTable({
+    name: 'specialty_hospital',
     joinColumn: {
       name: 'specialty_id',
       referencedColumnName: 'id',

@@ -6,6 +6,7 @@ import { Appointment } from './entities/appointment.entity';
 import { SchedulesModule } from '../schedules/schedules.module';
 import { PaymentsModule } from '../payments/payments.module';
 
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Appointment]),

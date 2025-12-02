@@ -36,7 +36,10 @@ const BookingPage = ({ navigate }) => {
         email: MOCK_USER_DATA.email,
         phone: MOCK_USER_DATA.phone,
         type: '',
-        notes: ''
+        notes: '',
+        examinationType: 'offline', // Mặc định offline, sẽ map sang examination_type enum
+        userId: '1',  // Giả sử userId=1 cho user đã auth (cần lấy từ AuthContext sau)
+        scheduleId: '' // Để lưu scheduleId tương ứng với doctor/date/time đã chọn
     });
     const [errors, setErrors] = useState({});
     // Dữ liệu hỗ trợ từ API
@@ -134,7 +137,7 @@ const BookingPage = ({ navigate }) => {
             return;
         }
 
-        const encodedTime = encodeURIComponent(time);  // Sau fix encode
+        const encodedTime = formatTimeForAPI(time);  // Sử dụng helper đã fix
         const apiUrl = `${API_BASE_URL}/schedules/available-doctors?specialtyId=${formData.specialtyId}&date=${date}&time=${encodedTime}`;
         console.log('Calling schedules API:', apiUrl);
         console.log('Params raw:', { specialtyId: formData.specialtyId, date, time });
@@ -146,7 +149,7 @@ const BookingPage = ({ navigate }) => {
             console.log('Schedules response status:', scheduleResponse.status);
             if (!scheduleResponse.ok) throw new Error(`Schedules API error: ${scheduleResponse.status}`);
             const scheduleData = await scheduleResponse.json();
-            console.log('scheduleData raw:', scheduleData);  // Check: [{doctorId:1}] hay [{doctor_id:1}]? Empty?
+            console.log('scheduleData raw:', scheduleData);  // Check: [1] hay [{id:1}]? Empty?
 
             if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
                 console.log('No schedules found');
@@ -174,7 +177,7 @@ const BookingPage = ({ navigate }) => {
                     return;
                 }
 
-                // 2. Extract unique doctor_ids từ full schedules
+                // 2. Extract unique doctor_ids từ full schedules + enrich doctors với schedule info nếu cần
                 const doctorIdsRaw = Array.from(
                     new Set(fullSchedulesData.map(schedule => schedule.doctor_id).filter(Boolean))
                 );
@@ -189,8 +192,23 @@ const BookingPage = ({ navigate }) => {
                     const doctorsResponse = await fetch(doctorsUrl);
                     console.log('Doctors response status:', doctorsResponse.status);
                     if (!doctorsResponse.ok) throw new Error(`Doctors API error: ${doctorsResponse.status}`);
-                    const doctorsData = await doctorsResponse.json();
+                    let doctorsData = await doctorsResponse.json();
                     console.log('doctorsData raw:', doctorsData);  // Array doctors hay empty? Structure?
+
+                    // **ENRICH: Thêm remainingPatients và scheduleId cho mỗi doctor (dựa trên fullSchedulesData)**
+                    doctorsData = doctorsData.map(doctor => {
+                        // Tìm schedule tương ứng với doctor_id này
+                        const matchingSchedule = fullSchedulesData.find(s => s.doctor_id === doctor.id);
+                        if (matchingSchedule) {
+                            const bookedCount = fullSchedulesData.filter(s => s.doctor_id === doctor.id).length; // Hoặc gọi count nếu cần chính xác
+                            return {
+                                ...doctor,
+                                remainingPatients: matchingSchedule.max_patients - bookedCount, // Tính remaining
+                                scheduleId: matchingSchedule.id  // Lưu scheduleId cho doctor này
+                            };
+                        }
+                        return doctor;
+                    });
 
                     setAvailableDoctorsData(doctorsData || []);  // Fallback empty
                 } else {
@@ -222,6 +240,7 @@ const BookingPage = ({ navigate }) => {
                     updated.date = '';
                     updated.time = '';
                     updated.doctorId = '';
+                    updated.scheduleId = '';
                     setHospitalsData([]);
                     setSpecialtiesData([]);
                     setAvailableDoctorsData([]);
@@ -233,6 +252,7 @@ const BookingPage = ({ navigate }) => {
                     updated.date = '';
                     updated.time = '';
                     updated.doctorId = '';
+                    updated.scheduleId = '';
                     setSpecialtiesData([]);
                     setAvailableDoctorsData([]);
                     break;
@@ -242,6 +262,7 @@ const BookingPage = ({ navigate }) => {
                     updated.date = '';
                     updated.time = '';
                     updated.doctorId = '';
+                    updated.scheduleId = '';
                     setAvailableDoctorsData([]);
                     break;
 
@@ -249,16 +270,26 @@ const BookingPage = ({ navigate }) => {
                     updated.date = value;
                     updated.time = '';
                     updated.doctorId = '';
+                    updated.scheduleId = '';
                     setAvailableDoctorsData([]);
                     break;
 
                 case 'time':
                     updated.time = value;
                     updated.doctorId = '';
+                    updated.scheduleId = '';
                     break;
 
                 case 'doctorId':
-                    updated.doctorId = Number(value); // Ép kiểu number
+                    // **FIX: Khi chọn doctor, lấy scheduleId từ data enriched**
+                    const selectedDoc = availableDoctorsData.find(d => d.id === Number(value));
+                    updated.doctorId = Number(value);
+                    updated.scheduleId = selectedDoc?.scheduleId || ''; // Set scheduleId tương ứng
+                    console.log('Selected doctorId:', updated.doctorId, 'scheduleId:', updated.scheduleId);
+                    break;
+
+                case 'examinationType':
+                    updated.examinationType = value; // 'online' hoặc 'offline'
                     break;
 
                 default:
@@ -309,26 +340,45 @@ const BookingPage = ({ navigate }) => {
         window.scrollTo(0, 0);
     };
     const handleSubmit = async () => {
-        // BƯỚC 7: GỌI API THANH TOÁN THỰC TẾ (Giữ mock simulate, nhưng có thể POST real sau)
         setIsLoading(true);
         try {
-            // THỰC TẾ: Gửi formData full lên POST /appointments từ MySQL
-            // Backend sẽ: insert appointment, update count patients cho schedule (trừ 1 remaining)
-            const appointmentData = { ...formData, doctorName: selectedDoctor?.name, specialty: selectedDoctor?.specialty };
-            // const response = await fetch(`${API_BASE_URL}/appointments`, {
-            //     method: 'POST',
-            //     body: JSON.stringify(appointmentData),
-            //     headers: { 'Content-Type': 'application/json' }
-            // });
-            // if (!response.ok) throw new Error('Submit error');
-        
-            addAppointment(appointmentData); // Từ context (simulate)
+            if (!formData.userId || !formData.scheduleId) {
+                throw new Error('Chưa có userId hoặc scheduleId');
+            }
+
+            // **FIX: Map đúng DTO fields**
+            const appointmentData = {
+                user_id: Number(formData.userId),          // phải là số nguyên
+                doctor_id: Number(formData.doctorId),
+                hospital_id: Number(formData.hospitalId),
+                schedule_id: Number(formData.scheduleId),  // đã set từ doctor selection
+                appointment_date: formData.date,           // 'YYYY-MM-DD'
+                appointment_time: formData.time,           // 'HH:mm'
+                examination_type: formData.examinationType, // 'online' hoặc 'offline' từ step 6
+                symptoms: formData.notes || formData.type, // Map notes hoặc type sang symptoms (mô tả triệu chứng)
+            };
+
+            console.log('Submitting appointmentData:', appointmentData); // Debug
+
+            const response = await fetch(`${API_BASE_URL}/appointments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appointmentData),
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Submit error');
+            }
+
+            const result = await response.json();
+            addAppointment(result);
+            setStep(8);
         } catch (error) {
             console.error('Lỗi submit:', error);
-            // Handle error UI nếu cần (ví dụ: hết slot -> conflict)
+            setErrors({ submit: error.message });
         } finally {
             setIsLoading(false);
-            setStep(8);
         }
     };
 
@@ -647,9 +697,9 @@ const BookingPage = ({ navigate }) => {
                                         <Card
                                             key={doctor.id}
                                             hover
-                                            onClick={() => handleChange('doctorId', Number(doctor.id))}
+                                            onClick={() => handleChange('doctorId', doctor.id)}
                                             className={`cursor-pointer border-2 transition-all ${
-                                                formData.doctorId === Number(doctor.id)
+                                                formData.doctorId === doctor.id
                                                     ? 'border-blue-500 bg-blue-50 shadow-lg'
                                                     : 'border-gray-200'
                                             }`}
@@ -673,9 +723,9 @@ const BookingPage = ({ navigate }) => {
                                                             {doctor.experience || 10} năm
                                                         </span>
                                                     </div>
-                                                    {/* Có thể hiển thị remaining slots nếu API trả về */}
-                                                    {doctor.remainingPatients !== undefined && (
-                                                        <p className="text-xs text-gray-500">Còn {doctor.remainingPatients} slot</p>
+                                                    {/* Hiển thị remaining slots từ enriched data */}
+                                                    {doctor.remainingPatients !== undefined && doctor.remainingPatients > 0 && (
+                                                        <p className="text-xs text-green-600">Còn {doctor.remainingPatients} slot</p>
                                                     )}
                                                     <p className="text-sm font-medium text-gray-900">
                                                         {formatCurrency(doctor.consultationFee || 0)}
@@ -761,8 +811,35 @@ const BookingPage = ({ navigate }) => {
                                 icon={FileText}
                                 required
                             />
-                        
-                            {/* Optional notes */}
+                            {/* **NEW: Chọn loại khám (online/offline) - map sang examination_type */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Loại hình khám <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            value="offline"
+                                            checked={formData.examinationType === 'offline'}
+                                            onChange={(e) => handleChange('examinationType', e.target.value)}
+                                            className="rounded"
+                                        />
+                                        <span className="text-sm">Khám trực tiếp</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            value="online"
+                                            checked={formData.examinationType === 'online'}
+                                            onChange={(e) => handleChange('examinationType', e.target.value)}
+                                            className="rounded"
+                                        />
+                                        <span className="text-sm">Khám online</span>
+                                    </label>
+                                </div>
+                            </div>
+                            {/* Optional notes - map sang symptoms */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Ghi chú thêm (tùy chọn)
@@ -849,6 +926,13 @@ const BookingPage = ({ navigate }) => {
                                             <p className="font-semibold text-gray-900">{formData.type}</p>
                                         </div>
                                     </div>
+                                    <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
+                                        <Heart className="w-5 h-5 text-blue-600 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm text-gray-600">Loại hình</p>
+                                            <p className="font-semibold text-gray-900 capitalize">{formData.examinationType}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             {/* Payment Info */}
@@ -862,6 +946,7 @@ const BookingPage = ({ navigate }) => {
                                     <strong>Lưu ý:</strong> Vui lòng đến trước giờ hẹn 15 phút. Mang theo CMND/CCCD và sổ khám bệnh (nếu có).
                                 </p>
                             </div>
+                            {errors.submit && <p className="text-red-600 text-sm mt-4">{errors.submit}</p>}
                         </Card>
                         <div className="flex gap-4">
                             <Button
