@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Card from '../components/common/Card';
-import { PAGES } from '../utils/constants';
-import { validateEmail } from '../utils/helpers';
+import React, { useState } from "react";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import Button from "../components/common/Button";
+import Input from "../components/common/Input";
+import Card from "../components/common/Card";
+import { PAGES } from "../utils/constants";
+import { validateEmail } from "../utils/helpers";
 
 const LoginPage = ({ navigate }) => {
   const { login } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -21,50 +29,54 @@ const LoginPage = ({ navigate }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const validate = () => {
     const newErrors = {};
-    
+
     if (!formData.email) {
-      newErrors.email = 'Vui lòng nhập email';
+      newErrors.email = "Vui lòng nhập email";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Email không hợp lệ';
+      newErrors.email = "Email không hợp lệ";
     }
-    
+
     if (!formData.password) {
-      newErrors.password = 'Vui lòng nhập mật khẩu';
+      newErrors.password = "Vui lòng nhập mật khẩu";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
     }
-    
+
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       await login(formData, rememberMe);
       setShowSuccess(true);
-      
+
       setTimeout(() => {
         navigate(PAGES.HOME);
       }, 1000);
     } catch (error) {
-      setErrors({ general: 'Đăng nhập thất bại. Vui lòng thử lại.' });
+      // Hiển thị error message chi tiết từ backend
+      const errorMessage =
+        error?.message || "Đăng nhập thất bại. Vui lòng thử lại.";
+      setErrors({ general: errorMessage });
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -98,13 +110,15 @@ const LoginPage = ({ navigate }) => {
             {/* Features */}
             <div className="space-y-4 pt-8">
               {[
-                { icon: '✓', text: 'Đặt lịch khám nhanh chóng' },
-                { icon: '✓', text: 'Quản lý hồ sơ bệnh án' },
-                { icon: '✓', text: 'Tư vấn online 24/7' }
+                { icon: "✓", text: "Đặt lịch khám nhanh chóng" },
+                { icon: "✓", text: "Quản lý hồ sơ bệnh án" },
+                { icon: "✓", text: "Tư vấn online 24/7" },
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-green-600 font-bold">{feature.icon}</span>
+                    <span className="text-green-600 font-bold">
+                      {feature.icon}
+                    </span>
                   </div>
                   <span className="text-gray-700">{feature.text}</span>
                 </div>
@@ -144,7 +158,9 @@ const LoginPage = ({ navigate }) => {
             </div>
 
             <div className="hidden lg:block mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Đăng nhập
+              </h2>
               <p className="text-gray-600">Nhập thông tin để tiếp tục</p>
             </div>
 
@@ -152,7 +168,9 @@ const LoginPage = ({ navigate }) => {
             {showSuccess && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                <p className="text-green-800 text-sm">Đăng nhập thành công! Đang chuyển hướng...</p>
+                <p className="text-green-800 text-sm">
+                  Đăng nhập thành công! Đang chuyển hướng...
+                </p>
               </div>
             )}
 
@@ -179,7 +197,7 @@ const LoginPage = ({ navigate }) => {
 
               <div className="relative">
                 <Input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   label="Mật khẩu"
                   placeholder="Nhập mật khẩu"
@@ -194,7 +212,11 @@ const LoginPage = ({ navigate }) => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
 
@@ -206,7 +228,9 @@ const LoginPage = ({ navigate }) => {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-700">Ghi nhớ đăng nhập</span>
+                  <span className="text-sm text-gray-700">
+                    Ghi nhớ đăng nhập
+                  </span>
                 </label>
 
                 <button
@@ -225,7 +249,7 @@ const LoginPage = ({ navigate }) => {
                 loading={isLoading}
                 disabled={isLoading}
               >
-                {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
             </form>
 
@@ -234,7 +258,9 @@ const LoginPage = ({ navigate }) => {
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold text-blue-900 mb-1">Demo: Đăng nhập nhanh</p>
+                  <p className="font-semibold text-blue-900 mb-1">
+                    Demo: Đăng nhập nhanh
+                  </p>
                   <p className="text-blue-700">Email: demo@stlclinic.com</p>
                   <p className="text-blue-700">Mật khẩu: 123456</p>
                 </div>
@@ -256,24 +282,32 @@ const LoginPage = ({ navigate }) => {
               <Button
                 variant="outline"
                 size="md"
-                onClick={() => alert('Tính năng đang phát triển')}
+                onClick={() => alert("Tính năng đang phát triển")}
               >
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                <img
+                  src="https://www.google.com/favicon.ico"
+                  alt="Google"
+                  className="w-5 h-5"
+                />
                 Google
               </Button>
               <Button
                 variant="outline"
                 size="md"
-                onClick={() => alert('Tính năng đang phát triển')}
+                onClick={() => alert("Tính năng đang phát triển")}
               >
-                <img src="https://www.facebook.com/favicon.ico" alt="Facebook" className="w-5 h-5" />
+                <img
+                  src="https://www.facebook.com/favicon.ico"
+                  alt="Facebook"
+                  className="w-5 h-5"
+                />
                 Facebook
               </Button>
             </div>
 
             {/* Register Link */}
             <p className="text-center text-gray-600 mt-6">
-              Chưa có tài khoản?{' '}
+              Chưa có tài khoản?{" "}
               <button
                 onClick={() => navigate(PAGES.REGISTER)}
                 className="text-blue-600 font-semibold hover:text-blue-700 transition"

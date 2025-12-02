@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, MessageCircle, User, Bell, Search, TrendingUp, Activity, Heart, FileText, ArrowRight, Plus } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useAppointments } from '../contexts/AppointmentContext';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import { PAGES, HEALTH_TIPS, SPECIALTIES } from '../utils/constants';
-import { formatDate, getInitials, getRelativeDate } from '../utils/helpers';
+import React, { useState } from "react";
+import {
+  Calendar,
+  Clock,
+  MessageCircle,
+  User,
+  Bell,
+  Search,
+  TrendingUp,
+  Activity,
+  Heart,
+  FileText,
+  ArrowRight,
+  Plus,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppointments } from "../contexts/AppointmentContext";
+import Card from "../components/common/Card";
+import Button from "../components/common/Button";
+import { PAGES, HEALTH_TIPS, SPECIALTIES } from "../utils/constants";
+import { formatDate, getInitials, getRelativeDate } from "../utils/helpers";
 
 const HomePage = ({ navigate }) => {
   const { user } = useAuth();
   const { getUpcomingAppointments, getStatistics } = useAppointments();
-  const [searchQuery, setSearchQuery] = useState('');
-  
+  const [searchQuery, setSearchQuery] = useState("");
+
   const upcomingAppointments = getUpcomingAppointments().slice(0, 3);
   const stats = getStatistics();
   const randomTip = HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)];
@@ -19,38 +32,56 @@ const HomePage = ({ navigate }) => {
   const quickActions = [
     {
       icon: Calendar,
-      label: 'Đặt lịch khám',
-      color: 'blue',
+      label: "Đặt lịch khám",
+      color: "blue",
       page: PAGES.BOOKING,
-      gradient: 'from-blue-500 to-blue-600'
+      gradient: "from-blue-500 to-blue-600",
     },
     {
       icon: Clock,
-      label: 'Lịch hẹn',
-      color: 'purple',
+      label: "Lịch hẹn",
+      color: "purple",
       page: PAGES.APPOINTMENTS,
-      gradient: 'from-purple-500 to-purple-600'
+      gradient: "from-purple-500 to-purple-600",
     },
     {
       icon: MessageCircle,
-      label: 'Tư vấn online',
-      color: 'green',
+      label: "Tư vấn online",
+      color: "green",
       page: PAGES.CHAT,
-      gradient: 'from-green-500 to-green-600'
+      gradient: "from-green-500 to-green-600",
     },
     {
       icon: FileText,
-      label: 'Hồ sơ bệnh án',
-      color: 'orange',
+      label: "Hồ sơ bệnh án",
+      color: "orange",
       page: PAGES.SETTINGS,
-      gradient: 'from-orange-500 to-orange-600'
-    }
+      gradient: "from-orange-500 to-orange-600",
+    },
   ];
 
   const healthMetrics = [
-    { label: 'Lượt khám', value: stats.completed, icon: Activity, color: 'blue', change: '+12%' },
-    { label: 'Lịch hẹn', value: stats.upcoming, icon: Calendar, color: 'purple', change: '+5%' },
-    { label: 'Điểm sức khỏe', value: '85', icon: Heart, color: 'red', change: '+3%' }
+    {
+      label: "Lượt khám",
+      value: stats.completed,
+      icon: Activity,
+      color: "blue",
+      change: "+12%",
+    },
+    {
+      label: "Lịch hẹn",
+      value: stats.upcoming,
+      icon: Calendar,
+      color: "purple",
+      change: "+5%",
+    },
+    {
+      label: "Điểm sức khỏe",
+      value: "85",
+      icon: Heart,
+      color: "red",
+      change: "+3%",
+    },
   ];
 
   return (
@@ -90,16 +121,26 @@ const HomePage = ({ navigate }) => {
                 <Bell className="w-6 h-6" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              
-              <div 
+
+              <div
                 className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition"
                 onClick={() => navigate(PAGES.SETTINGS)}
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                  {getInitials(user?.fullName || 'User')}
-                </div>
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt="Avatar"
+                    className="w-10 h-10 rounded-full object-cover shadow-lg border"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                    {getInitials(user?.fullName || "User")}
+                  </div>
+                )}
                 <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">{user?.fullName || 'Người dùng'}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {user?.fullName || "Người dùng"}
+                  </p>
                   <p className="text-xs text-gray-500">Bệnh nhân</p>
                 </div>
               </div>
@@ -113,10 +154,11 @@ const HomePage = ({ navigate }) => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Xin chào, {user?.fullName || 'Bạn'}! 👋
+            Xin chào, {user?.fullName || "Bạn"}! 👋
           </h2>
           <p className="text-gray-600">
-            Hôm nay bạn cảm thấy thế nào? Hãy để chúng tôi chăm sóc sức khỏe của bạn.
+            Hôm nay bạn cảm thấy thế nào? Hãy để chúng tôi chăm sóc sức khỏe của
+            bạn.
           </p>
         </div>
 
@@ -127,13 +169,19 @@ const HomePage = ({ navigate }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">{metric.label}</p>
-                  <p className="text-3xl font-bold text-gray-900">{metric.value}</p>
-                  <p className={`text-sm font-medium text-${metric.color}-600 mt-2 flex items-center gap-1`}>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {metric.value}
+                  </p>
+                  <p
+                    className={`text-sm font-medium text-${metric.color}-600 mt-2 flex items-center gap-1`}
+                  >
                     <TrendingUp className="w-4 h-4" />
                     {metric.change} so với tháng trước
                   </p>
                 </div>
-                <div className={`w-16 h-16 bg-${metric.color}-100 rounded-2xl flex items-center justify-center`}>
+                <div
+                  className={`w-16 h-16 bg-${metric.color}-100 rounded-2xl flex items-center justify-center`}
+                >
                   <metric.icon className={`w-8 h-8 text-${metric.color}-600`} />
                 </div>
               </div>
@@ -143,7 +191,9 @@ const HomePage = ({ navigate }) => {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Thao tác nhanh</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
+            Thao tác nhanh
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
               <Card
@@ -152,10 +202,14 @@ const HomePage = ({ navigate }) => {
                 onClick={() => navigate(action.page)}
                 className="group cursor-pointer"
               >
-                <div className={`w-12 h-12 bg-gradient-to-br ${action.gradient} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
+                <div
+                  className={`w-12 h-12 bg-gradient-to-br ${action.gradient} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-lg`}
+                >
                   <action.icon className="w-6 h-6 text-white" />
                 </div>
-                <p className="font-semibold text-gray-900 text-sm">{action.label}</p>
+                <p className="font-semibold text-gray-900 text-sm">
+                  {action.label}
+                </p>
               </Card>
             ))}
           </div>
@@ -197,8 +251,12 @@ const HomePage = ({ navigate }) => {
                               <User className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                              <h4 className="font-bold text-gray-900">{apt.doctorName}</h4>
-                              <p className="text-sm text-blue-600">{apt.specialty}</p>
+                              <h4 className="font-bold text-gray-900">
+                                {apt.doctorName}
+                              </h4>
+                              <p className="text-sm text-blue-600">
+                                {apt.specialty}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-gray-600 ml-13">
@@ -238,7 +296,9 @@ const HomePage = ({ navigate }) => {
 
             {/* Specialties */}
             <Card>
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Chuyên khoa phổ biến</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">
+                Chuyên khoa phổ biến
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {SPECIALTIES.slice(0, 8).map((specialty) => (
                   <div
@@ -249,7 +309,9 @@ const HomePage = ({ navigate }) => {
                     <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">
                       {specialty.icon}
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{specialty.name}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {specialty.name}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -269,7 +331,9 @@ const HomePage = ({ navigate }) => {
                   <p className="text-sm text-blue-100">{randomTip.category}</p>
                 </div>
               </div>
-              <p className="text-white/90 leading-relaxed">{randomTip.content}</p>
+              <p className="text-white/90 leading-relaxed">
+                {randomTip.content}
+              </p>
             </Card>
 
             {/* Quick Book */}

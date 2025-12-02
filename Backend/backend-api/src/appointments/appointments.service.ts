@@ -21,7 +21,7 @@ export class AppointmentsService {
 
     @Inject(forwardRef(() => SchedulesService))
     private schedulesService: SchedulesService,
-  ) {}
+  ) { }
 
   /** Tạo lịch hẹn mới */
   async create(dto: CreateAppointmentDto): Promise<Appointment> {

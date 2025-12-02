@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, FileText, CheckCircle, Search, Star, Award, ArrowLeft, ArrowRight, MapPin, Home, Mail, Phone, Heart } from 'lucide-react';
 import { useAppointments } from '../contexts/AppointmentContext';
+import { useAuth } from '../contexts/AuthContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import { formatDate, formatCurrency } from '../utils/helpers';
 import { PAGES } from '../utils/constants';
-const API_BASE_URL = 'http://localhost:8080';
-// Dữ liệu giả lập người dùng đã xác thực (Autofill) - Giữ mock cho user
-const MOCK_USER_DATA = {
-    fullName: 'Lê Văn Khách',
-    email: 'le.v.khach@gmail.com',
-    phone: '0987654321',
-    // Giả sử có firebaseUid: 'user-firebase-uid-123'
-};
+
+const API_BASE_URL = 'http://localhost:8080/api';
+
 const BookingPage = ({ navigate }) => {
     const { addAppointment } = useAppointments();
+    const { user } = useAuth();
     const [step, setStep] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -30,17 +27,31 @@ const BookingPage = ({ navigate }) => {
     const [formData, setFormData] = useState({
         areaId: '', hospitalId: '', specialtyId: '',
         date: '', time: '', doctorId: '',
-    
-        // B6: Thông tin BN (Autofill) - Giữ mock, có thể update từ GET /users/me sau
-        fullName: MOCK_USER_DATA.fullName,
-        email: MOCK_USER_DATA.email,
-        phone: MOCK_USER_DATA.phone,
+
+        // B6: Thông tin BN (Autofill từ Auth)
+        fullName: user?.full_name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
         type: '',
         notes: '',
         examinationType: 'offline', // Mặc định offline, sẽ map sang examination_type enum
-        userId: '1',  // Giả sử userId=1 cho user đã auth (cần lấy từ AuthContext sau)
+        userId: user?.id || '',
         scheduleId: '' // Để lưu scheduleId tương ứng với doctor/date/time đã chọn
     });
+
+    // Update formData when user data is available
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                fullName: user.full_name || prev.fullName,
+                email: user.email || prev.email,
+                phone: user.phone || prev.phone,
+                userId: user.id || prev.userId
+            }));
+        }
+    }, [user]);
+
     const [errors, setErrors] = useState({});
     // Dữ liệu hỗ trợ từ API
     const selectedDoctor = availableDoctorsData.find(d => d.id === formData.doctorId);
@@ -232,7 +243,7 @@ const BookingPage = ({ navigate }) => {
         setFormData(prev => {
             const updated = { ...prev };
 
-            switch(field) {
+            switch (field) {
                 case 'areaId':
                     updated.areaId = value;
                     updated.hospitalId = '';
@@ -399,7 +410,7 @@ const BookingPage = ({ navigate }) => {
                     <p className="text-gray-600 mb-6">
                         Lịch hẹn của bạn đã được xác nhận và thanh toán (Mô phỏng). Số slot còn lại đã được cập nhật.
                     </p>
-                
+
                     <div className="bg-blue-50 rounded-xl p-4 mb-6 text-left">
                         <div className="space-y-3 text-sm">
                             <div className="flex items-center gap-2">
@@ -420,7 +431,7 @@ const BookingPage = ({ navigate }) => {
                             </div>
                         </div>
                     </div>
-    
+
                     <Button variant="primary" size="lg" fullWidth onClick={() => navigate(PAGES.APPOINTMENTS)}>
                         Xem lịch hẹn
                     </Button>
@@ -443,7 +454,7 @@ const BookingPage = ({ navigate }) => {
                             <ArrowLeft className="w-5 h-5" />
                             <span>{step > 1 ? 'Quay lại' : 'Trang chủ'}</span>
                         </button>
-                    
+
                         <h1 className="text-xl font-bold text-gray-900">Đặt lịch khám</h1>
                         <div className="w-20"></div>
                     </div>
@@ -457,11 +468,10 @@ const BookingPage = ({ navigate }) => {
                             <React.Fragment key={s.number}>
                                 <div className="flex flex-col items-center flex-1">
                                     <div
-                                        className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
-                                            step >= s.number
-                                                ? 'bg-blue-600 text-white scale-110 shadow-lg'
-                                                : 'bg-gray-200 text-gray-500'
-                                        }`}
+                                        className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${step >= s.number
+                                            ? 'bg-blue-600 text-white scale-110 shadow-lg'
+                                            : 'bg-gray-200 text-gray-500'
+                                            }`}
                                     >
                                         {step > s.number ? (
                                             <CheckCircle className="w-6 h-6" />
@@ -474,9 +484,8 @@ const BookingPage = ({ navigate }) => {
                                     </p>
                                 </div>
                                 {index < steps.length - 1 && (
-                                    <div className={`flex-1 h-1 mx-2 transition-all ${
-                                        step > s.number ? 'bg-blue-600' : 'bg-gray-200'
-                                    }`} />
+                                    <div className={`flex-1 h-1 mx-2 transition-all ${step > s.number ? 'bg-blue-600' : 'bg-gray-200'
+                                        }`} />
                                 )}
                             </React.Fragment>
                         ))}
@@ -551,7 +560,7 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-            
+
                 {/* Step 3: Chọn Chuyên khoa (Từ API) */}
                 {step === 3 && (
                     <div className="space-y-6">
@@ -613,33 +622,32 @@ const BookingPage = ({ navigate }) => {
                             </div>
                             {/* Time Slots UI (Generated 30min slots, tất cả selectable - filter doctors sau) */}
                             <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">
-                                Chọn khung giờ <span className="text-red-500">*</span>
-                            </label>
-                            
-                            {!formData.date ? (
-                                <p className="text-gray-500 text-sm">Vui lòng chọn ngày trước để xem khung giờ.</p>
-                            ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                    {generateTimeSlots().map((slot) => (
-                                        <button
-                                            key={slot.time}
-                                            onClick={() => handleChange('time', slot.time)}
-                                            disabled={isLoading}
-                                            className={`py-3 px-4 rounded-lg border-2 transition-all font-medium text-sm ${
-                                                formData.time === slot.time
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                    Chọn khung giờ <span className="text-red-500">*</span>
+                                </label>
+
+                                {!formData.date ? (
+                                    <p className="text-gray-500 text-sm">Vui lòng chọn ngày trước để xem khung giờ.</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                        {generateTimeSlots().map((slot) => (
+                                            <button
+                                                key={slot.time}
+                                                onClick={() => handleChange('time', slot.time)}
+                                                disabled={isLoading}
+                                                className={`py-3 px-4 rounded-lg border-2 transition-all font-medium text-sm ${formData.time === slot.time
                                                     ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
                                                     : 'border-gray-200 hover:border-blue-500 hover:shadow-md'
-                                            }`}
-                                        >
-                                            <Clock className="w-4 h-4 inline mr-1" /> {slot.time}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            
-                            {errors.time && (<p className="text-red-600 text-sm mt-2">{errors.time}</p>)}
-                        </div>
+                                                    }`}
+                                            >
+                                                <Clock className="w-4 h-4 inline mr-1" /> {slot.time}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {errors.time && (<p className="text-red-600 text-sm mt-2">{errors.time}</p>)}
+                            </div>
                         </Card>
                         <div className="flex gap-4">
                             <Button
@@ -670,7 +678,7 @@ const BookingPage = ({ navigate }) => {
                     <div className="space-y-6">
                         <Card>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">5. Chọn Bác sĩ</h2>
-                        
+
                             {/* Search */}
                             <div className="mb-6">
                                 <div className="relative">
@@ -698,21 +706,20 @@ const BookingPage = ({ navigate }) => {
                                             key={doctor.id}
                                             hover
                                             onClick={() => handleChange('doctorId', doctor.id)}
-                                            className={`cursor-pointer border-2 transition-all ${
-                                                formData.doctorId === doctor.id
-                                                    ? 'border-blue-500 bg-blue-50 shadow-lg'
-                                                    : 'border-gray-200'
-                                            }`}
+                                            className={`cursor-pointer border-2 transition-all ${formData.doctorId === doctor.id
+                                                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                                                : 'border-gray-200'
+                                                }`}
                                         >
                                             <div className="flex gap-4">
                                                 <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 shadow-lg">
                                                     {doctor.avatar || '👨‍⚕️'}
                                                 </div>
-                                            
+
                                                 <div className="flex-1 min-w-0">
                                                     <h3 className="font-bold text-lg text-gray-900 mb-1">{doctor.name}</h3>
                                                     <p className="text-blue-600 font-medium text-sm mb-2">{doctor.specialty}</p>
-                                                
+
                                                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                                                         <span className="flex items-center gap-1">
                                                             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -771,7 +778,7 @@ const BookingPage = ({ navigate }) => {
                         </div>
                     </div>
                 )}
-            
+
                 {/* Step 6: Điền Thông tin Bệnh nhân (Mock) */}
                 {step === 6 && (
                     <div className="space-y-6">
@@ -888,7 +895,7 @@ const BookingPage = ({ navigate }) => {
                                     <CheckCircle className="w-5 h-5 text-blue-600" />
                                     Tóm tắt đặt lịch
                                 </h3>
-                            
+
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
                                         <User className="w-5 h-5 text-blue-600 mt-0.5" />

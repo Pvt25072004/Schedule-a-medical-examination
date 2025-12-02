@@ -1,0 +1,61 @@
+version: "3.8"
+services:
+  backend:
+    image: phamvantien/clinic-be:latest
+    build:
+      context: ./Backend/backend-api
+      dockerfile: Dockerfile
+    container_name: clinic-backend
+    restart: always
+    environment:
+      - DB_TYPE=mysql
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - DB_USERNAME=root
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=booking_db
+      - DB_SYNC=true
+      - PORT=8080
+      - FRONTEND_URL=${FRONTEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql-db
+    networks:
+      - app-network
+
+  frontend:
+    image: phamvantien/clinic-fe:latest
+    container_name: clinic-frontend
+    # build:
+    #   context: ./Web
+    #   dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: medical-mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=booking_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

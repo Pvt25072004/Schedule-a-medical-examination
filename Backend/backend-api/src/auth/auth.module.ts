@@ -1,38 +1,31 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { FirebaseService } from '../firebase/firebase.service';
-import { EmailService } from '../email/email.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { EmailService } from '../email/email.service';
 
 @Module({
   imports: [
     HttpModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    forwardRef(() => UsersModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'your-secret-key',
+      useFactory: (configService: ConfigService) => ({
+        secret:
+          configService.get<string>('JWT_SECRET') ||
+          'your-secret-key-change-in-production',
         signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRES_IN') || '7d') as any,
+          expiresIn: '7d',
         },
       }),
       inject: [ConfigService],
     }),
-    forwardRef(() => UsersModule),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    FirebaseService,
-    EmailService,
-    JwtStrategy,
-  ],
-  exports: [AuthService, JwtModule, PassportModule],
+  providers: [AuthService, EmailService],
+  exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }
