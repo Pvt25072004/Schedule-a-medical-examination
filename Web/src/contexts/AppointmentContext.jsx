@@ -19,46 +19,56 @@ export const AppointmentProvider = ({ children }) => {
   const [appointments, setAppointments] = useState([]);
 
   // Load appointments thực từ backend theo bệnh nhân
+  const loadAppointments = async () => {
+    if (!user?.id) {
+      setAppointments([]);
+      return;
+    }
+    try {
+      const data = await getAppointmentsByUser(user.id);
+      const list = Array.isArray(data) ? data : [];
+      const mapped = list.map((apt) => {
+        const rawDate =
+          typeof apt.appointment_date === "string"
+            ? apt.appointment_date.slice(0, 10)
+            : apt.appointment_date?.toString().slice(0, 10);
+        const rawTime = (apt.appointment_time || "").slice(0, 5);
+        return {
+          id: apt.id, // dùng luôn id backend
+          backendId: apt.id,
+          doctorId: apt.doctor_id,
+          doctorName: apt.doctor?.name || "Bác sĩ",
+          specialty:
+            apt.doctor?.specialty ||
+            apt.doctor?.category?.name ||
+            "Chuyên khoa",
+          date: rawDate,
+          time: rawTime,
+          type: apt.symptoms || "",
+          status: apt.status || APPOINTMENT_STATUS.PENDING,
+          cancelReason: apt.cancel_reason || "",
+          hasReview: false,
+          notes: "",
+          hospital: apt.hospital || null,
+          hospitalName: apt.hospital?.name || "STL Clinic",
+          hospitalAddress: apt.hospital?.address || "123 Đường ABC, Q.1",
+          hospitalCity: apt.hospital?.city || "",
+        };
+      });
+      setAppointments(mapped);
+    } catch (e) {
+      console.error("Load patient appointments error:", e);
+      setAppointments([]);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      if (!user?.id) {
-        setAppointments([]);
-        return;
-      }
-      try {
-        const data = await getAppointmentsByUser(user.id);
-        const list = Array.isArray(data) ? data : [];
-        const mapped = list.map((apt) => {
-          const rawDate =
-            typeof apt.appointment_date === "string"
-              ? apt.appointment_date.slice(0, 10)
-              : apt.appointment_date?.toString().slice(0, 10);
-          const rawTime = (apt.appointment_time || "").slice(0, 5);
-          return {
-            id: apt.id, // dùng luôn id backend
-            backendId: apt.id,
-            doctorId: apt.doctor_id,
-            doctorName: apt.doctor?.name || "Bác sĩ",
-            specialty:
-              apt.doctor?.specialty ||
-              apt.doctor?.category?.name ||
-              "Chuyên khoa",
-            date: rawDate,
-            time: rawTime,
-            type: apt.symptoms || "",
-            status: apt.status || APPOINTMENT_STATUS.PENDING,
-            cancelReason: apt.cancel_reason || "",
-            hasReview: false,
-            notes: "",
-          };
-        });
-        setAppointments(mapped);
-      } catch (e) {
-        console.error("Load patient appointments error:", e);
-        setAppointments([]);
-      }
-    };
-    void load();
+    void loadAppointments();
+    // Refresh appointments mỗi 30 giây để cập nhật status
+    const interval = setInterval(() => {
+      void loadAppointments();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   const addAppointment = (appointmentData) => {
@@ -159,6 +169,7 @@ export const AppointmentProvider = ({ children }) => {
     getPastAppointments,
     getStatistics,
     isSlotAvailable,
+    refreshAppointments: loadAppointments,
   };
 
   return (

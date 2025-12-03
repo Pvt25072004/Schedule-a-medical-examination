@@ -21,7 +21,7 @@ import { useAppointments } from "../contexts/AppointmentContext";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { PAGES, HEALTH_TIPS, SPECIALTIES } from "../utils/constants";
-import { formatDate, getInitials, getRelativeDate } from "../utils/helpers";
+import { formatDate, getInitials, getRelativeDate, getStatusText, getStatusColor } from "../utils/helpers";
 
 const HomePage = ({ navigate }) => {
   const { user } = useAuth();
@@ -273,8 +273,18 @@ const HomePage = ({ navigate }) => {
                             </span>
                           </div>
                         </div>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                          Đã xác nhận
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          apt.status === "pending" 
+                            ? "bg-yellow-100 text-yellow-700"
+                            : apt.status === "confirmed"
+                            ? "bg-green-100 text-green-700"
+                            : apt.status === "rejected"
+                            ? "bg-red-100 text-red-700"
+                            : apt.status === "completed"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}>
+                          {getStatusText(apt.status)}
                         </span>
                       </div>
                     </div>

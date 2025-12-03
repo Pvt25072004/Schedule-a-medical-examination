@@ -279,7 +279,11 @@ const AppointmentsPage = ({ navigate }) => {
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-gray-400" />
-                          <span>STL Clinic - 123 Đường ABC, Q.1</span>
+                          <span>
+                            {apt.hospitalName || "STL Clinic"}
+                            {apt.hospitalCity && ` - ${apt.hospitalCity}`}
+                            {apt.hospitalAddress && `, ${apt.hospitalAddress}`}
+                          </span>
                         </div>
                       </div>
 

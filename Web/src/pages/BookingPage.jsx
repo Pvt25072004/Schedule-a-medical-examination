@@ -34,6 +34,7 @@ const BookingPage = ({ navigate }) => {
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [schedules, setSchedules] = useState([]);
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
@@ -143,8 +144,9 @@ const BookingPage = ({ navigate }) => {
     if (!doctorId || !date) return;
     try {
       setLoadingSlots(true);
-      const schedules = await getSchedulesByDoctor(doctorId);
-      const daySchedules = (schedules || []).filter((s) => {
+      const schedulesData = await getSchedulesByDoctor(doctorId);
+      setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
+      const daySchedules = (schedulesData || []).filter((s) => {
         const workDate =
           typeof s.work_date === "string"
             ? s.work_date.slice(0, 10)
@@ -175,6 +177,7 @@ const BookingPage = ({ navigate }) => {
     } catch (err) {
       console.error("Load schedule slots error:", err);
       setAvailableSlots([]);
+      setSchedules([]);
     } finally {
       setLoadingSlots(false);
     }
@@ -227,12 +230,39 @@ const BookingPage = ({ navigate }) => {
     setIsLoading(true);
 
     try {
-      // Tạm thời gán hospital_id cố định (1) và examination_type = 'offline'
+      // Tìm schedule_id từ date và time
+      const workDate = formData.date;
+      const appointmentTime = formData.time;
+      let foundSchedule = null;
+      
+      for (const sch of schedules) {
+        const schDate =
+          typeof sch.work_date === "string"
+            ? sch.work_date.slice(0, 10)
+            : sch.work_date?.toString().slice(0, 10);
+        if (schDate === workDate) {
+          const start = (sch.start_time || "").slice(0, 5);
+          const end = (sch.end_time || "").slice(0, 5);
+          if (start && end && appointmentTime >= start && appointmentTime <= end) {
+            foundSchedule = sch;
+            break;
+          }
+        }
+      }
+
+      // Lấy hospital_id từ schedule hoặc từ doctor
+      let hospitalId = 1; // fallback
+      if (foundSchedule?.hospital_id) {
+        hospitalId = foundSchedule.hospital_id;
+      } else if (selectedDoctor?.hospitals?.[0]?.id) {
+        hospitalId = selectedDoctor.hospitals[0].id;
+      }
+
       const payload = {
         user_id: user.id,
         doctor_id: formData.doctorId,
-        hospital_id: 1,
-        schedule_id: undefined,
+        hospital_id: hospitalId,
+        schedule_id: foundSchedule?.id,
         appointment_date: formData.date,
         appointment_time: formData.time,
         examination_type: "offline",
