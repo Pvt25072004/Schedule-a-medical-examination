@@ -12,6 +12,9 @@ import {
   FileText,
   ArrowRight,
   Plus,
+  Phone,
+  Mail,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppointments } from "../contexts/AppointmentContext";
@@ -370,6 +373,92 @@ const HomePage = ({ navigate }) => {
           </div>
         </div>
       </main>
+      <footer id="contact" className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="font-bold text-lg mb-4">STL Clinic</h3>
+              <p className="text-gray-400 text-sm">
+                Nền tảng đặt khám trực tuyến hàng đầu Việt Nam
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-4">Liên kết</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Về chúng tôi
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Bác sĩ
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Chuyên khoa
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Tin tức
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-4">Hỗ trợ</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Câu hỏi thường gặp
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Hướng dẫn đặt lịch
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Chính sách bảo mật
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition">
+                    Điều khoản sử dụng
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-4">Liên hệ</h4>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center gap-2 text-gray-400">
+                  <Phone className="w-4 h-4" />
+                  <span>1900-xxxx</span>
+                </li>
+                <li className="flex items-center gap-2 text-gray-400">
+                  <Mail className="w-4 h-4" />
+                  <span>support@stlclinic.com</span>
+                </li>
+                <li className="flex items-start gap-2 text-gray-400">
+                  <MapPin className="w-4 h-4 mt-1" />
+                  <span>123 Đường ABC, Q.1, TP.HCM</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+            <p>© 2025 STL Clinic. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

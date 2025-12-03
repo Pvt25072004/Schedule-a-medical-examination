@@ -60,6 +60,7 @@ const AdminDashboardPage = ({ navigate }) => {
   const [hospitalForm, setHospitalForm] = useState({
     name: "",
     address: "",
+    city: "",
     phone: "",
     email: "",
     main_specialty: "",
@@ -169,6 +170,7 @@ const AdminDashboardPage = ({ navigate }) => {
     setHospitalForm({
       name: "",
       address: "",
+      city: "",
       phone: "",
       email: "",
       main_specialty: "",
@@ -181,6 +183,7 @@ const AdminDashboardPage = ({ navigate }) => {
     setHospitalForm({
       name: hospital.name || "",
       address: hospital.address || "",
+      city: hospital.city || "",
       phone: hospital.phone || "",
       email: hospital.email || "",
       main_specialty: hospital.main_specialty || "",
@@ -503,21 +506,41 @@ const AdminDashboardPage = ({ navigate }) => {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Địa chỉ
-                </label>
-                <input
-                  type="text"
-                  value={hospitalForm.address}
-                  onChange={(e) =>
-                    setHospitalForm((prev) => ({
-                      ...prev,
-                      address: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Thành phố/Tỉnh
+                  </label>
+                  <input
+                    type="text"
+                    value={hospitalForm.city}
+                    onChange={(e) =>
+                      setHospitalForm((prev) => ({
+                        ...prev,
+                        city: e.target.value,
+                      }))
+                    }
+                    placeholder="Ví dụ: TP. Hồ Chí Minh, Hà Nội..."
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Địa chỉ cụ thể
+                  </label>
+                  <input
+                    type="text"
+                    value={hospitalForm.address}
+                    onChange={(e) =>
+                      setHospitalForm((prev) => ({
+                        ...prev,
+                        address: e.target.value,
+                      }))
+                    }
+                    placeholder="Số nhà, đường, phường/xã..."
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -632,6 +655,11 @@ const AdminDashboardPage = ({ navigate }) => {
                       <h3 className="font-semibold text-gray-900">
                         {hospital.name}
                       </h3>
+                      {hospital.city && (
+                        <p className="text-sm text-blue-600 font-medium">
+                          {hospital.city}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-500">
                         {hospital.address}
                       </p>

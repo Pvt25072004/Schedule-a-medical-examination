@@ -460,9 +460,31 @@ const BookingPage = ({ navigate }) => {
                           </span>
                         </div>
 
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-gray-900 mb-2">
                           {formatCurrency(doctor.consultationFee)}
                         </p>
+                        {Array.isArray(doctor.hospitals) &&
+                          doctor.hospitals.length > 0 && (
+                            <div className="flex items-start gap-1 text-xs text-gray-500">
+                              <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <span className="font-medium">
+                                  {doctor.hospitals[0].name}
+                                </span>
+                                {doctor.hospitals[0].city && (
+                                  <span className="text-blue-600">
+                                    {" "}
+                                    · {doctor.hospitals[0].city}
+                                  </span>
+                                )}
+                                {doctor.hospitals[0].address && (
+                                  <span className="block text-gray-400 mt-0.5">
+                                    {doctor.hospitals[0].address}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                       </div>
 
                       {formData.doctorId === doctor.id && (
@@ -507,15 +529,38 @@ const BookingPage = ({ navigate }) => {
               {/* Selected Doctor Info */}
               {selectedDoctor && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     <div className="text-4xl">{selectedDoctor.avatar}</div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-bold text-gray-900">
                         {selectedDoctor.name}
                       </h3>
-                      <p className="text-blue-600 text-sm">
+                      <p className="text-blue-600 text-sm mb-2">
                         {selectedDoctor.specialty}
                       </p>
+                      {Array.isArray(selectedDoctor.hospitals) &&
+                        selectedDoctor.hospitals.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-blue-200">
+                            <div className="flex items-start gap-2 text-sm">
+                              <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {selectedDoctor.hospitals[0].name}
+                                </p>
+                                {selectedDoctor.hospitals[0].city && (
+                                  <p className="text-blue-600">
+                                    {selectedDoctor.hospitals[0].city}
+                                  </p>
+                                )}
+                                {selectedDoctor.hospitals[0].address && (
+                                  <p className="text-gray-600 text-xs mt-0.5">
+                                    {selectedDoctor.hospitals[0].address}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -684,12 +729,33 @@ const BookingPage = ({ navigate }) => {
                       <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-600">Địa điểm</p>
-                        <p className="font-semibold text-gray-900">
-                          STL Clinic
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          123 Đường ABC, Q.1, TP.HCM
-                        </p>
+                        {Array.isArray(selectedDoctor?.hospitals) &&
+                        selectedDoctor.hospitals.length > 0 ? (
+                          <>
+                            <p className="font-semibold text-gray-900">
+                              {selectedDoctor.hospitals[0].name}
+                            </p>
+                            {selectedDoctor.hospitals[0].city && (
+                              <p className="text-sm text-blue-600">
+                                {selectedDoctor.hospitals[0].city}
+                              </p>
+                            )}
+                            {selectedDoctor.hospitals[0].address && (
+                              <p className="text-sm text-gray-600">
+                                {selectedDoctor.hospitals[0].address}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-semibold text-gray-900">
+                              STL Clinic
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              123 Đường ABC, Q.1, TP.HCM
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

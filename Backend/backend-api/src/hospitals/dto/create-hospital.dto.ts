@@ -16,6 +16,11 @@ export class CreateHospitalDto {
   @IsString()
   address: string;
 
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  city?: string;
+
   @IsString()
   @Length(6, 20)
   phone: string;

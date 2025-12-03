@@ -23,6 +23,9 @@ export class Hospital {
   @Column({ type: 'text' })
   address: string;
 
+  @Column({ length: 100, nullable: true })
+  city: string;
+
   @Column({ length: 20 })
   phone: string;
 
