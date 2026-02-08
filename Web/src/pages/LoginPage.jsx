@@ -12,7 +12,7 @@ import { useAuth } from "../contexts/AuthContext";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import Card from "../components/common/Card";
-import { PAGES } from "../utils/constants";
+import { PAGES, USER_ROLES } from "../utils/constants";
 import { validateEmail } from "../utils/helpers";
 
 const LoginPage = ({ navigate }) => {
@@ -65,11 +65,18 @@ const LoginPage = ({ navigate }) => {
     setIsLoading(true);
 
     try {
-      await login(formData, rememberMe);
+      const { user: loggedInUser } = await login(formData, rememberMe);
       setShowSuccess(true);
 
       setTimeout(() => {
-        navigate(PAGES.HOME);
+        const role = (loggedInUser?.role || "").toLowerCase();
+        if (role === USER_ROLES.ADMIN) {
+          navigate(PAGES.ADMIN_DASHBOARD);
+        } else if (role === USER_ROLES.DOCTOR) {
+          navigate(PAGES.DOCTOR_DASHBOARD);
+        } else {
+          navigate(PAGES.HOME);
+        }
       }, 1000);
     } catch (error) {
       // Hiển thị error message chi tiết từ backend
@@ -254,7 +261,7 @@ const LoginPage = ({ navigate }) => {
             </form>
 
             {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
@@ -265,7 +272,7 @@ const LoginPage = ({ navigate }) => {
                   <p className="text-blue-700">Mật khẩu: 123456</p>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Divider */}
             <div className="relative my-6">

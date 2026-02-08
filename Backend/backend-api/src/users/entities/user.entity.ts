@@ -15,6 +15,13 @@ export class User {
   @Column({ length: 255 })
   full_name: string;
 
+  @Column({
+    type: 'enum',
+    enum: ['patient', 'doctor', 'admin'],
+    default: 'patient',
+  })
+  role: string;
+
   @Column({ length: 255, unique: true })
   email: string;
 
@@ -50,6 +57,9 @@ export class User {
 
   @Column({ default: false })
   is_welcome: boolean;
+
+  @Column({ default: true })
+  is_active: boolean;
 
   @CreateDateColumn()
   created_at: Date;

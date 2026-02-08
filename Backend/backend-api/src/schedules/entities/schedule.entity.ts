@@ -6,6 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 @Entity('schedules')
 export class Schedule {
@@ -37,8 +38,10 @@ export class Schedule {
   created_at: Date;
 
   @ManyToOne(() => Doctor, (doctor) => doctor.schedules)
+  @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor | null;
 
   @ManyToOne(() => Hospital)
+  @JoinColumn({ name: 'hospital_id' })
   hospital?: Hospital | null;
 }

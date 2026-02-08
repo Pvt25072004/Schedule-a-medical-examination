@@ -10,6 +10,7 @@ import {
   CreateDateColumn,
   OneToOne,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 // 1. Import thư viện Swagger
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -32,9 +33,12 @@ export class Appointment {
   @Column()
   hospital_id: number;
 
-  @ApiProperty({ example: 20, description: 'ID lịch làm việc của bác sĩ' })
-  @Column()
-  schedule_id: number;
+  @ApiPropertyOptional({
+    example: 20,
+    description: 'ID lịch làm việc của bác sĩ (có thể null nếu chưa liên kết)',
+  })
+  @Column({ type: 'int', nullable: true })
+  schedule_id: number | null;
 
   @ApiProperty({ example: '2025-02-27', description: 'Ngày khám (YYYY-MM-DD)' })
   @Column({ type: 'date' })
@@ -71,6 +75,13 @@ export class Appointment {
   })
   status: string;
 
+  @ApiPropertyOptional({
+    example: 'Bác sĩ bận đột xuất',
+    description: 'Lý do hủy / từ chối lịch hẹn (do bác sĩ hoặc hệ thống)',
+  })
+  @Column({ type: 'text', nullable: true })
+  cancel_reason: string | null;
+
   @ApiProperty({ example: '2025-02-27T08:00:00.000Z' })
   @CreateDateColumn()
   created_at: Date;
@@ -88,11 +99,14 @@ export class Appointment {
   payment: Payment;
 
   @ManyToOne(() => User, (user) => user.appointments)
+  @JoinColumn({ name: 'user_id' })
   user?: User | null;
 
   @ManyToOne(() => Doctor, (doctor) => doctor.appointments)
+  @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor | null;
 
   @ManyToOne(() => Hospital, (hospital) => hospital.appointments)
+  @JoinColumn({ name: 'hospital_id' })
   hospital?: Hospital | null;
 }

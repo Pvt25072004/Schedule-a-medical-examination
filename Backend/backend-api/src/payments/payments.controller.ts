@@ -17,6 +17,11 @@ export class PaymentsController {
     return this.paymentsService.findAll();
   }
 
+  @Get('doctor/:doctorId')
+  findByDoctor(@Param('doctorId') doctorId: string) {
+    return this.paymentsService.findByDoctor(+doctorId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.paymentsService.findOne(+id);

@@ -1,10 +1,11 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
 import { Doctor } from 'src/doctors/doctor.entity';
-import { Schedule } from 'src/schedules/entities/schedule.entity';
+import { Category } from 'src/categories/entities/category.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinTable,
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -21,6 +22,9 @@ export class Hospital {
 
   @Column({ type: 'text' })
   address: string;
+
+  @Column({ length: 100, nullable: true })
+  city: string;
 
   @Column({ length: 20 })
   phone: string;
@@ -45,4 +49,12 @@ export class Hospital {
 
   @ManyToMany(() => Doctor, (doctor) => doctor.hospitals)
   doctors: Doctor[];
+
+  @ManyToMany(() => Category)
+  @JoinTable({
+    name: 'hospital_category',
+    joinColumn: { name: 'hospital_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
+  })
+  categories: Category[];
 }

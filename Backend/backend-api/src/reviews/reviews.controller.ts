@@ -22,6 +22,11 @@ export class ReviewsController {
     return this.reviewsService.findOne(+id);
   }
 
+  @Get('/doctor/:doctorId')
+  findByDoctor(@Param('doctorId') doctorId: string) {
+    return this.reviewsService.findByDoctor(+doctorId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateReviewDto: UpdateReviewDto) {
     return this.reviewsService.update(+id, updateReviewDto);

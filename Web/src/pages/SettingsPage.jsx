@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { PAGES } from "../utils/constants";
-import { updateUser } from "../services/api";
+import { changePassword } from "../services/api";
 
 const SettingsPage = ({ navigate }) => {
   const { user, logout, updateProfile } = useAuth();
@@ -57,6 +57,13 @@ const SettingsPage = ({ navigate }) => {
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordMessage, setPasswordMessage] = useState(null);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   // File input refs để chọn ảnh thật từ máy
   const avatarFileInputRef = useRef(null);
@@ -523,6 +530,13 @@ const SettingsPage = ({ navigate }) => {
             </label>
             <input
               type="password"
+              value={passwordForm.currentPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({
+                  ...prev,
+                  currentPassword: e.target.value,
+                }))
+              }
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
@@ -532,6 +546,13 @@ const SettingsPage = ({ navigate }) => {
             </label>
             <input
               type="password"
+              value={passwordForm.newPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({
+                  ...prev,
+                  newPassword: e.target.value,
+                }))
+              }
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
@@ -541,11 +562,72 @@ const SettingsPage = ({ navigate }) => {
             </label>
             <input
               type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({
+                  ...prev,
+                  confirmPassword: e.target.value,
+                }))
+              }
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
-          <button className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 rounded-lg transition-colors">
-            Cập nhật mật khẩu
+          {passwordMessage && (
+            <p
+              className={`text-sm ${
+                passwordMessage.type === "error"
+                  ? "text-red-600"
+                  : "text-green-600"
+              }`}
+            >
+              {passwordMessage.text}
+            </p>
+          )}
+          <button
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-60"
+            disabled={savingPassword}
+            onClick={async () => {
+              if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+                setPasswordMessage({
+                  type: "error",
+                  text: "Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới",
+                });
+                return;
+              }
+              if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+                setPasswordMessage({
+                  type: "error",
+                  text: "Mật khẩu mới và xác nhận không khớp",
+                });
+                return;
+              }
+              try {
+                setSavingPassword(true);
+                setPasswordMessage(null);
+                await changePassword({
+                  currentPassword: passwordForm.currentPassword,
+                  newPassword: passwordForm.newPassword,
+                });
+                setPasswordMessage({
+                  type: "success",
+                  text: "Đổi mật khẩu thành công",
+                });
+                setPasswordForm({
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmPassword: "",
+                });
+              } catch (e) {
+                setPasswordMessage({
+                  type: "error",
+                  text: e.message || "Đổi mật khẩu thất bại",
+                });
+              } finally {
+                setSavingPassword(false);
+              }
+            }}
+          >
+            {savingPassword ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
           </button>
         </div>
       </div>

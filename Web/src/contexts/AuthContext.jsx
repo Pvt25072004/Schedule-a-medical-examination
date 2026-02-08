@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   const login = async (credentials, rememberMe = false) => {
     setIsLoading(true);
@@ -31,6 +32,8 @@ export const AuthProvider = ({ children }) => {
       const normalizedUser = {
         ...userData,
         fullName: userData.fullName || userData.full_name || "",
+        role:
+          userData.role || userData.userRole || userData.user_role || "patient",
       };
 
       setUser(normalizedUser);
@@ -84,6 +87,11 @@ export const AuthProvider = ({ children }) => {
       const normalizedUser = {
         ...userFromApi,
         fullName: userFromApi.fullName || userFromApi.full_name || "",
+        role:
+          userFromApi.role ||
+          userFromApi.userRole ||
+          userFromApi.user_role ||
+          "patient",
       };
 
       setUser(normalizedUser);
@@ -137,6 +145,13 @@ export const AuthProvider = ({ children }) => {
     const normalizedUser = {
       ...updatedFromApi,
       fullName: updatedFromApi.fullName || updatedFromApi.full_name || "",
+      // Giữ lại role hiện tại nếu API không trả về
+      role:
+        updatedFromApi.role ||
+        updatedFromApi.userRole ||
+        updatedFromApi.user_role ||
+        user.role ||
+        "patient",
     };
 
     setUser(normalizedUser);
@@ -166,12 +181,14 @@ export const AuthProvider = ({ children }) => {
         logout();
       }
     }
+    setIsAuthReady(true);
   }, []);
 
   const value = {
     user,
     isAuthenticated,
     isLoading,
+    isAuthReady,
     login,
     logout,
     register,
