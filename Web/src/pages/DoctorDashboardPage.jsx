@@ -205,7 +205,7 @@ const DoctorDashboardPage = ({ navigate }) => {
     const ok = window.confirm(
       `Bạn có chắc muốn xóa ca làm việc ngày ${entry.work_date} tại bệnh viện ${
         entry.hospital?.name || entry.hospital_id
-      }?`
+      }?`,
     );
     if (!ok) return;
     try {
@@ -227,7 +227,7 @@ const DoctorDashboardPage = ({ navigate }) => {
             since: "",
           }))
         : [],
-    [doctorProfile?.hospitals]
+    [doctorProfile?.hospitals],
   );
 
   const formatDateVN = (d) => {
@@ -241,13 +241,13 @@ const DoctorDashboardPage = ({ navigate }) => {
     try {
       const updated = await updateAppointmentStatus(
         appointment.id,
-        "confirmed"
+        "confirmed",
       );
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
+        prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
     } catch (e) {
-      alert(e.message || "Không thể xác nhận lịch hẹn");
+      alert(e.message || "Không thể xác nhận lịch hẹn.");
     }
   };
 
@@ -262,10 +262,10 @@ const DoctorDashboardPage = ({ navigate }) => {
       const updated = await updateAppointmentStatus(
         appointment.id,
         "rejected",
-        reason.trim()
+        reason.trim(),
       );
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
+        prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
     } catch (e) {
       alert(e.message || "Không thể từ chối lịch hẹn");
@@ -274,16 +274,16 @@ const DoctorDashboardPage = ({ navigate }) => {
 
   const handleCompleteAppointment = async (appointment) => {
     const ok = window.confirm(
-      `Xác nhận đã khám xong cho lịch hẹn #${appointment.id}?`
+      `Xác nhận đã khám xong cho lịch hẹn #${appointment.id}?`,
     );
     if (!ok) return;
     try {
       const updated = await updateAppointmentStatus(
         appointment.id,
-        "completed"
+        "completed",
       );
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
+        prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
     } catch (e) {
       alert(e.message || "Không thể cập nhật trạng thái lịch hẹn");
@@ -492,7 +492,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                                 return {
                                   ...prev,
                                   hospitalIds: current.filter(
-                                    (id) => id !== h.id
+                                    (id) => id !== h.id,
                                   ),
                                 };
                               });
