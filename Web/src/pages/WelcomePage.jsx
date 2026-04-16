@@ -202,7 +202,7 @@ const WelcomePage = ({ navigate }) => {
       }
       showAlert(
         "success",
-        editingId ? "Cập nhật lịch hẹn thành công" : "Tạo lịch hẹn thành công"
+        editingId ? "Cập nhật lịch hẹn thành công" : "Tạo lịch hẹn thành công",
       );
       resetForm();
       await fetchAppointments();
@@ -711,7 +711,7 @@ const WelcomePage = ({ navigate }) => {
                         onClick={resetForm}
                         fullWidth
                       >
-                        Hủy chỉnh sửa
+                        Hủy chỉnh sửa.
                       </Button>
                     )}
                   </div>
