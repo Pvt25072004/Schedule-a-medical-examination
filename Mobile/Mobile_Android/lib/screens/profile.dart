@@ -1,10 +1,9 @@
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import '../subscreens/profile/help.dart';
 import '../subscreens/profile/legal.dart';
 import '../subscreens/profile/setting/setting.dart';
+import '../service/auth_service.dart';
 
 // --- Cài đặt Màu Chủ đạo Mới (Teal - Xanh Ngọc) ---
 const Color primaryColor = Color(0xFF00BFA5); // Teal (Xanh ngọc)
@@ -20,7 +19,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
-  Map<dynamic, dynamic>? userData;
+  Map<String, dynamic>? userData;
+  final AuthService _authService = AuthService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -46,34 +46,29 @@ class _ProfileScreenState extends State<ProfileScreen>
       parent: _animationController,
       curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
     ));
-    _subscribeToUserData();
+    _loadUserData();
     _animationController.forward();
   }
 
-  void _subscribeToUserData() {
-    final user = FirebaseAuth.instance.currentUser;
+  // Thay thế luồng listen Firebase bằng gọi API HTTP từ AuthService
+  Future<void> _loadUserData() async {
+    final user = AuthService.currentUser;
     if (user == null) return;
 
-    final ref = FirebaseDatabase.instance.ref('users/${user.uid}');
-
-    ref.onValue.listen((event) {
-      if (context.mounted) {
-        final data = event.snapshot.value;
-        if (data != null && data is Map<dynamic, dynamic>) {
-          setState(() {
-            userData = data;
-          });
-        } else {
-          setState(() {
-            userData = null;
-          });
-        }
+    try {
+      final data = await _authService.fetchUserData(user.uid);
+      if (mounted) {
+        setState(() {
+          userData = data;
+          // Sync email từ AuthService local nếu backend response chưa đầy đủ
+          userData?['email'] ??= user.email; 
+        });
       }
-    }, onError: (error) {
-      if (context.mounted) {
+    } catch (error) {
+      if (mounted) {
         showAppSnackBar(context, 'Lỗi tải dữ liệu hồ sơ: $error');
       }
-    });
+    }
   }
 
   @override
@@ -173,6 +168,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   // --- Widget cho Avatar hiển thị chữ cái đầu ---
   Widget _buildInitialsAvatar(String name) {
     String initials = 'NV';
+    if (name.trim().isNotEmpty) {
+      final parts = name.trim().split(' ');
+      if (parts.length >= 2) {
+        initials = parts[0][0] + parts[parts.length - 1][0];
+      } else if (parts.isNotEmpty) {
+        initials = parts[0].substring(0, parts[0].length > 1 ? 2 : 1).toUpperCase();
+      }
+    }
 
     return Container(
       width: 60,
@@ -383,13 +386,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     final displayName = userData?['displayName'] ?? 'Nguyễn Văn A';
-    final userEmail = userData?['email'] ?? 'nguyenvanana@email.com';
+    final userEmail = userData?['email'] ?? (AuthService.currentUser?.email ?? 'nguyenvanana@email.com');
     final photoUrl = (userData?['photoUrl'] != null &&
             (userData!['photoUrl'] as String).isNotEmpty)
         ? userData!['photoUrl'] as String
         : null;
 
-    if (userData == null && FirebaseAuth.instance.currentUser != null) {
+    if (userData == null && AuthService.currentUser != null) {
       return const Scaffold(
         backgroundColor: backgroundLight,
         body: Center(child: CircularProgressIndicator(color: primaryColor)),

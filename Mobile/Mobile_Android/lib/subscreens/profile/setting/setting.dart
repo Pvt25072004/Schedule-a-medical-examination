@@ -1,5 +1,5 @@
 import 'package:clinic_booking_system/subscreens/profile/setting/security/security.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../screens/home.dart';
@@ -84,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _handleLogout() async {
-    await FirebaseAuth.instance.signOut();
+    await AuthService().signOut();
     if (context.mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),
