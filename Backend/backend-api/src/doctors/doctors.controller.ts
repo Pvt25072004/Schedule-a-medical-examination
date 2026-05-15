@@ -8,6 +8,7 @@ import {
   Post,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
@@ -30,8 +31,14 @@ export class DoctorsController {
   }
 
   @Get() // GET /doctors
-  findAll() {
-    return this.doctorsService.findAll();
+  findAll(
+    @Query('hospitalId') hospitalId?: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    return this.doctorsService.findAll(
+      hospitalId ? +hospitalId : undefined,
+      categoryId ? +categoryId : undefined,
+    );
   }
 
   @Get(':id') // GET /doctors/1

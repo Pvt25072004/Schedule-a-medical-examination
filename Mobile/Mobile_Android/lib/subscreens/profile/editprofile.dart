@@ -173,7 +173,7 @@ class _EditProfileState extends State<EditProfileScreen> {
         'phone': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
         'gender': _selectedGender,
-        'dateOfBirth': _selectedDob?.toIso8601String(),
+        'dateOfBirth': _selectedDob != null ? DateFormat('yyyy-MM-dd').format(_selectedDob!) : null,
         'medicalHistory': _medicalHistoryController.text.trim(),
         'insuranceId': _insuranceController.text.trim(),
         'address': {

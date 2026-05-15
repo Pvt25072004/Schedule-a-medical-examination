@@ -3,6 +3,7 @@ import 'package:clinic_booking_system/screens/home.dart';
 import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/welcome/onboarding.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
+import 'package:clinic_booking_system/screens/doctor_dashboard.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -74,7 +75,13 @@ class _MyAppState extends State<MyApp> {
       // 1. Lấy dữ liệu người dùng từ backend API
       final userData = await _authService.fetchUserData(user.uid);
       
-      // 2. Kiểm tra trạng thái Onboarding
+      // 🚀 THÊM MỚI: Nếu vai trò là Bác sĩ, đi thẳng vào Dashboard của Bác sĩ!
+      final role = userData['role'] as String? ?? 'patient';
+      if (role.toLowerCase() == 'doctor' || role == 'Bác sĩ') {
+        return const DoctorDashboardScreen();
+      }
+      
+      // 2. Kiểm tra trạng thái Onboarding (Dành cho Bệnh nhân)
       final bool isOnboardingNeeded = userData['is_onboarding_needed'] == true;
       final bool isProfileIncomplete = !_isProfileComplete(userData);
 

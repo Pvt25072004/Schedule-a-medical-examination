@@ -23,10 +23,21 @@ export class DoctorsService {
     private usersService: UsersService,
   ) {}
 
-  findAll(): Promise<Doctor[]> {
-    return this.doctorsRepository.find({
-      relations: ['category', 'hospitals'],
-    });
+  async findAll(hospitalId?: number, categoryId?: number): Promise<Doctor[]> {
+    const query = this.doctorsRepository.createQueryBuilder('doctor')
+      .leftJoinAndSelect('doctor.category', 'category')
+      .leftJoinAndSelect('doctor.hospitals', 'hospital');
+
+    if (hospitalId) {
+      query.innerJoin('doctor_hospital', 'dh', 'dh.doctor_id = doctor.id')
+           .andWhere('dh.hospital_id = :hospitalId', { hospitalId });
+    }
+
+    if (categoryId) {
+      query.andWhere('category.id = :categoryId', { categoryId });
+    }
+
+    return query.getMany();
   }
 
   findOne(id: number): Promise<Doctor | null> {

@@ -30,17 +30,21 @@ class _BookingScreenState extends State<BookingScreen> {
   String selectedCity = '';
   Color? cityColor;
   String selectedHospital = '';
+  int? selectedHospitalId; // MỚI: Lưu ID thật từ backend
   String selectedSpecialty = '';
+  int? selectedCategoryId; // MỚI: Lưu ID thật từ backend
   Color specialtyColor = Colors.greenAccent;
   String selectedDoctor = '';
+  int? selectedDoctorId; // MỚI: Lưu ID thật từ backend
   double selectedPrice = 0.0;
   DateTime selectedDate = DateTime.now();
   String selectedTimeSlot = '';
   String fullName = '';
   String phone = '';
   String email = '';
-  String reason = ''; // <-- Dùng biến này để lưu trạng thái
-  String note = '';   // <-- Dùng biến này để lưu trạng thái
+  String reason = ''; // Dùng biến này để lưu trạng thái
+  String note = '';   // Dùng biến này để lưu trạng thái
+  String bookingCode = ''; // MỚI: Mã lịch khám trả về từ Backend
 
   // Callback để cập nhật state khi chuyển step
   void goToStep(int step, {Map<String, dynamic>? data}) {
@@ -55,8 +59,10 @@ class _BookingScreenState extends State<BookingScreen> {
           cityColor = data['color'];
         } else if (step == 3) {
           selectedHospital = data['hospital'] ?? '';
+          selectedHospitalId = data['hospitalId']; // Nhận ID Bệnh viện thật
         } else if (step == 4) {
           selectedSpecialty = data['specialty'] ?? '';
+          selectedCategoryId = data['categoryId']; // Nhận ID Chuyên khoa thật
           specialtyColor = data['color'] ?? Colors.greenAccent;
         } else if (step == 5) {
           // Step 5: Chọn Ngày/Giờ
@@ -65,6 +71,7 @@ class _BookingScreenState extends State<BookingScreen> {
         } else if (step == 6) {
           // Step 6: Chọn Bác sĩ
           selectedDoctor = data['doctor'] ?? '';
+          selectedDoctorId = data['doctorId']; // Nhận ID Bác sĩ thật
 
           // --- SỬA LỖI: ÉP KIỂU SANG DOUBLE ---
           final priceData = data['price'];
@@ -84,8 +91,10 @@ class _BookingScreenState extends State<BookingScreen> {
           email = data['email'] ?? '';
           reason = data['reason'] ?? '';
           note = data['note'] ?? '';
+        } else if (step == 8) {
+          // Step 8: Lưu mã xác nhận từ API Backend đặt lịch trả về
+          bookingCode = data['bookingCode'] ?? '';
         }
-        // Step 8 (Thanh toán) và Step 9 (Xác nhận) không cần lưu data tạm
       }
     });
   }
@@ -133,8 +142,11 @@ class _BookingScreenState extends State<BookingScreen> {
       case 5:
       // Step 5: Chọn Bác sĩ
         body = Step5DoctorSelection(
+          cityName: selectedCity,
           specialtyName: selectedSpecialty,
           hospitalName: selectedHospital,
+          hospitalId: selectedHospitalId, // Truyền ID để lọc API
+          categoryId: selectedCategoryId, // Truyền ID để lọc API
           specialtyColor: specialtyColor,
           onNext: (data) => goToStep(6, data: data), // Chuyển sang Step 6 (Thông tin BN)
           onBack: goBack, // Quay lại Step 4
@@ -153,11 +165,15 @@ class _BookingScreenState extends State<BookingScreen> {
       // Step 7: Thanh toán
         body = Step7Payment(
           hospitalName: selectedHospital,
+          hospitalId: selectedHospitalId, // Truyền vào để gọi API
           doctor: selectedDoctor,
+          doctorId: selectedDoctorId, // Truyền vào để gọi API
           date: selectedDate,
           timeSlot: selectedTimeSlot,
           fullName: fullName,
           phone: phone,
+          email: email,
+          reason: reason,
           bookingPrice: selectedPrice,
           onNext: (data) => goToStep(8, data: data), // Chuyển sang Step 8 (Xác nhận)
           onBack: goBack, // Quay lại Step 6
@@ -167,6 +183,7 @@ class _BookingScreenState extends State<BookingScreen> {
       default:
       // Step 8: Xác nhận Đặt lịch Thành công
         body = Step8Confirmation(
+          bookingCode: bookingCode, // Truyền mã lịch thực từ Backend
           hospitalName: selectedHospital,
           cityName: selectedCity,
           specialty: selectedSpecialty,

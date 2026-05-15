@@ -131,7 +131,7 @@ class AuthService {
       final resp = await http.post(url, headers: _headers(), body: jsonEncode(body));
 
       if (resp.statusCode == 201) {
-        final data = jsonDecode(resp.body);
+        final data = jsonDecode(utf8.decode(resp.bodyBytes));
         final backendUser = data['user'];
         final token = data['access_token'];
 
@@ -146,7 +146,7 @@ class AuthService {
         await _saveLocalSession(appUser, token);
         return AppUserCredential(user: appUser);
       } else {
-        final errorBody = jsonDecode(resp.body);
+        final errorBody = jsonDecode(utf8.decode(resp.bodyBytes));
         final message = errorBody['message'] ?? 'Đăng ký không thành công.';
         throw Exception(message);
       }
@@ -166,7 +166,7 @@ class AuthService {
       final resp = await http.post(url, headers: _headers(), body: jsonEncode(body));
 
       if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body);
+        final data = jsonDecode(utf8.decode(resp.bodyBytes));
         final backendUser = data['user'];
         final token = data['access_token'];
 
@@ -181,7 +181,7 @@ class AuthService {
         await _saveLocalSession(appUser, token);
         return AppUserCredential(user: appUser);
       } else {
-        final errorBody = jsonDecode(resp.body);
+        final errorBody = jsonDecode(utf8.decode(resp.bodyBytes));
         final message = errorBody['message'] ?? 'Email hoặc mật khẩu không chính xác.';
         throw Exception(message);
       }
@@ -304,7 +304,7 @@ class AuthService {
       final resp = await http.get(url, headers: _headers(auth: true));
 
       if (resp.statusCode == 200) {
-        final backendUser = jsonDecode(resp.body);
+        final backendUser = jsonDecode(utf8.decode(resp.bodyBytes));
 
         // Đọc trạng thái onboarding từ Backend (dùng is_welcome) hoặc local cache
         final bool isBackendWelcome = backendUser['is_welcome'] ?? false;

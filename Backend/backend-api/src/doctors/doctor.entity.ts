@@ -44,6 +44,12 @@ export class Doctor {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Column({ type: 'float', default: 5.0 })
+  rating: number;
+
+  @Column({ default: 0 })
+  review_count: number;
+
   @CreateDateColumn()
   created_at: Date;
 
