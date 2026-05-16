@@ -462,26 +462,37 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                   
                   if (status.toLowerCase() == 'completed') ...[
                     const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          _showReviewDialog(appt);
-                        },
-                        icon: const Icon(Icons.star_rounded, size: 20, color: Colors.white),
-                        label: const Text(
-                          'ĐÁNH GIÁ NGAY',
-                          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange.shade700,
-                          foregroundColor: Colors.white,
-                          elevation: 4,
-                          shadowColor: Colors.orange.withOpacity(0.4),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final existingReview = appt['review'];
+                        final bool hasReviewed = existingReview != null;
+                        
+                        return SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              _showReviewDialog(appt);
+                            },
+                            icon: Icon(
+                              hasReviewed ? Icons.edit_note_rounded : Icons.star_rounded, 
+                              size: 20, 
+                              color: Colors.white
+                            ),
+                            label: Text(
+                              hasReviewed ? 'SỬA ĐÁNH GIÁ ✏️' : 'ĐÁNH GIÁ NGAY ⭐',
+                              style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: hasReviewed ? Colors.blue.shade600 : Colors.orange.shade700,
+                              foregroundColor: Colors.white,
+                              elevation: 4,
+                              shadowColor: (hasReviewed ? Colors.blue : Colors.orange).withOpacity(0.4),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ],
@@ -526,11 +537,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
         ),
       ],
     );
+  }
+
   void _showReviewDialog(dynamic appt) {
     final doctor = appt['doctor'];
     final String docName = doctor != null ? doctor['name'] : 'Bác sĩ';
-    int ratingValue = 5;
-    final TextEditingController commentController = TextEditingController();
+    final existingReview = appt['review'];
+    final bool isEditing = existingReview != null;
+    
+    int ratingValue = isEditing ? (existingReview['rating'] ?? 5) : 5;
+    final TextEditingController commentController = TextEditingController(
+      text: isEditing ? (existingReview['comment'] ?? '') : ''
+    );
     
     showDialog(
       context: context,
@@ -538,114 +556,177 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              elevation: 16,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.star_rounded, size: 48, color: Colors.orange),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Đánh giá buổi khám',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Bạn cảm thấy thế nào về dịch vụ của bác sĩ $docName?',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.black54, fontSize: 13),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(5, (index) {
-                        final int starIndex = index + 1;
-                        return IconButton(
-                          onPressed: () {
-                            setModalState(() {
-                              ratingValue = starIndex;
-                            });
-                          },
-                          icon: Icon(
-                            starIndex <= ratingValue ? Icons.star_rounded : Icons.star_outline_rounded,
-                            color: starIndex <= ratingValue ? Colors.amber : Colors.grey.shade400,
-                            size: 40,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30, offset: const Offset(0, 15))
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header Icon
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isEditing 
+                              ? [Colors.blue.shade300, Colors.blue.shade600]
+                              : [Colors.orange.shade300, Colors.orange.shade600],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    TextField(
-                      controller: commentController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'Nhập bình luận phản hồi của bạn tại đây...',
-                        hintStyle: const TextStyle(fontSize: 13, color: Colors.black38),
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        contentPadding: const EdgeInsets.all(16),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isEditing ? Colors.blue : Colors.orange).withOpacity(0.4),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            )
+                          ],
+                        ),
+                        child: Icon(isEditing ? Icons.rate_review_rounded : Icons.star_rounded, size: 48, color: Colors.white),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        isEditing ? 'Sửa Đánh Giá' : 'Đánh giá buổi khám',
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bạn cảm thấy thế nào về dịch vụ của bác sĩ $docName?',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.black54, fontSize: 14, height: 1.4),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Interactive Stars
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(5, (index) {
+                            final int starIndex = index + 1;
+                            return GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  ratingValue = starIndex;
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeOutBack,
+                                  transform: Matrix4.identity()..scale(starIndex <= ratingValue ? 1.15 : 1.0),
+                                  child: Icon(
+                                    starIndex <= ratingValue ? Icons.star_rounded : Icons.star_outline_rounded,
+                                    color: starIndex <= ratingValue ? Colors.amber.shade400 : Colors.grey.shade300,
+                                    size: 42,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Hủy', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                      
+                      // Comment Field
+                      TextField(
+                        controller: commentController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Chia sẻ thêm trải nghiệm của bạn (không bắt buộc)...',
+                          hintStyle: const TextStyle(fontSize: 14, color: Colors.black38),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                          contentPadding: const EdgeInsets.all(20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(color: isEditing ? Colors.blue.shade400 : Colors.orange.shade400, width: 2),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              final user = AuthService.currentUser;
-                              if (user == null) return;
-                              
-                              final userId = int.tryParse(user.uid);
-                              final doctorId = appt['doctor_id'] != null ? int.tryParse(appt['doctor_id'].toString()) : null;
-                              final appointmentId = appt['id'] != null ? int.tryParse(appt['id'].toString()) : null;
-                              
-                              if (userId == null || doctorId == null || appointmentId == null) {
-                                showAppSnackBar(context, '🔥 Không xác định được thông tin lịch hẹn!', color: Colors.red);
-                                return;
-                              }
-                              
-                              Navigator.pop(context); // Close dialog
-                              
-                              final success = await _reviewService.createReview(
-                                userId: userId,
-                                doctorId: doctorId,
-                                appointmentId: appointmentId,
-                                rating: ratingValue,
-                                comment: commentController.text.trim(),
-                              );
-                              
-                              if (success) {
-                                showAppSnackBar(context, '🎉 Đánh giá thành công! Cảm ơn bạn đã phản hồi.', color: Colors.green);
-                                _loadData(); // Reload appointments
-                              } else {
-                                showAppSnackBar(context, '❌ Không thể đánh giá (Có thể bạn đã đánh giá trước đó).', color: Colors.red);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange.shade700,
+                      ),
+                      const SizedBox(height: 28),
+                      
+                      // Actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                side: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              child: const Text('Hủy bỏ', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold, fontSize: 15)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                final user = AuthService.currentUser;
+                                if (user == null) return;
+                                
+                                final userId = int.tryParse(user.uid);
+                                final doctorId = appt['doctor_id'] != null ? int.tryParse(appt['doctor_id'].toString()) : null;
+                                final appointmentId = appt['id'] != null ? int.tryParse(appt['id'].toString()) : null;
+                                
+                                if (userId == null || doctorId == null || appointmentId == null) {
+                                  showAppSnackBar(context, '🔥 Không xác định được thông tin lịch hẹn!', color: Colors.red);
+                                  return;
+                                }
+                                
+                                Navigator.pop(context); // Close dialog
+                                
+                                bool success;
+                                if (isEditing) {
+                                  success = await _reviewService.updateReview(
+                                    reviewId: existingReview['id'],
+                                    rating: ratingValue,
+                                    comment: commentController.text.trim(),
+                                  );
+                                } else {
+                                  success = await _reviewService.createReview(
+                                    userId: userId,
+                                    doctorId: doctorId,
+                                    appointmentId: appointmentId,
+                                    rating: ratingValue,
+                                    comment: commentController.text.trim(),
+                                  );
+                                }
+                                
+                                if (success) {
+                                  showAppSnackBar(context, '🎉 ${isEditing ? 'Cập nhật' : 'Gửi'} đánh giá thành công!', color: Colors.green);
+                                  _loadData(); // Reload appointments to reflect new review status
+                                } else {
+                                  showAppSnackBar(context, '❌ Không thể lưu đánh giá.', color: Colors.red);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isEditing ? Colors.blue.shade600 : Colors.orange.shade600,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -657,12 +738,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                       ],
                     ),
                   ],
-                ),
-              ),
-            );
-          }
-        );
-      }
-    );
-  }
+                ), // Column
+              ), // SingleChildScrollView
+            ), // Container
+          ); // Dialog
+        }, // StatefulBuilder builder
+      ); // StatefulBuilder
+    }, // showDialog builder
+  ); // showDialog
+}
 }

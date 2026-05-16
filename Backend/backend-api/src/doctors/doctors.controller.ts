@@ -29,15 +29,24 @@ export class DoctorsController {
     }
     return this.doctorsService.findByEmail(user.email);
   }
+  
+  @Get('top-rated') // GET /doctors/top-rated
+  findTopRated() {
+    return this.doctorsService.findTopRated();
+  }
 
   @Get() // GET /doctors
   findAll(
     @Query('hospitalId') hospitalId?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('date') date?: string,
+    @Query('time') time?: string,
   ) {
     return this.doctorsService.findAll(
       hospitalId ? +hospitalId : undefined,
       categoryId ? +categoryId : undefined,
+      date,
+      time,
     );
   }
 

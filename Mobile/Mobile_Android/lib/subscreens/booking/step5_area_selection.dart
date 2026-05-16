@@ -9,6 +9,8 @@ class Step5DoctorSelection extends StatefulWidget {
   final int? hospitalId;
   final int? categoryId;
   final Color? specialtyColor;
+  final DateTime? selectedDate;
+  final String? selectedTimeSlot;
   final Function(Map<String, dynamic>) onNext;
   final VoidCallback onBack;
 
@@ -20,6 +22,8 @@ class Step5DoctorSelection extends StatefulWidget {
     this.hospitalId,
     this.categoryId,
     this.specialtyColor,
+    this.selectedDate,
+    this.selectedTimeSlot,
     required this.onNext,
     required this.onBack,
   });
@@ -48,6 +52,8 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
       final data = await _doctorService.fetchDoctors(
         hospitalId: widget.hospitalId,
         categoryId: widget.categoryId,
+        date: widget.selectedDate,
+        timeSlot: widget.selectedTimeSlot,
       );
       setState(() {
         _doctors = data;
@@ -134,8 +140,20 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
                         final String name = doc['name'] ?? 'Bác sĩ';
                         final String specialty = doc['specialty'] ?? widget.specialtyName;
                         
-                        // Phép tính toán logic giả lập từ ID để hiển thị UI sinh động
-                        final int price = 250000 + (docId % 4) * 50000; // Từ 250k - 400k tùy doctor ID
+                        // --- TÍNH TOÁN GIÁ THẬT (Chuẩn Enterprise) ---
+                        // Tổng giá = Giá khám bác sĩ + Phụ phí bệnh viện
+                        final double doctorFee = (doc['consultation_fee'] ?? 0).toDouble();
+                        double facilityFee = 0;
+                        final hospitals = doc['hospitals'] as List?;
+                        if (hospitals != null && hospitals.isNotEmpty) {
+                          // Ưu tiên lấy đúng phụ phí của bệnh viện mà user đã chọn ở Step 2
+                          final currentHos = hospitals.firstWhere(
+                            (h) => h['id'] == widget.hospitalId,
+                            orElse: () => hospitals.first,
+                          );
+                          facilityFee = (currentHos['facility_fee'] ?? 0).toDouble();
+                        }
+                        final int price = (doctorFee + facilityFee).toInt();
                         final double rating = 4.5 + (docId % 5) * 0.1; // Lên tới 5.0 sao
                         final int reviews = 50 + (docId * 7) % 150;
                         final int expYears = 5 + (docId % 20);

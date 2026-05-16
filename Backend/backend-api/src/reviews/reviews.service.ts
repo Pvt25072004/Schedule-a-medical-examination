@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Review } from './entities/review.entity';
 import { Doctor } from 'src/doctors/doctor.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
 
 @Injectable()
 export class ReviewsService {
@@ -61,5 +62,32 @@ export class ReviewsService {
       relations: ['user'], // Kèm thông tin Bệnh nhân gửi đánh giá
       order: { created_at: 'DESC' },
     });
+  }
+
+  async update(id: number, dto: UpdateReviewDto): Promise<Review> {
+    const review = await this.reviewsRepository.findOne({ where: { id } });
+    if (!review) {
+      throw new NotFoundException(`Không tìm thấy đánh giá với ID ${id}`);
+    }
+
+    const ratingChanged = dto.rating && dto.rating !== review.rating;
+    
+    Object.assign(review, dto);
+    const savedReview = await this.reviewsRepository.save(review);
+
+    if (ratingChanged) {
+      const doctor = await this.doctorsRepository.findOne({ where: { id: review.doctor_id } });
+      if (doctor) {
+        // Tính lại trung bình tuyệt đối an toàn bằng cách quét tất cả reviews
+        const allReviews = await this.reviewsRepository.find({ where: { doctor_id: doctor.id } });
+        if (allReviews.length > 0) {
+          const totalStars = allReviews.reduce((sum, r) => sum + r.rating, 0);
+          doctor.rating = Math.round((totalStars / allReviews.length) * 10) / 10;
+        }
+        await this.doctorsRepository.save(doctor);
+      }
+    }
+
+    return savedReview;
   }
 }

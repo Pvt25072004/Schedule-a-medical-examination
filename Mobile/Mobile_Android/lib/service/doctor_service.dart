@@ -4,7 +4,12 @@ import 'auth_service.dart';
 import '../utils/api_config.dart';
 
 class DoctorService {
-  Future<List<dynamic>> fetchDoctors({int? hospitalId, int? categoryId}) async {
+  Future<List<dynamic>> fetchDoctors({
+    int? hospitalId,
+    int? categoryId,
+    DateTime? date,
+    String? timeSlot,
+  }) async {
     try {
       String urlStr = '${ApiConfig.baseUrl}/doctors';
       List<String> queryParams = [];
@@ -15,9 +20,16 @@ class DoctorService {
       if (categoryId != null) {
         queryParams.add('categoryId=$categoryId');
       }
+      if (date != null) {
+        final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+        queryParams.add('date=$dateStr');
+      }
+      if (timeSlot != null && timeSlot.isNotEmpty) {
+        queryParams.add('time=$timeSlot');
+      }
       
       if (queryParams.isNotEmpty) {
-        urlStr += '?' + queryParams.join('&');
+        urlStr += '?${queryParams.join('&')}';
       }
       
       // Lấy Access Token từ hệ thống đăng nhập mới
@@ -77,6 +89,34 @@ class DoctorService {
     } catch (e) {
       print('🔥 DoctorProfile Error: $e');
       return null;
+    }
+  }
+
+  /// Lấy danh sách bác sĩ nổi bật (Top Rated) từ Backend
+  Future<List<dynamic>> fetchTopRatedDoctors() async {
+    try {
+      final urlStr = '${ApiConfig.baseUrl}/doctors/top-rated';
+      final token = AuthService.accessToken;
+      final Map<String, String> headers = {
+        'Content-Type': 'application/json',
+      };
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      print('➡️ Gọi API Bác sĩ nổi bật: $urlStr');
+      final response = await http.get(
+        Uri.parse(urlStr),
+        headers: headers,
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+      }
+      return [];
+    } catch (e) {
+      print('🔥 fetchTopRatedDoctors Error: $e');
+      return [];
     }
   }
 }

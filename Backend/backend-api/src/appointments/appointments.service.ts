@@ -4,7 +4,10 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Appointment } from './entities/appointment.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
+import { Doctor } from '../doctors/doctor.entity';
+import { Hospital } from '../hospitals/entities/hospital.entity';
 import { Repository, MoreThanOrEqual, In } from 'typeorm';
+import { PricingService } from '../pricing/pricing.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -13,6 +16,11 @@ export class AppointmentsService {
     private appointmentsRepository: Repository<Appointment>,
     @InjectRepository(Schedule)
     private schedulesRepository: Repository<Schedule>,
+    @InjectRepository(Doctor)
+    private doctorsRepository: Repository<Doctor>,
+    @InjectRepository(Hospital)
+    private hospitalsRepository: Repository<Hospital>,
+    private pricingService: PricingService,
   ) {}
 
   async create(
@@ -82,8 +90,29 @@ export class AppointmentsService {
     // Cập nhật lại chính xác schedule_id trước khi tạo bản ghi
     createAppointmentDto.schedule_id = schedule.id;
 
-    const appointment =
-      this.appointmentsRepository.create(createAppointmentDto);
+    // --- Lấy dữ liệu Bác sĩ & Bệnh viện để thực hiện Snapshot giá và thông tin (Chuẩn Enterprise) ---
+    const [doctor, hospital] = await Promise.all([
+      this.doctorsRepository.findOneBy({ id: createAppointmentDto.doctor_id }),
+      this.hospitalsRepository.findOneBy({ id: createAppointmentDto.hospital_id }),
+    ]);
+
+    if (!doctor || !hospital) {
+      throw new BadRequestException('Thông tin bác sĩ hoặc bệnh viện không hợp lệ!');
+    }
+
+    // Tính toán giá bằng Stateless PricingService (Pure Function Style)
+    const pricing = this.pricingService.calculateAppointmentFee(doctor, hospital);
+
+    const appointment = this.appointmentsRepository.create({
+      ...createAppointmentDto,
+      doctor_fee_snapshot: pricing.doctorFeeSnapshot,
+      hospital_fee_snapshot: pricing.hospitalFeeSnapshot,
+      total_fee: pricing.totalFee,
+      doctor_name_snapshot: pricing.doctorNameSnapshot,
+      hospital_name_snapshot: pricing.hospitalNameSnapshot,
+      currency_snapshot: pricing.currencySnapshot,
+    });
+
     return await this.appointmentsRepository.save(appointment);
   }
 
@@ -132,7 +161,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where: { user_id: userId },
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['doctor', 'hospital'],
+      relations: ['doctor', 'hospital', 'review'],
     });
   }
 
