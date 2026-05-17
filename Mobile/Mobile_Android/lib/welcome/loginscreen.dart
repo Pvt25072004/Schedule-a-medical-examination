@@ -5,7 +5,6 @@ import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/service/email_service.dart';
 import 'package:clinic_booking_system/subscreens/password/emailforpass.dart';
 import 'package:clinic_booking_system/utils/otp_utils.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'onboarding.dart';
 
@@ -443,7 +442,7 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
           }
 
           showLoadingDialog("Đang tạo tài khoản...");
-          final UserCredential createdCred =
+          final AppUserCredential createdCred =
               await _authService.signUpWithEmail(input, password, displayName);
 
           if (createdCred.user != null) {
@@ -479,7 +478,7 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
       // ======================= ĐĂNG NHẬP =======================
       showLoadingDialog("Đang đăng nhập...");
 
-      UserCredential? userCred;
+      AppUserCredential? userCred;
       if (_inputType == 'phone') {
         if (!isValidPhone(input)) {
           safePopDialog();
@@ -511,7 +510,7 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
 
       safePopDialog();
 
-      final user = FirebaseAuth.instance.currentUser;
+      final user = AuthService.currentUser;
       if (user != null && context.mounted) {
         final userData =
             await _authService.fetchUserData(user.uid); // FIXED: Fetch từ DB
@@ -595,7 +594,7 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
 
       safePopDialog();
 
-      final user = FirebaseAuth.instance.currentUser;
+      final user = AuthService.currentUser;
       if (user != null && context.mounted) {
         final userData = await _authService.fetchUserData(user.uid);
         final bool isOnboardingNeeded = userData['is_onboarding_needed'] ??
@@ -657,7 +656,7 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
 
       safePopDialog();
 
-      final user = FirebaseAuth.instance.currentUser;
+      final user = AuthService.currentUser;
       if (user != null && context.mounted) {
         final userData = await _authService.fetchUserData(user.uid);
         final bool isOnboardingNeeded = userData['is_onboarding_needed'] ?? true;

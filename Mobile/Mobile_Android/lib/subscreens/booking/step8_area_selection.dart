@@ -18,11 +18,15 @@ class Step8Confirmation extends StatelessWidget {
   final String email;
   final String reason;
 
+  // Mã xác nhận thực tế từ backend
+  final String? bookingCode;
+
   // Hành động
   final VoidCallback onBookNew;
 
   const Step8Confirmation({
     super.key,
+    this.bookingCode,
     required this.hospitalName,
     required this.cityName,
     required this.specialty,
@@ -79,8 +83,10 @@ class Step8Confirmation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mock Mã đặt lịch
-    const bookingCode = 'BK68285971';
+    // Sử dụng mã booking thật nếu có, ngược lại dùng mã mockup
+    final String displayCode = (bookingCode != null && bookingCode!.isNotEmpty) 
+        ? 'MED-${bookingCode!.padLeft(6, '0')}' 
+        : 'BK68285971';
     final formattedDate = DateFormat('EEEE, dd tháng MM, yyyy', 'vi').format(date);
     final priceText = _formatPrice(price);
 
@@ -123,7 +129,7 @@ class Step8Confirmation extends StatelessWidget {
                   const Text('Mã đặt lịch', style: TextStyle(fontSize: 14, color: Colors.black54)),
                   const SizedBox(height: 4),
                   Text(
-                    bookingCode,
+                    displayCode,
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
                   ),
                 ],

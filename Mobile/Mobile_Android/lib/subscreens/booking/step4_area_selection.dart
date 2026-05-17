@@ -2,12 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flip_card/flip_card.dart';
+import '../../service/schedule_service.dart';
 
 class Step4DateTimeSelection extends StatefulWidget {
+  final int? doctorId;
   final Function(Map<String, dynamic>) onNext;
   final VoidCallback onBack;
   const Step4DateTimeSelection({
     super.key,
+    this.doctorId,
     required this.onNext,
     required this.onBack,
   });
@@ -26,6 +29,11 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
   late DateTime _displayedMonth;
   bool flashcardEnabled = true;
 
+  final ScheduleService _scheduleService = ScheduleService();
+  List<dynamic> _doctorSchedules = [];
+  Set<String> _availableDates = {};
+  bool _isLoadingSchedules = false;
+
   final List<String> timeSlots = [
     '08:00','08:30','09:00','09:30','10:00','10:30',
     '11:00','13:00','13:30','14:00','14:30','15:00',
@@ -40,6 +48,56 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
   void initState() {
     super.initState();
     _displayedMonth = DateTime.now();
+    if (widget.doctorId != null) {
+      _loadSchedules();
+    }
+  }
+
+  Future<void> _loadSchedules() async {
+    setState(() => _isLoadingSchedules = true);
+    final schedules = await _scheduleService.fetchDoctorSchedules(widget.doctorId!);
+    final Set<String> dates = {};
+    for (var s in schedules) {
+      if (s['is_available'] == true && s['work_date'] != null) {
+        dates.add(s['work_date'].toString().substring(0, 10)); // Extract YYYY-MM-DD
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _doctorSchedules = schedules;
+        _availableDates = dates;
+        _isLoadingSchedules = false;
+      });
+    }
+  }
+
+  bool _isSlotAvailable(String slot) {
+    if (widget.doctorId == null || selectedDate == null) return true;
+    
+    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate!);
+    final daySchedules = _doctorSchedules.where((s) => 
+      s['work_date'].toString().startsWith(dateStr) && s['is_available'] == true
+    ).toList();
+    
+    if (daySchedules.isEmpty) return false;
+
+    final parts = slot.split(':');
+    final slotMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    
+    for (var s in daySchedules) {
+       if (s['start_time'] == null || s['end_time'] == null) continue;
+       final startStr = s['start_time'].toString();
+       final endStr = s['end_time'].toString();
+       final startParts = startStr.split(':');
+       final endParts = endStr.split(':');
+       final startMins = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+       final endMins = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+       
+       if (slotMinutes >= startMins && slotMinutes < endMins) {
+          return true;
+       }
+    }
+    return false;
   }
 
   Future<void> _selectDate(DateTime date) async {
@@ -130,7 +188,14 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
                     final isToday = date.year==DateTime.now().year && date.month==DateTime.now().month && date.day==DateTime.now().day;
                     final isSelected = selectedDate!=null && date.year==selectedDate!.year && date.month==selectedDate!.month && date.day==selectedDate!.day;
                     final isPast = date.isBefore(DateTime.now().subtract(const Duration(hours:24)));
-                    final isDisabled = !isInMonth || isPast;
+                    
+                    bool isDisabled = !isInMonth || isPast;
+                    if (widget.doctorId != null) {
+                      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+                      if (!_availableDates.contains(dateStr)) {
+                        isDisabled = true; // Bác sĩ không có ca trực ngày này
+                      }
+                    }
 
                     return GestureDetector(
                       onTap: isDisabled ? null : ()=>_selectDate(date),
@@ -178,7 +243,9 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
               Text('Chọn giờ khám:', style: const TextStyle(fontSize:16,fontWeight: FontWeight.bold)),
               const SizedBox(height:8),
               Expanded(
-                child: GridView.builder(
+                child: timeSlots.isEmpty
+                ? const Center(child: Text('Không có ca khám khả dụng ngày này.', style: TextStyle(color: Colors.red)))
+                : GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -186,19 +253,21 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
                   itemCount: timeSlots.length,
                   itemBuilder: (context,index){
                     final slot=timeSlots[index];
-                    final isSelected = selectedTimeSlot==slot;
+                    final isAvailable = _isSlotAvailable(slot);
+                    final isSelected = selectedTimeSlot==slot && isAvailable;
                     return ChoiceChip(
                       label: Text(slot, style: TextStyle(
-                          color:isSelected?primaryDarkColor:Colors.black87,
-                          fontWeight:FontWeight.w500
+                          color: isAvailable ? (isSelected?primaryDarkColor:Colors.black87) : Colors.black26,
+                          fontWeight:FontWeight.w500,
+                          decoration: isAvailable ? TextDecoration.none : TextDecoration.lineThrough,
                       )),
                       selected:isSelected,
-                      onSelected:(s)=>setState(()=>selectedTimeSlot=s?slot:''),
+                      onSelected: isAvailable ? (s)=>setState(()=>selectedTimeSlot=s?slot:'') : null,
                       selectedColor: primaryColor,
-                      backgroundColor: Colors.grey.shade100,
+                      backgroundColor: isAvailable ? Colors.grey.shade100 : Colors.grey.shade200,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color:isSelected?primaryDarkColor:Colors.grey.shade300),
+                        side: BorderSide(color:isSelected?primaryDarkColor:(isAvailable ? Colors.grey.shade300 : Colors.transparent)),
                       ),
                     );
                   },
