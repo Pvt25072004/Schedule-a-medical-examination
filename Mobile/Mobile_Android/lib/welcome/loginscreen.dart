@@ -628,6 +628,67 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
     }
   }
 
+  //Đăng nhập bằng Facebook Signin
+  void _handleFacebookSignIn() async {
+    void showLoadingDialog(String message) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 16),
+              Expanded(child: Text(message)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    void safePopDialog() {
+      if (Navigator.canPop(context)) Navigator.pop(context);
+    }
+
+    try {
+      showLoadingDialog("Đang đăng nhập bằng Facebook...");
+
+      final userCred = await _authService.signInWithFacebook();
+
+      safePopDialog();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && context.mounted) {
+        final userData = await _authService.fetchUserData(user.uid);
+        final bool isOnboardingNeeded = userData['is_onboarding_needed'] ?? true;
+        final String userRole = userData['role'] ?? 'UNASSIGNED';
+
+        _showSnack("🎉 Đăng nhập Facebook thành công!");
+
+        if (isOnboardingNeeded || userRole == 'UNASSIGNED') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingFlowScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+          );
+        }
+      } else {
+        _showSnack("⚠️ Đăng nhập Facebook thất bại!");
+      }
+    } catch (e) {
+      if (Navigator.canPop(context)) Navigator.pop(context);
+      if (e.toString().contains('cancelled') || e.toString().contains('hủy')) {
+        _showSnack("Đăng nhập Facebook đã bị hủy.");
+      } else {
+        _showSnack("❌ Lỗi Facebook Sign-In: $e");
+      }
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -1194,9 +1255,7 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
       children: [
         // 1. Facebook
         InkWell(
-          onTap: () {
-            _showSnack("Tính năng Facebook chưa được triển khai.");
-          },
+          onTap: _handleFacebookSignIn,
           child: const Icon(Icons.facebook, color: Colors.blue, size: 36),
         ),
         const SizedBox(width: 24),
@@ -1212,8 +1271,7 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.grey.shade300)),
             child: Center(
-              child: Icon(Icons.g_mobiledata,
-                  color: Colors.red.shade600, size: 36),
+              child: Image.asset('assets/images/google.png', width: 20, height: 20),
             ),
           ),
         ),

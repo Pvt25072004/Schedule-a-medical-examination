@@ -11,6 +11,7 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { SocialLoginDto } from './dto/social-login.dto';
 import { RequestResetDto } from './dto/request-reset.dto';
 import { VerifyResetDto } from './dto/verify-reset.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -30,6 +31,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return await this.authService.login(loginDto);
+  }
+
+  @Post('social-login')
+  @HttpCode(HttpStatus.OK)
+  async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
+    return await this.authService.socialLogin(socialLoginDto);
   }
 
   @Post('request-reset')

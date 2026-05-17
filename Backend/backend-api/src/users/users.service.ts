@@ -28,6 +28,15 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { phone } });
   }
 
+  async findByProvider(
+    auth_provider: string,
+    provider_id: string,
+  ): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { auth_provider, provider_id },
+    });
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = this.usersRepository.create(createUserDto);
     return await this.usersRepository.save(user);

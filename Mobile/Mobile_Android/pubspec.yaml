@@ -37,6 +37,7 @@ dependencies:
   url_launcher: ^6.3.2
   flip_card: ^0.7.0
   flutter_screenutil: ^5.9.3
+  flutter_facebook_auth: ^7.1.0
 
 flutter_icons:
   android: true
