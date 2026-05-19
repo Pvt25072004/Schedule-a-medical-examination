@@ -8,6 +8,8 @@ import 'screens/booking.dart';
 import 'screens/home.dart';
 import 'screens/qr_scan.dart';
 import 'screens/chatbot.dart';
+import 'service/auth_service.dart';
+import 'screens/doctor_dashboard.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,6 +20,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
+  bool _isDoctor = false;
 
   double chatX = 0;
   double chatY = 0;
@@ -30,6 +33,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _checkDoctorRole();
 
     _chatController = AnimationController(
       duration: const Duration(milliseconds: 2000),
@@ -43,6 +47,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     Timer(const Duration(seconds: 5), () {
       if (mounted) setState(() => _showChatHint = false);
     });
+  }
+
+  Future<void> _checkDoctorRole() async {
+    final user = AuthService.currentUser;
+    if (user != null) {
+      try {
+        final data = await AuthService().fetchUserData(user.uid);
+        final role = data['role'] as String? ?? '';
+        if (role == 'Bác sĩ' || role.toLowerCase() == 'doctor') {
+          if (mounted) setState(() => _isDoctor = true);
+        }
+      } catch (e) {
+        debugPrint('⚠️ Lỗi kiểm tra quyền Bác sĩ: $e');
+      }
+    }
   }
 
   @override
@@ -155,6 +174,59 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 const ProfileScreen(),
               ],
             ),
+
+            // 🔄 Nút Chuyển Sang Giao Diện Bác Sĩ (Chỉ hiện nếu User là Bác sĩ)
+            if (_isDoctor)
+              Positioned(
+                top: 55,
+                right: 20,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.teal.shade700, Colors.teal.shade500],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.teal.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      )
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (context) => const DoctorDashboardScreen()),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.medical_services_outlined, color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Về Bác sĩ',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
             // ✅ Chatbot nổi (dùng ảnh PNG)
             // ✅ Draggable chatbot

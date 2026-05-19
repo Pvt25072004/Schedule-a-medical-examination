@@ -1,41 +1,79 @@
-// step3_specialty_selection.dart
 import 'package:flutter/material.dart';
+import '../../service/category_service.dart';
 
-class Step3SpecialtySelection extends StatelessWidget {
+class Step3SpecialtySelection extends StatefulWidget {
   final String cityName;
   final String hospitalName;
   final Color? color;
   final Function(Map<String, dynamic>) onNext;
-  // Loại bỏ final VoidCallback onBack; vì nó không được sử dụng trong UI này
-  Step3SpecialtySelection({
+  final VoidCallback onBack;
+
+  const Step3SpecialtySelection({
     super.key,
     required this.cityName,
     required this.hospitalName,
     this.color,
     required this.onNext,
-    required final VoidCallback onBack, // Vẫn nhận để đảm bảo API không bị phá vỡ, nhưng không dùng trong UI
+    required this.onBack,
   });
 
-  final List<Map<String, dynamic>> specialties = [
-    {'name': 'Tim mạch', 'icon': Icons.favorite, 'color': Colors.red},
-    {'name': 'Nhĩ khoa', 'icon': Icons.hearing, 'color': Colors.blue},
-    {'name': 'Xương khớp', 'icon': Icons.accessibility, 'color': Colors.orange}, // Đổi icon Xương khớp
-    {'name': 'Thần kinh', 'icon': Icons.psychology_outlined, 'color': Colors.purple}, // Đổi icon Thần kinh
-    {'name': 'Mắt', 'icon': Icons.visibility, 'color': Colors.green},
-    {'name': 'Nhi khoa', 'icon': Icons.child_care, 'color': Colors.pink},
-    {'name': 'Tai mũi họng', 'icon': Icons.hearing_outlined, 'color': Colors.brown}, // Đổi icon Tai mũi họng
-    {'name': 'Da liễu', 'icon': Icons.spa_outlined, 'color': Colors.teal}, // Đổi icon Da liễu
-    {'name': 'Nội khoa', 'icon': Icons.health_and_safety, 'color': Colors.indigo},
+  @override
+  State<Step3SpecialtySelection> createState() => _Step3SpecialtySelectionState();
+}
+
+class _Step3SpecialtySelectionState extends State<Step3SpecialtySelection> {
+  final CategoryService _categoryService = CategoryService();
+  List<dynamic> _categories = [];
+  bool _isLoading = true;
+
+  final List<Color> _colorsPalette = [
+    Colors.red,
+    Colors.blue,
+    Colors.orange,
+    Colors.purple,
+    Colors.green,
+    Colors.pink,
+    Colors.brown,
+    Colors.teal,
+    Colors.indigo,
+  ];
+
+  final List<IconData> _iconsPalette = [
+    Icons.favorite,
+    Icons.hearing,
+    Icons.accessibility,
+    Icons.psychology_outlined,
+    Icons.visibility,
+    Icons.child_care,
+    Icons.hearing_outlined,
+    Icons.spa_outlined,
+    Icons.health_and_safety,
   ];
 
   @override
-  Widget build(BuildContext context) {
-    // Màu chủ đạo (không sử dụng ở đây nhưng giữ lại)
-    final Color headerColor = color ?? Colors.blue;
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
 
+  Future<void> _loadCategories() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await _categoryService.fetchCategories();
+      setState(() {
+        _categories = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
-        // --- Header Tùy Chỉnh (Xít lên và có mô tả) ---
+        // --- Header Tùy Chỉnh ---
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           width: double.infinity,
@@ -47,7 +85,7 @@ class Step3SpecialtySelection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chọn chuyên khoa tại $hospitalName',
+                'Chọn chuyên khoa tại ${widget.hospitalName}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -58,7 +96,7 @@ class Step3SpecialtySelection extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Thành phố: $cityName. Vui lòng chọn chuyên khoa bạn cần khám.',
+                'Thành phố: ${widget.cityName}. Chọn chuyên khoa để tiếp tục.',
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.grey[600],
@@ -67,69 +105,93 @@ class Step3SpecialtySelection extends StatelessWidget {
             ],
           ),
         ),
-        // --- Kết thúc Header Tùy Chỉnh ---
 
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0), // Padding ngang cho toàn bộ nội dung
-            child: GridView.builder(
-              // THÊM PADDING DƯỚI 100PX CHO GRIDVIEW
-              padding: const EdgeInsets.only(top: 16.0, bottom: 110.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.2,
-                crossAxisSpacing: 16, // Tăng khoảng cách ngang
-                mainAxisSpacing: 16, // Tăng khoảng cách dọc
-              ),
-              itemCount: specialties.length,
-              itemBuilder: (context, index) {
-                final spec = specialties[index];
-                final specColor = spec['color'] as Color;
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B5E20)))
+              : _categories.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.category_outlined, size: 60, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                           Text(
+                            'Chưa có danh mục chuyên khoa nào.',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: _loadCategories,
+                            child: const Text('Tải lại'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: GridView.builder(
+                        padding: const EdgeInsets.only(top: 16.0, bottom: 110.0),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: _categories.length,
+                        itemBuilder: (context, index) {
+                          final category = _categories[index];
+                          final categoryId = category['id'] as int;
+                          final name = category['name'] ?? 'Chuyên khoa';
+                          
+                          final specColor = _colorsPalette[index % _colorsPalette.length];
+                          final specIcon = _iconsPalette[index % _iconsPalette.length];
 
-                return Card(
-                  elevation: 6, // Tăng elevation
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16), // Bo tròn lớn hơn
-                    side: BorderSide(color: specColor.withOpacity(0.5)), // Viền theo màu chuyên khoa
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => onNext({
-                      'specialty': spec['name'],
-                      'color': specColor,
-                    }),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: specColor.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(spec['icon'], size: 36, color: specColor),
-                        ),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            spec['name'],
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.black87
+                          return Card(
+                            elevation: 6,
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: specColor.withOpacity(0.5)),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => widget.onNext({
+                                'specialty': name,
+                                'categoryId': categoryId,
+                                'color': specColor,
+                              }),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: specColor.withOpacity(0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(specIcon, size: 36, color: specColor),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                    child: Text(
+                                      name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.black87
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
         ),
       ],
     );

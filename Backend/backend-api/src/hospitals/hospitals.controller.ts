@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { HospitalsService } from './hospitals.service';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
@@ -23,8 +24,8 @@ export class HospitalsController {
 
   // Admin + public: xem danh sách bệnh viện
   @Get()
-  findAll() {
-    return this.hospitalsService.findAll();
+  findAll(@Query('city') city?: string) {
+    return this.hospitalsService.findAll(city);
   }
 
   @Get(':id')
