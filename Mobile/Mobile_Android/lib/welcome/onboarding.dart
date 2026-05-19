@@ -1,7 +1,7 @@
 import 'package:clinic_booking_system/dashboard.dart';
+import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../service/auth_service.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
@@ -45,7 +45,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = AuthService.currentUser;
     if (user != null) {
       final userData = await _authService.fetchUserData(user.uid);
       setState(() {
@@ -56,25 +56,37 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         final dob = userData['dateOfBirth'];
         if (dob != null) _selectedDate = DateTime.parse(dob);
         final address = userData['address'] as Map? ?? {};
-        _selectedProvince = address['province'];
-        _selectedDistrict = address['district'];
+        final loadedProvince = address['province']?.toString();
+        if (loadedProvince != null && provinces.contains(loadedProvince)) {
+          _selectedProvince = loadedProvince;
+        } else {
+          _selectedProvince = null;
+        }
+
+        final loadedDistrict = address['district']?.toString();
+        if (_selectedProvince != null && loadedDistrict != null) {
+          final allowedDistricts = districts[_selectedProvince] ?? [];
+          if (allowedDistricts.contains(loadedDistrict)) {
+            _selectedDistrict = loadedDistrict;
+          } else {
+            _selectedDistrict = null;
+          }
+        } else {
+          _selectedDistrict = null;
+        }
         _streetController.text = address['street'] ?? '';
         _medicalHistoryController.text = userData['medicalHistory'] ?? '';
-        // FIXED: Jump to current step based on completeness (e.g., if role set, start step 1)
-        if (_selectedRole != null && _selectedRole != 'UNASSIGNED')
-          _currentStep = 1;
-        if (_displayNameController.text.isNotEmpty && _selectedDate != null)
-          _currentStep = 2;
-        if (_selectedProvince != null &&
-            _selectedDistrict != null &&
-            _streetController.text.isNotEmpty) _currentStep = 3;
-        _pageController.jumpToPage(_currentStep);
+        // Luôn bắt đầu từ bước 0 để người dùng có thể tự tay xác nhận vai trò và thông tin
+        _currentStep = 0;
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(0);
+        }
       });
     }
   }
 
   Future<void> _nextStep() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = AuthService.currentUser;
     if (user == null) return;
 
     switch (_currentStep) {

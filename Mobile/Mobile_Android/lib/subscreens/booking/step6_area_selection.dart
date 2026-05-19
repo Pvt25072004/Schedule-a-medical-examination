@@ -1,15 +1,10 @@
-// step6_patient_info.dart (Đã sửa lỗi lưu trạng thái)
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-
+import '../../service/auth_service.dart';
 import '../profile/editprofile.dart';
 
 class Step6PatientInfo extends StatefulWidget {
   final Function(Map<String, dynamic>) onNext;
   final VoidCallback onBack;
-  // THÊM CÁC BIẾN INITIAL
   final String initialReason;
   final String initialNote;
 
@@ -17,7 +12,7 @@ class Step6PatientInfo extends StatefulWidget {
     super.key,
     required this.onNext,
     required this.onBack,
-    this.initialReason = '', // Gán giá trị mặc định an toàn
+    this.initialReason = '', 
     this.initialNote = '',
   });
 
@@ -37,14 +32,13 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
   final _noteController = TextEditingController();
 
   // GlobalKey cho các trường bắt buộc để ScrollToError hoạt động
-  final GlobalKey _phoneKey = GlobalKey(); // Key cho SĐT
-  final GlobalKey _reasonKey = GlobalKey(); // Key cho Lý do khám
+  final GlobalKey _phoneKey = GlobalKey(); 
+  final GlobalKey _reasonKey = GlobalKey(); 
 
-  // Realtime Firebase Logic
-  StreamSubscription<DatabaseEvent>? _userSubscription;
-  Map<dynamic, dynamic>? _firebaseUserData;
+  Map<String, dynamic>? _userData;
+  final AuthService _authService = AuthService();
 
-  // Màu chủ đạo giả định
+  // Màu chủ đạo
   final Color primaryColor = Colors.greenAccent;
   final Color primaryDarkColor = const Color(0xFF1B5E20);
   final Color errorColor = Colors.red.shade700;
@@ -52,44 +46,32 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
   @override
   void initState() {
     super.initState();
-    // KHỞI TẠO CONTROLLERS VỚI GIÁ TRỊ TỪ WIDGET CHA
     _reasonController.text = widget.initialReason;
     _noteController.text = widget.initialNote;
-
-    _subscribeToUserData();
+    _loadUserData();
   }
 
-  // ... (Các hàm _subscribeToUserData, _updateControllersFromFirebase, _scrollToError giữ nguyên)
-  // --- HÀM LẮNG NGHE REALTIME DATA TỪ FIREBASE ---
-  void _subscribeToUserData() {
-    final user = FirebaseAuth.instance.currentUser;
+  // Lấy thông tin bệnh nhân từ REST API để điền tự động
+  Future<void> _loadUserData() async {
+    final user = AuthService.currentUser;
     if (user == null) return;
 
-    final ref = FirebaseDatabase.instance.ref('users/${user.uid}');
-
-    _userSubscription = ref.onValue.listen((event) {
+    try {
+      final data = await _authService.fetchUserData(user.uid);
       if (mounted) {
-        final data = event.snapshot.value;
-        if (data != null && data is Map<dynamic, dynamic>) {
-          setState(() {
-            _firebaseUserData = data;
-            _updateControllersFromFirebase();
-          });
-        }
+        setState(() {
+          _userData = data;
+          _nameController.text = data['displayName'] ?? '';
+          _phoneController.text = data['phone'] ?? '';
+          _emailController.text = data['email'] ?? (user.email ?? '');
+        });
       }
-    });
-  }
-
-  // --- CẬP NHẬT CONTROLLERS DỰA TRÊN DỮ LIỆU FIREBASE ---
-  void _updateControllersFromFirebase() {
-    if (_firebaseUserData != null) {
-      _nameController.text = _firebaseUserData!['displayName'] ?? '';
-      _phoneController.text = _firebaseUserData!['phone'] ?? '';
-      _emailController.text = _firebaseUserData!['email'] ?? '';
+    } catch (e) {
+      debugPrint('🔥 Lỗi Step6 load user: $e');
     }
   }
 
-  // --- LOGIC CUỘN ĐẾN LỖI (SCROLL TO ERROR) ---
+  // LOGIC CUỘN ĐẾN LỖI (SCROLL TO ERROR)
   void _scrollToError() {
     if (!_formKey.currentState!.validate()) {
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -99,12 +81,10 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
           final context = key.currentContext;
           if (context != null) {
             final formField = context.widget as TextFormField;
-
             final String? errorMessage = formField.validator?.call(formField.controller?.text);
 
             if (errorMessage != null) {
               FocusScope.of(context).unfocus();
-
               Scrollable.ensureVisible(
                 context,
                 duration: const Duration(milliseconds: 500),
@@ -118,9 +98,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
       });
     }
   }
-  // ... (Các hàm _buildReadOnlyField, _buildInputField, _goToEditProfile giữ nguyên)
 
-  // --- Widget TextField Chung cho Read-Only ---
   Widget _buildReadOnlyField({
     required TextEditingController controller,
     required String labelText,
@@ -164,7 +142,6 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
     );
   }
 
-  // --- Widget TextField Chung cho Input ---
   Widget _buildInputField({
     required TextEditingController controller,
     required String labelText,
@@ -203,27 +180,26 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
     );
   }
 
-  // --- Logic Chuyển đến Màn hình Sửa Hồ sơ ---
   void _goToEditProfile(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-    );
+    ).then((_) {
+      // Tải lại thông tin sau khi quay lại từ màn hình sửa hồ sơ
+      _loadUserData();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_firebaseUserData == null && FirebaseAuth.instance.currentUser != null) {
+    if (_userData == null && AuthService.currentUser != null) {
       return const Center(child: CircularProgressIndicator(color: Colors.greenAccent));
     }
 
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Column(
         children: [
-          // --- Header Tùy Chỉnh (Bước 6) ---
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             width: double.infinity,
@@ -253,7 +229,6 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
               ],
             ),
           ),
-          // --- Kết thúc Header Tùy Chỉnh ---
 
           Expanded(
             child: SingleChildScrollView(
@@ -264,7 +239,6 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- Thông báo và Nút Sửa Hồ sơ ---
                     Card(
                       color: Colors.blue.shade50,
                       elevation: 2,
@@ -291,7 +265,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                       ),
                     ),
 
-                    // 1. Họ và tên (Read-only)
+                    // 1. Họ và tên
                     _buildReadOnlyField(
                       controller: _nameController,
                       labelText: 'Họ và tên',
@@ -300,7 +274,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 2. Số điện thoại (Read-only)
+                    // 2. Số điện thoại
                     _buildReadOnlyField(
                       key: _phoneKey,
                       controller: _phoneController,
@@ -311,7 +285,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 3. Email (Read-only) - KHÔNG BẮT BUỘC
+                    // 3. Email
                     _buildReadOnlyField(
                       controller: _emailController,
                       labelText: 'Email',
@@ -320,15 +294,13 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                       required: false,
                     ),
 
-                    // --- Thêm Khoảng cách (25px) trước tiêu đề ---
                     const SizedBox(height: 25),
 
-                    // --- Form Bổ sung ---
                     const Text('Thông tin khám bệnh:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
                     const Divider(height: 10, thickness: 1),
                     const SizedBox(height: 10),
 
-                    // 4. Lý do khám (Bắt buộc)
+                    // 4. Lý do khám
                     _buildInputField(
                       controller: _reasonController,
                       labelText: 'Lý do khám (Triệu chứng chính)',
@@ -343,7 +315,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                     _buildInputField(
                       controller: _noteController,
                       labelText: 'Ghi chú thêm (Lịch sử bệnh án, dị ứng...)',
-                      validationMessage: '', // Không bắt buộc
+                      validationMessage: '', 
                       maxLines: 3,
                       required: false,
                     ),
@@ -354,19 +326,15 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // 1. Validate Form
                           if (_formKey.currentState!.validate()) {
-                            // 2. Chuyển bước nếu hợp lệ
                             widget.onNext({
                               'fullName': _nameController.text,
                               'phone': _phoneController.text,
                               'email': _emailController.text,
-                              // GỬI LẠI GIÁ TRỊ CỦA TEXTFIELD (ĐÃ ĐƯỢC LƯU NHỜ CONTROLLER)
                               'reason': _reasonController.text,
                               'note': _noteController.text,
                             });
                           } else {
-                            // 3. Cuộn đến lỗi nếu không hợp lệ
                             _scrollToError();
                           }
                         },
@@ -392,12 +360,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
 
   @override
   void dispose() {
-    // LƯU TRẠNG THÁI CUỐI CÙNG VÀO CONTROLLERS TRƯỚC KHI DISPOSE
-    // (Vì giá trị của controllers sẽ được cha lưu trong goToStep khi onNext)
-
-    _userSubscription?.cancel();
     _scrollController.dispose();
-
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();

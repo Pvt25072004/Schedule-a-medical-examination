@@ -1,7 +1,6 @@
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import '../service/auth_service.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -12,8 +11,8 @@ class AppointmentsScreen extends StatefulWidget {
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
   String? _userRole;
-  List<Map<String, dynamic>> _appointments =
-      []; // FIXED: Mock data (fetch from DB in real)
+  List<Map<String, dynamic>> _appointments = []; 
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -22,49 +21,53 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   }
 
   Future<void> _fetchUserRoleAndAppointments() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = AuthService.currentUser;
     if (user == null) return;
 
-    final ref = FirebaseDatabase.instance.ref('users/${user.uid}');
-    final snapshot = await ref.get();
+    try {
+      final userData = await _authService.fetchUserData(user.uid);
 
-    if (snapshot.exists) {
-      final userData = snapshot.value as Map<dynamic, dynamic>;
-      setState(() {
-        _userRole = userData['role'] as String?;
-      });
+      if (mounted) {
+        setState(() {
+          // Map normalized role back to UpperCase structure expected by this screen logic
+          final role = userData['role']?.toString().toUpperCase() ?? 'PATIENT';
+          _userRole = role.contains('BÁC SĨ') || role.contains('DOCTOR') ? 'DOCTOR' : 'PATIENT';
+        });
 
-      // FIXED: Mock appointments (real: fetch from 'appointments/$uid' hoặc query)
-      _appointments = [
-        {
-          'date': '25/10/2025',
-          'time': '10:00',
-          'status': 'Đã xác nhận', // FIXED: Status badge
-          'notes': 'Khám tim mạch định kỳ',
-          // Doctor view: patient info
-          'patientName': 'Nguyễn Văn A',
-          'patientPhone': '0123456789',
-          'patientEmail': 'a@example.com',
-          'medicalHistory': 'Tiểu đường type 2, cao huyết áp',
-          // Patient view: doctor info
-          'doctorName': 'BS. Trần Thị B',
-          'doctorSpecialty': 'Nội khoa',
-          'doctorPhone': '0987654321',
-        },
-        {
-          'date': '26/10/2025',
-          'time': '14:00',
-          'status': 'Chờ xác nhận',
-          'notes': 'Tái khám nhi khoa',
-          'patientName': 'Trần Thị C',
-          'patientPhone': '0111222333',
-          'patientEmail': 'c@example.com',
-          'medicalHistory': 'Hen suyễn nhẹ',
-          'doctorName': 'BS. Lê Văn D',
-          'doctorSpecialty': 'Nhi khoa',
-          'doctorPhone': '0444555666',
-        },
-      ];
+        // FIXED: Mock appointments (real: fetch from 'appointments/$uid' hoặc query)
+        _appointments = [
+          {
+            'date': '25/10/2025',
+            'time': '10:00',
+            'status': 'Đã xác nhận',
+            'notes': 'Khám tim mạch định kỳ',
+            // Doctor view: patient info
+            'patientName': 'Nguyễn Văn A',
+            'patientPhone': '0123456789',
+            'patientEmail': 'a@example.com',
+            'medicalHistory': 'Tiểu đường type 2, cao huyết áp',
+            // Patient view: doctor info
+            'doctorName': 'BS. Trần Thị B',
+            'doctorSpecialty': 'Nội khoa',
+            'doctorPhone': '0987654321',
+          },
+          {
+            'date': '26/10/2025',
+            'time': '14:00',
+            'status': 'Chờ xác nhận',
+            'notes': 'Tái khám nhi khoa',
+            'patientName': 'Trần Thị C',
+            'patientPhone': '0111222333',
+            'patientEmail': 'c@example.com',
+            'medicalHistory': 'Hen suyễn nhẹ',
+            'doctorName': 'BS. Lê Văn D',
+            'doctorSpecialty': 'Nhi khoa',
+            'doctorPhone': '0444555666',
+          },
+        ];
+      }
+    } catch (e) {
+      debugPrint('🔥 Lỗi AppointmentsScreen: $e');
     }
   }
 
@@ -73,8 +76,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     if (_userRole == null) {
       return const Scaffold(
         backgroundColor: Color(0xFFFFF8F0),
-        body:
-            Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
+        body: Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
       );
     }
 
@@ -112,8 +114,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   child: ExpansionTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.greenAccent.withOpacity(0.2),
-                      child:
-                          const Icon(Icons.schedule, color: Colors.greenAccent),
+                      child: const Icon(Icons.schedule, color: Colors.greenAccent),
                     ),
                     title: Text(
                       '${appt['date']} - ${appt['time']}',
@@ -132,15 +133,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                       ),
                       child: Text(
                         appt['status'],
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 12),
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ),
                     children: _userRole == 'DOCTOR'
-                        ? _buildDoctorView(
-                            appt) // FIXED: Doctor view: patient details
-                        : _buildPatientView(
-                            appt), // FIXED: Patient view: doctor details
+                        ? _buildDoctorView(appt)
+                        : _buildPatientView(appt),
                   ),
                 );
               },
@@ -148,7 +146,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     );
   }
 
-  // FIXED: Doctor view (patient info limited)
+  // Doctor view (patient info limited)
   List<Widget> _buildDoctorView(Map<String, dynamic> appt) {
     return [
       Padding(
@@ -164,9 +162,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () {
-                // FIXED: Placeholder view full profile (limited access)
-                showAppSnackBar(
-                    context, 'Xem chi tiết hồ sơ bệnh nhân (sắp có)');
+                showAppSnackBar(context, 'Xem chi tiết hồ sơ bệnh nhân (sắp có)');
               },
               icon: const Icon(Icons.visibility, size: 18),
               label: const Text('Xem chi tiết'),
@@ -177,7 +173,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     ];
   }
 
-  // FIXED: Patient view (doctor info)
+  // Patient view (doctor info)
   List<Widget> _buildPatientView(Map<String, dynamic> appt) {
     return [
       Padding(
@@ -193,7 +189,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () {
-                // FIXED: Placeholder contact doctor
                 showAppSnackBar(context, 'Liên hệ bác sĩ (sắp có)');
               },
               icon: const Icon(Icons.call, size: 18),
@@ -217,8 +212,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style:
-                        TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
                 Text(value, style: const TextStyle(fontSize: 16)),
               ],
             ),

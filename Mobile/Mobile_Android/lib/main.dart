@@ -4,53 +4,29 @@ import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/welcome/onboarding.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
 import 'package:clinic_booking_system/welcome/welcome.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print('Thông báo nền: ${message.data}');
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('vi', null);
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Giữ lại Core Init phòng trường hợp các plugin nền cần
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    print('⚠️ Firebase Core Init warning: $e');
+  }
+
+  // QUAN TRỌNG: Khởi tạo session AuthService từ SharedPreferences trước khi dựng UI
+  await AuthService.init();
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
   ));
-
-  FirebaseDatabase.instance.databaseURL =
-  'https://clinic-booking-system-18e7d-default-rtdb.asia-southeast1.firebasedatabase.app/';
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  try {
-    await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    String? token = await FirebaseMessaging.instance.getToken();
-    print('FCM Token: $token');
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && token != null) {
-      await FirebaseDatabase.instance
-          .ref('users/${user.uid}/fcmToken')
-          .set(token);
-    }
-  } catch (e) {
-    print('⚠️ KHÔNG THỂ KHỞI TẠO FCM TRÊN THIẾT BỊ NÀY: $e');
-  }
 
   runApp(const MyApp());
 }
@@ -64,14 +40,14 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-  final AuthService _authService = AuthService(); // THÊM DÒNG NÀY
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
   }
 
-  // KHỞI TẠO LẠI HÀM KIỂM TRA HỒ SƠ (vì nó không thuộc AuthService)
+  // Kiểm tra hồ sơ đã hoàn tất chưa
   bool _isProfileComplete(Map<String, dynamic> userData) {
     final role = userData['role'] as String? ?? '';
     final displayName = userData['displayName'] as String? ?? '';
@@ -87,33 +63,31 @@ class _MyAppState extends State<MyApp> {
         dob.isNotEmpty &&
         province.isNotEmpty &&
         district.isNotEmpty &&
-        street.isNotEmpty &&
-        medicalHistory.isNotEmpty;
+        street.isNotEmpty;
   }
 
   Future<Widget> _getStartScreen() async {
-    final user = FirebaseAuth.instance.currentUser;
+    // THAY THẾ: Lấy user từ AuthService local thay vì FirebaseAuth
+    final user = AuthService.currentUser;
 
     if (user != null) {
-      // 1. Lấy dữ liệu người dùng
-      final userData = await _authService.fetchUserData(user.uid); // SỬA: Gọi từ _authService
+      // 1. Lấy dữ liệu người dùng từ backend API
+      final userData = await _authService.fetchUserData(user.uid);
+      
       // 2. Kiểm tra trạng thái Onboarding
       final bool isOnboardingNeeded = userData['is_onboarding_needed'] == true;
       final bool isProfileIncomplete = !_isProfileComplete(userData);
 
-      // 💥 SỬA: KHÔNG signOut() NỮA. Nếu cần Onboarding, trả về màn hình Onboarding ngay.
       if (isOnboardingNeeded || isProfileIncomplete) {
-        // Nếu cần Onboarding (cờ ONBOARDING_NEEDED là true) hoặc hồ sơ cơ bản chưa đủ.
-        // Giữ người dùng đang đăng nhập và chuyển thẳng đến flow Onboarding.
+        // Đi tới onboarding flow
         return const OnboardingFlowScreen();
       } else {
-        // Đã hoàn tất hồ sơ và có vai trò hợp lệ
+        // Vào màn hình Dashboard
         return const MainScreen();
       }
     }
 
-    // 3. Người dùng chưa đăng nhập
-    // Chuyển đến màn hình Chào mừng (WelcomeScreen) để bắt đầu đăng nhập/đăng ký.
+    // 3. Chưa đăng nhập
     return const WelcomeScreen();
   }
 
@@ -130,7 +104,7 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/home': (context) => const HomeScreen(),
-        '/onboarding-flow': (context) => const OnboardingFlowScreen(), // FIXED: Route for combined
+        '/onboarding-flow': (context) => const OnboardingFlowScreen(),
       },
       home: FutureBuilder<Widget>(
         future: _getStartScreen(),
