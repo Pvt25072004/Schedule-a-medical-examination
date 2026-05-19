@@ -12,7 +12,7 @@ import {
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
-  full_name: string;
+  full_name?: string;
 
   @IsEmail()
   @IsOptional()
