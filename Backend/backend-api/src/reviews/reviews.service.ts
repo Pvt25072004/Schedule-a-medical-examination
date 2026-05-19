@@ -90,4 +90,42 @@ export class ReviewsService {
 
     return savedReview;
   }
+
+  findAll(): Promise<Review[]> {
+    return this.reviewsRepository.find({
+      relations: ['appointment', 'user', 'doctor'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findOne(id: number): Promise<Review> {
+    const review = await this.reviewsRepository.findOne({
+      where: { id },
+      relations: ['appointment', 'user', 'doctor'],
+    });
+    if (!review) {
+      throw new NotFoundException(`Review #${id} not found`);
+    }
+    return review;
+  }
+
+  async remove(id: number): Promise<void> {
+    const review = await this.findOne(id);
+    await this.reviewsRepository.remove(review);
+
+    // Recalculate doctor rating after deletion
+    const doctor = await this.doctorsRepository.findOne({ where: { id: review.doctor_id } });
+    if (doctor) {
+      const allReviews = await this.reviewsRepository.find({ where: { doctor_id: doctor.id } });
+      if (allReviews.length > 0) {
+        const totalStars = allReviews.reduce((sum, r) => sum + r.rating, 0);
+        doctor.rating = Math.round((totalStars / allReviews.length) * 10) / 10;
+        doctor.review_count = allReviews.length;
+      } else {
+        doctor.rating = 0;
+        doctor.review_count = 0;
+      }
+      await this.doctorsRepository.save(doctor);
+    }
+  }
 }
