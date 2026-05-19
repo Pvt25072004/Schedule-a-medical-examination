@@ -1,7 +1,7 @@
 // Admin Users API
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const USERS_ENDPOINT = `${API_BASE_URL}/users`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -59,5 +59,3 @@ export const deleteUserAdmin = async (id) => {
   });
   return handleResponse(response, "Không thể xóa người dùng");
 };
-
-

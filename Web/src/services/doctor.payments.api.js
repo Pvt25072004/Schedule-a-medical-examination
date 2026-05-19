@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const PAYMENTS_ENDPOINT = `${API_BASE_URL}/payments`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -32,7 +32,8 @@ export const getPaymentsByDoctor = async (doctorId) => {
     },
     credentials: "include",
   });
-  return handleResponse(response, "Không thể tải danh sách thanh toán của bác sĩ");
+  return handleResponse(
+    response,
+    "Không thể tải danh sách thanh toán của bác sĩ",
+  );
 };
-
-

@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const REVIEWS_ENDPOINT = `${API_BASE_URL}/reviews`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -45,7 +45,7 @@ export const getReviewsByDoctor = async (doctorId) => {
   });
   return handleResponse(
     response,
-    "Không thể tải danh sách đánh giá của bác sĩ"
+    "Không thể tải danh sách đánh giá của bác sĩ",
   );
 };
 
