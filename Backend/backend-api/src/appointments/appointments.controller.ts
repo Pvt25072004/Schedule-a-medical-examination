@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  Req,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -36,8 +35,7 @@ export class AppointmentsController {
     type: Appointment, // Cho Swagger biết dữ liệu trả về là Entity Appointment
   })
   @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ.' })
-  create(@Body() createAppointmentDto: CreateAppointmentDto, @Req() req: any) {
-    createAppointmentDto.user_id = req.user_id;
+  create(@Body() createAppointmentDto: CreateAppointmentDto) {
     return this.appointmentsService.create(createAppointmentDto);
   }
 
@@ -52,7 +50,7 @@ export class AppointmentsController {
     return this.appointmentsService.findAll();
   }
 
-  @Get('/my-appointments')
+  @Get('/user/:userId')
   @ApiOperation({ summary: 'Lấy danh sách lịch hẹn theo bệnh nhân' })
   findByUser(@Param('userId') userId: string) {
     return this.appointmentsService.findByUser(+userId);

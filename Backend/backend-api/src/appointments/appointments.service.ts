@@ -25,7 +25,7 @@ export class AppointmentsService {
         0,
         10,
       );
-
+      console.log(createAppointmentDto);
       const appointmentTime = createAppointmentDto.appointment_time;
 
       // 1. Validate ngày quá khứ
@@ -34,11 +34,11 @@ export class AppointmentsService {
       );
       const today = dayjs().startOf('day');
 
-      if (appointmentDate < today) {
+      if (appointmentDate.isBefore(today)) {
         throw new BadRequestException('Không thể đặt lịch trong quá khứ!');
       }
 
-      let schedule: Schedule | null = null;
+      let schedule: Schedule | null;
 
       // 2. Tìm schedule + lock
       if (createAppointmentDto.schedule_id) {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import dayjs from "dayjs";
 import {
   Calendar,
   Clock,
@@ -77,13 +78,13 @@ const BookingPage = ({ navigate }) => {
       ...doctor,
       averageRating: doctorRatingsMap.get(doctor.id) || "0.0",
       totalReviews: reviews.filter(
-        (r) => (r.doctor_id || r.doctor?.id) === doctor.id
+        (r) => (r.doctor_id || r.doctor?.id) === doctor.id,
       ).length,
     }));
   }, [doctors, doctorRatingsMap, reviews]);
 
   const selectedDoctor = doctorsWithRatings.find(
-    (d) => d.id === formData.doctorId
+    (d) => d.id === formData.doctorId,
   );
 
   const filteredDoctors = doctorsWithRatings.filter((doctor) => {
@@ -154,18 +155,34 @@ const BookingPage = ({ navigate }) => {
         return workDate === date;
       });
 
-      const slotsSet = new Set();
+      const SLOT_DURATION = 30;
+
       for (const sch of daySchedules) {
         const start = (sch.start_time || "").slice(0, 5);
         const end = (sch.end_time || "").slice(0, 5);
+
         if (!start || !end) continue;
+
         let [h, m] = start.split(":").map(Number);
+
         const [endH, endM] = end.split(":").map(Number);
-        while (h < endH || (h === endH && m < endM)) {
+
+        while (true) {
+          const currentMinutes = h * 60 + m;
+          const endMinutes = endH * 60 + endM;
+
+          // Không cho slot vượt quá giờ kết thúc
+          if (currentMinutes + SLOT_DURATION > endMinutes) {
+            break;
+          }
+
           const hh = String(h).padStart(2, "0");
           const mm = String(m).padStart(2, "0");
+
           slotsSet.add(`${hh}:${mm}`);
-          m += 30;
+
+          m += SLOT_DURATION;
+
           if (m >= 60) {
             h += 1;
             m -= 60;
@@ -205,7 +222,7 @@ const BookingPage = ({ navigate }) => {
       // Khi chuyển sang bước 2, load slot từ schedules
       void loadSlotsFromSchedules(
         formData.doctorId,
-        formData.date || getMinDate()
+        formData.date || getMinDate(),
       );
     }
     if (step === 2 && formData.doctorId && formData.date) {
@@ -231,10 +248,10 @@ const BookingPage = ({ navigate }) => {
 
     try {
       // Tìm schedule_id từ date và time
-      const workDate = formData.date;
+      const workDate = dayjs(formData.date).format("YYYY-MM-DD");
       const appointmentTime = formData.time;
       let foundSchedule = null;
-      
+
       for (const sch of schedules) {
         const schDate =
           typeof sch.work_date === "string"
@@ -243,7 +260,12 @@ const BookingPage = ({ navigate }) => {
         if (schDate === workDate) {
           const start = (sch.start_time || "").slice(0, 5);
           const end = (sch.end_time || "").slice(0, 5);
-          if (start && end && appointmentTime >= start && appointmentTime <= end) {
+          if (
+            start &&
+            end &&
+            appointmentTime >= start &&
+            appointmentTime < end
+          ) {
             foundSchedule = sch;
             break;
           }
@@ -259,10 +281,10 @@ const BookingPage = ({ navigate }) => {
       }
 
       const payload = {
-        user_id: user.id,
-        doctor_id: formData.doctorId,
-        hospital_id: hospitalId,
-        schedule_id: foundSchedule?.id,
+        user_id: Number(user.id),
+        doctor_id: Number(formData.doctorId),
+        hospital_id: Number(hospitalId),
+        schedule_id: foundSchedule?.id ? Number(foundSchedule.id) : undefined,
         appointment_date: formData.date,
         appointment_time: formData.time,
         examination_type: "offline",
@@ -270,7 +292,7 @@ const BookingPage = ({ navigate }) => {
       };
 
       const created = await apiCreateAppointment(payload);
-
+      console.log(payload);
       // Demo payment sau khi tạo appointment thành công
       try {
         await createPaymentDemo({
@@ -623,7 +645,7 @@ const BookingPage = ({ navigate }) => {
                         ? isSlotAvailable(
                             formData.doctorId,
                             formData.date,
-                            time
+                            time,
                           )
                         : true;
                       return (
@@ -637,8 +659,8 @@ const BookingPage = ({ navigate }) => {
                             formData.time === time
                               ? "bg-blue-600 text-white border-blue-600 shadow-lg"
                               : available
-                              ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
-                              : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                                ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
+                                : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
                           }`}
                         >
                           <Clock className="w-4 h-4 inline mr-1" />
@@ -648,7 +670,7 @@ const BookingPage = ({ navigate }) => {
                           )}
                         </button>
                       );
-                    }
+                    },
                   )}
                 </div>
                 {errors.time && (

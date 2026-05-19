@@ -45,7 +45,7 @@ export const getAppointmentsByUser = async (userId) => {
   });
   return handleResponse(
     response,
-    "Không thể tải danh sách lịch hẹn của bệnh nhân"
+    "Không thể tải danh sách lịch hẹn của bệnh nhân",
   );
 };
 
