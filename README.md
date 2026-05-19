@@ -163,7 +163,7 @@ http://localhost:3000/api
 Đội ngũ phát triển
 Dự án được thực hiện bởi:
 
-Phạm Văn Tiến (@tienphamvan) - Project Leader - Backend (NestJS) & Web Admin (ReactJS)
+Phạm Văn Tiền (@tienphamvan) - Project Leader - Backend (NestJS) & Web Admin (ReactJS)
 
 [Tên thành viên Lương] (@username-luong) - Frontend (Web Client)
 
