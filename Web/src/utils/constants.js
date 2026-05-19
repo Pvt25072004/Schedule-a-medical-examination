@@ -24,7 +24,7 @@ export const APPOINTMENT_STATUS = {
 };
 
 // API Endpoints
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 // User Roles
 export const USER_ROLES = {
