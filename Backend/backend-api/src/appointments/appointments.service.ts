@@ -4,7 +4,8 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Appointment } from './entities/appointment.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
-import { Repository, MoreThanOrEqual, In } from 'typeorm';
+import { Repository, MoreThanOrEqual, In, DataSource } from 'typeorm';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class AppointmentsService {
@@ -13,78 +14,110 @@ export class AppointmentsService {
     private appointmentsRepository: Repository<Appointment>,
     @InjectRepository(Schedule)
     private schedulesRepository: Repository<Schedule>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
     createAppointmentDto: CreateAppointmentDto,
   ): Promise<Appointment> {
-    let schedule: Schedule | null = null;
-    const appointmentDateStr = createAppointmentDto.appointment_date.slice(0, 10); // YYYY-MM-DD
-    const appointmentTime = createAppointmentDto.appointment_time; // Đã được DTO validate format HH:mm
+    return await this.dataSource.transaction(async (manager) => {
+      const appointmentDateStr = createAppointmentDto.appointment_date.slice(
+        0,
+        10,
+      );
 
-    // 1. Tìm kiếm lịch làm việc (Schedule)
-    if (createAppointmentDto.schedule_id) {
-      schedule = await this.schedulesRepository.findOne({
-        where: { id: createAppointmentDto.schedule_id },
+      const appointmentTime = createAppointmentDto.appointment_time;
+
+      // 1. Validate ngày quá khứ
+      const appointmentDate = dayjs(appointmentDateStr, 'YYYY-MM-DD').startOf(
+        'day',
+      );
+      const today = dayjs().startOf('day');
+
+      if (appointmentDate < today) {
+        throw new BadRequestException('Không thể đặt lịch trong quá khứ!');
+      }
+
+      let schedule: Schedule | null = null;
+
+      // 2. Tìm schedule + lock
+      if (createAppointmentDto.schedule_id) {
+        schedule = await manager.findOne(Schedule, {
+          where: {
+            id: createAppointmentDto.schedule_id,
+          },
+          lock: {
+            mode: 'pessimistic_write',
+          },
+        });
+      } else {
+        schedule = await manager
+          .createQueryBuilder(Schedule, 'schedule')
+          .setLock('pessimistic_write')
+          .where('schedule.doctor_id = :doctorId', {
+            doctorId: createAppointmentDto.doctor_id,
+          })
+          .andWhere('schedule.hospital_id = :hospitalId', {
+            hospitalId: createAppointmentDto.hospital_id,
+          })
+          .andWhere('schedule.work_date = :workDate', {
+            workDate: appointmentDateStr,
+          })
+          .andWhere('schedule.start_time <= :appointmentTime', {
+            appointmentTime,
+          })
+          .andWhere('schedule.end_time > :appointmentTime', {
+            appointmentTime,
+          })
+          .getOne();
+      }
+
+      // 3. Không tìm thấy schedule
+      if (!schedule) {
+        throw new BadRequestException('Không tìm thấy lịch làm việc phù hợp!');
+      }
+
+      // 4. Kiểm tra trạng thái ca
+      if (!schedule.is_available) {
+        throw new BadRequestException('Ca khám hiện không khả dụng!');
+      }
+
+      // 5. Kiểm tra duplicate booking
+      const existedAppointment = await manager.findOne(Appointment, {
+        where: {
+          user_id: createAppointmentDto.user_id,
+          schedule_id: schedule.id,
+          status: In(['pending', 'confirmed']),
+        },
       });
-    } else {
-      // KHẮC PHỤC: Dùng QueryBuilder để truy vấn trực tiếp trên DB thay vì tải hết lên RAM
-      schedule = await this.schedulesRepository
-        .createQueryBuilder('schedule')
-        .where('schedule.doctor_id = :doctorId', {
-          doctorId: createAppointmentDto.doctor_id,
-        })
-        .andWhere('schedule.hospital_id = :hospitalId', {
-          hospitalId: createAppointmentDto.hospital_id,
-        })
-        .andWhere('schedule.work_date = :workDate', {
-          workDate: appointmentDateStr,
-        })
-        .andWhere('schedule.start_time <= :appointmentTime', {
-          appointmentTime,
-        })
-        .andWhere('schedule.end_time >= :appointmentTime', {
-          appointmentTime,
-        })
-        .getOne();
-    }
 
-    // 2. Kiểm tra sự tồn tại của lịch làm việc
-    if (!schedule) {
-      throw new BadRequestException(
-        'Không tìm thấy lịch làm việc phù hợp của bác sĩ vào thời gian đã chọn!',
-      );
-    }
+      if (existedAppointment) {
+        throw new BadRequestException('Bạn đã đặt lịch trong ca khám này rồi!');
+      }
 
-    // 3. KHẮC PHỤC: Bổ sung kiểm tra trạng thái sẵn sàng (is_available) của ca khám
-    if (!schedule.is_available) {
-      throw new BadRequestException(
-        'Ca làm việc này của bác sĩ hiện đã tạm ngưng hoặc không khả dụng. Vui lòng chọn ca khác!',
-      );
-    }
+      // 6. Đếm số lượng bệnh nhân hiện tại
+      const existingAppointmentsCount = await manager.count(Appointment, {
+        where: {
+          schedule_id: schedule.id,
+          status: In(['pending', 'confirmed']),
+        },
+      });
 
-    // 4. KHẮC PHỤC: Tính tổng số bệnh nhân đã đặt trong CẢ CA LÀM VIỆC (Bỏ filter trùng giờ chi tiết)
-    // Chỉ đếm các appointment có status pending hoặc confirmed (chưa bị hủy/từ chối)
-    const existingAppointmentsCount = await this.appointmentsRepository.count({
-      where: {
-        schedule_id: schedule.id,
-        status: In(['pending', 'confirmed']),
-      },
+      // 7. Kiểm tra capacity
+      if (existingAppointmentsCount >= schedule.max_patients) {
+        throw new BadRequestException(
+          `Ca khám đã đầy (${schedule.max_patients} bệnh nhân)!`,
+        );
+      }
+
+      // 8. Gán lại schedule_id chính xác
+      createAppointmentDto.schedule_id = schedule.id;
+
+      // 9. Tạo appointment
+      const appointment = manager.create(Appointment, createAppointmentDto);
+
+      return await manager.save(appointment);
     });
-
-    // 5. Kiểm tra giới hạn tải (Capacity)
-    if (existingAppointmentsCount >= schedule.max_patients) {
-      throw new BadRequestException(
-        `Ca làm việc này đã đầy bệnh nhân (tối đa ${schedule.max_patients} người/ca). Vui lòng chọn ca khám khác!`,
-      );
-    }
-
-    // Cập nhật lại chính xác schedule_id trước khi tạo bản ghi
-    createAppointmentDto.schedule_id = schedule.id;
-
-    const appointment =
-      this.appointmentsRepository.create(createAppointmentDto);
-    return await this.appointmentsRepository.save(appointment);
   }
 
   async findAll(): Promise<Appointment[]> {
@@ -109,16 +142,15 @@ export class AppointmentsService {
     return this.appointmentsRepository.remove(appointment);
   }
 
-  async findByDoctor(
-    doctorId: number,
-    date?: string,
-  ): Promise<Appointment[]> {
+  async findByDoctor(doctorId: number, date?: string): Promise<Appointment[]> {
     const where: any = { doctor_id: doctorId };
     if (date) {
       where.appointment_date = date;
     } else {
       // mặc định lấy từ hôm nay trở đi
-      where.appointment_date = MoreThanOrEqual(new Date().toISOString().slice(0, 10));
+      where.appointment_date = MoreThanOrEqual(
+        new Date().toISOString().slice(0, 10),
+      );
     }
 
     return this.appointmentsRepository.find({
