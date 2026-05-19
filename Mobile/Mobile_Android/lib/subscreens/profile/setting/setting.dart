@@ -105,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _animationController,
-          curve: Interval(0.3 + delayFactor * 0.1, 1.0, curve: Curves.easeOut),
+          curve: Interval((0.3 + delayFactor * 0.05).clamp(0.0, 1.0), 1.0, curve: Curves.easeOut),
         ),
       ),
       child: SlideTransition(
@@ -113,7 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             .animate(
           CurvedAnimation(
             parent: _animationController,
-            curve: Interval(0.3 + delayFactor * 0.1, 1.0,
+            curve: Interval((0.3 + delayFactor * 0.05).clamp(0.0, 1.0), 1.0,
                 curve: Curves.easeOutCubic),
           ),
         ),

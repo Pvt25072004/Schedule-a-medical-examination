@@ -31,14 +31,25 @@ export class SchedulesService {
     return schedule;
   }
 
+  // async findByDoctor(doctorId: number): Promise<Schedule[]> {
+  //   return this.schedulesRepository.find({
+  //     where: { doctor_id: doctorId },
+  //     order: { work_date: 'ASC', start_time: 'ASC' },
+  //     relations: ['hospital'],
+  //   });
+  // }
   async findByDoctor(doctorId: number): Promise<Schedule[]> {
     return this.schedulesRepository.find({
-      where: { doctor_id: doctorId },
-      order: { work_date: 'ASC', start_time: 'ASC' },
+      where: {
+        doctor_id: doctorId,
+      },
       relations: ['hospital'],
+      order: {
+        work_date: 'ASC',
+        start_time: 'ASC',
+      },
     });
   }
-
   async update(id: number, dto: UpdateScheduleDto): Promise<Schedule> {
     const schedule = await this.findOne(id);
     Object.assign(schedule, dto);

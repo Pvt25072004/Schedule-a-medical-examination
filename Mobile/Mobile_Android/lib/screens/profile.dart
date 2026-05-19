@@ -91,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
         parent: _animationController,
         curve: Interval(
-          0.3 + delayFactor * 0.15,
+          (0.3 + delayFactor * 0.1).clamp(0.0, 1.0),
           1.0,
           curve: Curves.easeOut,
         ),
@@ -101,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             .animate(CurvedAnimation(
           parent: _animationController,
           curve: Interval(
-            0.3 + delayFactor * 0.15,
+            (0.3 + delayFactor * 0.1).clamp(0.0, 1.0),
             1.0,
             curve: Curves.easeOutCubic,
           ),

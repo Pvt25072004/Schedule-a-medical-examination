@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../utils/api_config.dart';
 
 // Lớp giả lập để thay thế Firebase User
@@ -45,6 +47,8 @@ class AppUserCredential {
 }
 
 class AuthService {
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  bool _isInitialized = false;
   // Static current user để truy xuất mọi nơi giống FirebaseAuth.instance.currentUser
   static AppUser? _currentUser;
   static AppUser? get currentUser => _currentUser;
@@ -131,7 +135,7 @@ class AuthService {
       final resp = await http.post(url, headers: _headers(), body: jsonEncode(body));
 
       if (resp.statusCode == 201) {
-        final data = jsonDecode(resp.body);
+        final data = jsonDecode(utf8.decode(resp.bodyBytes));
         final backendUser = data['user'];
         final token = data['access_token'];
 
@@ -146,7 +150,7 @@ class AuthService {
         await _saveLocalSession(appUser, token);
         return AppUserCredential(user: appUser);
       } else {
-        final errorBody = jsonDecode(resp.body);
+        final errorBody = jsonDecode(utf8.decode(resp.bodyBytes));
         final message = errorBody['message'] ?? 'Đăng ký không thành công.';
         throw Exception(message);
       }
@@ -166,7 +170,7 @@ class AuthService {
       final resp = await http.post(url, headers: _headers(), body: jsonEncode(body));
 
       if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body);
+        final data = jsonDecode(utf8.decode(resp.bodyBytes));
         final backendUser = data['user'];
         final token = data['access_token'];
 
@@ -181,7 +185,7 @@ class AuthService {
         await _saveLocalSession(appUser, token);
         return AppUserCredential(user: appUser);
       } else {
-        final errorBody = jsonDecode(resp.body);
+        final errorBody = jsonDecode(utf8.decode(resp.bodyBytes));
         final message = errorBody['message'] ?? 'Email hoặc mật khẩu không chính xác.';
         throw Exception(message);
       }
@@ -304,7 +308,7 @@ class AuthService {
       final resp = await http.get(url, headers: _headers(auth: true));
 
       if (resp.statusCode == 200) {
-        final backendUser = jsonDecode(resp.body);
+        final backendUser = jsonDecode(utf8.decode(resp.bodyBytes));
 
         // Đọc trạng thái onboarding từ Backend (dùng is_welcome) hoặc local cache
         final bool isBackendWelcome = backendUser['is_welcome'] ?? false;
@@ -360,7 +364,112 @@ class AuthService {
     throw Exception('Tính năng Đăng nhập SMS hiện chưa hỗ trợ.');
   }
 
+  Future<void> _initGoogleSignIn() async {
+    if (!_isInitialized) {
+      _isInitialized = true;
+    }
+  }
+
   Future<AppUserCredential> signInWithGoogle() async {
-    throw Exception('Tính năng Đăng nhập Google hiện chưa hỗ trợ bởi máy chủ.');
+    try {
+      await _initGoogleSignIn();
+      final googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        throw Exception('Người dùng đã hủy hoặc không chọn tài khoản Google.');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        throw Exception('Không lấy được ID Token từ Google.');
+      }
+
+      final url = Uri.parse('${ApiConfig.baseUrl}/auth/social-login');
+      debugPrint('➡️ Gọi API Social Login (Google): $url');
+      final resp = await http.post(
+        url,
+        headers: _headers(),
+        body: jsonEncode({
+          'token': idToken,
+          'provider': 'google',
+        }),
+      );
+
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        final data = jsonDecode(utf8.decode(resp.bodyBytes));
+        final backendUser = data['user'];
+        final token = data['access_token'];
+
+        final appUser = AppUser(
+          uid: backendUser['id'].toString(),
+          email: backendUser['email'],
+          displayName: backendUser['full_name'],
+          phoneNumber: backendUser['phone'],
+          photoURL: backendUser['avatar_url'],
+        );
+
+        await _saveLocalSession(appUser, token);
+        return AppUserCredential(user: appUser);
+      } else {
+        final errorBody = jsonDecode(utf8.decode(resp.bodyBytes));
+        final message = errorBody['message'] ?? 'Đăng nhập Google thất bại.';
+        throw Exception(message);
+      }
+    } catch (e) {
+      debugPrint('🔥 Lỗi đăng nhập Google: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  Future<AppUserCredential> signInWithFacebook() async {
+    try {
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: ['public_profile', 'email'],
+      );
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        
+        final url = Uri.parse('${ApiConfig.baseUrl}/auth/social-login');
+        debugPrint('➡️ Gọi API Social Login (Facebook): $url');
+        final resp = await http.post(
+          url,
+          headers: _headers(),
+          body: jsonEncode({
+            'token': accessToken.tokenString,
+            'provider': 'facebook',
+          }),
+        );
+
+        if (resp.statusCode == 200 || resp.statusCode == 201) {
+          final data = jsonDecode(utf8.decode(resp.bodyBytes));
+          final backendUser = data['user'];
+          final token = data['access_token'];
+
+          final appUser = AppUser(
+            uid: backendUser['id'].toString(),
+            email: backendUser['email'],
+            displayName: backendUser['full_name'],
+            phoneNumber: backendUser['phone'],
+            photoURL: backendUser['avatar_url'],
+          );
+
+          await _saveLocalSession(appUser, token);
+          return AppUserCredential(user: appUser);
+        } else {
+          final errorBody = jsonDecode(utf8.decode(resp.bodyBytes));
+          final message = errorBody['message'] ?? 'Đăng nhập Facebook thất bại.';
+          throw Exception(message);
+        }
+      } else if (result.status == LoginStatus.cancelled) {
+        throw Exception('Đăng nhập Facebook đã bị hủy bởi người dùng.');
+      } else {
+        throw Exception('Lỗi Facebook: ${result.message}');
+      }
+    } catch (e) {
+      debugPrint('🔥 Lỗi đăng nhập Facebook: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
   }
 }

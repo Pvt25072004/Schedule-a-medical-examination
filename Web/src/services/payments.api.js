@@ -1,7 +1,7 @@
 // Payments demo API
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const PAYMENTS_ENDPOINT = `${API_BASE_URL}/payments`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -39,5 +39,3 @@ export const createPaymentDemo = async (payload) => {
   });
   return handleResponse(response, "Không thể tạo thanh toán demo");
 };
-
-

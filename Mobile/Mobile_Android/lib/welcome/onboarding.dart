@@ -2,6 +2,7 @@ import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/dashboard.dart';
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../service/auth_service.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
@@ -125,7 +126,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         }
         await _authService.updateProfile(user.uid, {
           'displayName': _displayNameController.text.trim(),
-          'dateOfBirth': _selectedDate!.toIso8601String(),
+          'dateOfBirth': DateFormat('yyyy-MM-dd').format(_selectedDate!),
         });
         _pageController.nextPage(
             duration: const Duration(milliseconds: 300),

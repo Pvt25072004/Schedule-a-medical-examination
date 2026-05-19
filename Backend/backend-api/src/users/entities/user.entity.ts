@@ -6,8 +6,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique,
 } from 'typeorm';
 @Entity()
+@Unique(['auth_provider', 'provider_id'])
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -22,20 +24,33 @@ export class User {
   })
   role: string;
 
-  @Column({ length: 255, unique: true })
+  @Column({ length: 255, unique: true, nullable: true })
   email: string;
 
-  @Column({ length: 20, unique: true })
+  @Column({ length: 20, unique: true, nullable: true })
   phone: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   password_hash: string;
 
   @Column({ type: 'date', nullable: true })
   date_of_birth: Date;
 
-  @Column({ type: 'enum', enum: ['male', 'female', 'other'] })
+  @Column({ type: 'enum', enum: ['male', 'female', 'other'], nullable: true })
   gender: string;
+
+  @Column({ length: 255, nullable: true })
+  provider_id: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['local', 'google', 'facebook'],
+    default: 'local',
+  })
+  auth_provider: string;
+
+  @Column({ default: false })
+  is_email_verified: boolean;
 
   @Column({ type: 'text', nullable: true })
   address: string;

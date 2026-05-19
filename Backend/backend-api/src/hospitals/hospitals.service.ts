@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, Like } from 'typeorm';
 import { Hospital } from './entities/hospital.entity';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { UpdateHospitalDto } from './dto/update-hospital.dto';
@@ -28,8 +28,13 @@ export class HospitalsService {
     return this.hospitalsRepository.save(hospital);
   }
 
-  findAll(): Promise<Hospital[]> {
+  findAll(city?: string): Promise<Hospital[]> {
+    const whereClause: any = {};
+    if (city) {
+      whereClause.city = Like(`%${city}%`);
+    }
     return this.hospitalsRepository.find({
+      where: whereClause,
       relations: ['categories'],
       order: { created_at: 'DESC' },
     });
