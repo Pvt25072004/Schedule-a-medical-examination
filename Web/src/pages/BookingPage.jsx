@@ -77,13 +77,13 @@ const BookingPage = ({ navigate }) => {
       ...doctor,
       averageRating: doctorRatingsMap.get(doctor.id) || "0.0",
       totalReviews: reviews.filter(
-        (r) => (r.doctor_id || r.doctor?.id) === doctor.id
+        (r) => (r.doctor_id || r.doctor?.id) === doctor.id,
       ).length,
     }));
   }, [doctors, doctorRatingsMap, reviews]);
 
   const selectedDoctor = doctorsWithRatings.find(
-    (d) => d.id === formData.doctorId
+    (d) => d.id === formData.doctorId,
   );
 
   const filteredDoctors = doctorsWithRatings.filter((doctor) => {
@@ -205,7 +205,7 @@ const BookingPage = ({ navigate }) => {
       // Khi chuyển sang bước 2, load slot từ schedules
       void loadSlotsFromSchedules(
         formData.doctorId,
-        formData.date || getMinDate()
+        formData.date || getMinDate(),
       );
     }
     if (step === 2 && formData.doctorId && formData.date) {
@@ -234,7 +234,7 @@ const BookingPage = ({ navigate }) => {
       const workDate = formData.date;
       const appointmentTime = formData.time;
       let foundSchedule = null;
-      
+
       for (const sch of schedules) {
         const schDate =
           typeof sch.work_date === "string"
@@ -243,7 +243,12 @@ const BookingPage = ({ navigate }) => {
         if (schDate === workDate) {
           const start = (sch.start_time || "").slice(0, 5);
           const end = (sch.end_time || "").slice(0, 5);
-          if (start && end && appointmentTime >= start && appointmentTime <= end) {
+          if (
+            start &&
+            end &&
+            appointmentTime >= start &&
+            appointmentTime <= end
+          ) {
             foundSchedule = sch;
             break;
           }
@@ -623,7 +628,7 @@ const BookingPage = ({ navigate }) => {
                         ? isSlotAvailable(
                             formData.doctorId,
                             formData.date,
-                            time
+                            time,
                           )
                         : true;
                       return (
@@ -637,8 +642,8 @@ const BookingPage = ({ navigate }) => {
                             formData.time === time
                               ? "bg-blue-600 text-white border-blue-600 shadow-lg"
                               : available
-                              ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
-                              : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                                ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
+                                : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
                           }`}
                         >
                           <Clock className="w-4 h-4 inline mr-1" />
@@ -648,7 +653,7 @@ const BookingPage = ({ navigate }) => {
                           )}
                         </button>
                       );
-                    }
+                    },
                   )}
                 </div>
                 {errors.time && (

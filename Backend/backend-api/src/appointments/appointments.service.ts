@@ -20,7 +20,7 @@ export class AppointmentsService {
   ): Promise<Appointment> {
     // Tìm schedule dựa vào schedule_id (nếu có) hoặc tìm theo doctor_id, date, time
     let schedule: Schedule | null = null;
-    
+
     if (createAppointmentDto.schedule_id) {
       schedule = await this.schedulesRepository.findOne({
         where: { id: createAppointmentDto.schedule_id },
@@ -28,9 +28,12 @@ export class AppointmentsService {
     } else {
       // Nếu không có schedule_id, tìm schedule dựa vào doctor_id, date, time
       // Format date string để so sánh chính xác (YYYY-MM-DD)
-      const appointmentDateStr = createAppointmentDto.appointment_date.slice(0, 10);
+      const appointmentDateStr = createAppointmentDto.appointment_date.slice(
+        0,
+        10,
+      );
       const appointmentTime = createAppointmentDto.appointment_time;
-      
+
       const allSchedules = await this.schedulesRepository.find({
         where: {
           doctor_id: createAppointmentDto.doctor_id,
@@ -39,10 +42,11 @@ export class AppointmentsService {
 
       // Lọc schedules theo date và tìm schedule có time slot chứa appointment_time
       for (const sch of allSchedules) {
-        const schDateStr = sch.work_date instanceof Date
-          ? sch.work_date.toISOString().slice(0, 10)
-          : String(sch.work_date).slice(0, 10);
-        
+        const schDateStr =
+          sch.work_date instanceof Date
+            ? sch.work_date.toISOString().slice(0, 10)
+            : String(sch.work_date).slice(0, 10);
+
         if (schDateStr === appointmentDateStr) {
           const start = sch.start_time.slice(0, 5); // HH:mm
           const end = sch.end_time.slice(0, 5);
@@ -106,16 +110,15 @@ export class AppointmentsService {
     return this.appointmentsRepository.remove(appointment);
   }
 
-  async findByDoctor(
-    doctorId: number,
-    date?: string,
-  ): Promise<Appointment[]> {
+  async findByDoctor(doctorId: number, date?: string): Promise<Appointment[]> {
     const where: any = { doctor_id: doctorId };
     if (date) {
       where.appointment_date = date;
     } else {
       // mặc định lấy từ hôm nay trở đi
-      where.appointment_date = MoreThanOrEqual(new Date().toISOString().slice(0, 10));
+      where.appointment_date = MoreThanOrEqual(
+        new Date().toISOString().slice(0, 10),
+      );
     }
 
     return this.appointmentsRepository.find({
