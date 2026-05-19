@@ -156,6 +156,7 @@ const BookingPage = ({ navigate }) => {
       });
 
       const SLOT_DURATION = 30;
+      const slotsSet = new Set();
 
       for (const sch of daySchedules) {
         const start = (sch.start_time || "").slice(0, 5);
