@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">STL Online Health</string>
+    <string name="facebook_app_id">963479733091448</string>
+    <string name="fb_login_protocol_scheme">fb963479733091448</string>
+    <string name="facebook_client_token">4099413e1d28fc44a597c28d96c36ce4</string>
+</resources>

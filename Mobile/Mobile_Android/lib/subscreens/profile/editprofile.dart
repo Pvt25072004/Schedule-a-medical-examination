@@ -1,10 +1,7 @@
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import '../../service/auth_service.dart';
 import '../../screens/home.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -15,8 +12,9 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfileScreen> {
-  Map<dynamic, dynamic>? userData;
+  Map<String, dynamic>? userData;
   bool _isLoading = true;
+  final AuthService _authService = AuthService();
 
   // Controllers cho các trường nhập liệu
   final _nameController = TextEditingController();
@@ -38,7 +36,7 @@ class _EditProfileState extends State<EditProfileScreen> {
   // Màu fill nền cho input
   final Color _inputFillColor = Colors.grey.shade50;
 
-  // Trạng thái email/phone từ Firebase (để quyết định readOnly)
+  // Trạng thái email/phone từ backend
   bool _emailExists = false;
   bool _phoneExists = false;
 
@@ -65,7 +63,7 @@ class _EditProfileState extends State<EditProfileScreen> {
           const SizedBox(width: 12),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -76,9 +74,9 @@ class _EditProfileState extends State<EditProfileScreen> {
     );
   }
 
-  // --- LOGIC FETCH DATA (Cập nhật để kiểm tra email/phone exists) ---
+  // --- LOGIC FETCH DATA (Cập nhật từ Backend AuthService) ---
   Future<void> _fetchUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = AuthService.currentUser;
     if (user == null) {
       if (context.mounted) {
         Navigator.pop(context);
@@ -86,60 +84,51 @@ class _EditProfileState extends State<EditProfileScreen> {
       return;
     }
 
-    final ref = FirebaseDatabase.instance.ref('users/${user.uid}');
-    final snapshot = await ref.get();
+    try {
+      final data = await _authService.fetchUserData(user.uid);
 
-    if (snapshot.exists && mounted) {
-      setState(() {
-        userData = snapshot.value as Map<dynamic, dynamic>;
-        _isLoading = false;
+      if (mounted) {
+        setState(() {
+          userData = data;
+          _isLoading = false;
 
-        _nameController.text = userData?['displayName'] ?? '';
-        _phoneController.text = userData?['phone'] ?? '';
-        _emailController.text = userData?['email'] ?? '';
+          _nameController.text = userData?['displayName'] ?? '';
+          _phoneController.text = userData?['phone'] ?? '';
+          _emailController.text = userData?['email'] ?? (user.email ?? '');
 
-        _selectedGender = userData?['gender'] ?? 'Nam';
-        _medicalHistoryController.text = userData?['medicalHistory'] ?? '';
-        _insuranceController.text = userData?['insuranceId'] ?? 'BH123456789'; // Giả định BH Y tế
+          // Fallback gender Mapping
+          _selectedGender = userData?['gender'] ?? 'Nam';
+          _medicalHistoryController.text = userData?['medicalHistory'] ?? '';
+          _insuranceController.text = userData?['insuranceId'] ?? 'BH123456789'; // Giả định BH Y tế
 
-        final address = userData?['address'] as Map<dynamic, dynamic>?;
-        if (address != null) {
-          _streetController.text = address['street'] ?? '';
-          _districtController.text = address['district'] ?? '';
-          _provinceController.text = address['province'] ?? '';
-        } else {
-          // Mocking địa chỉ nếu DB chưa có
-          _streetController.text = '';
-          _districtController.text = '';
-          _provinceController.text = '';
-        }
-
-        final dobRaw = userData?['dateOfBirth'];
-        if (dobRaw != null) {
-          try {
-            if (dobRaw is int) {
-              _selectedDob = DateTime.fromMillisecondsSinceEpoch(dobRaw);
-            } else if (dobRaw is String) {
-              _selectedDob = DateTime.tryParse(dobRaw);
-            }
-          } catch (e) {
-            _selectedDob = null;
+          final address = userData?['address'] as Map?;
+          if (address != null) {
+            _streetController.text = address['street'] ?? '';
+            _districtController.text = address['district'] ?? '';
+            _provinceController.text = address['province'] ?? '';
           }
-        }
 
-        // Kiểm tra email/phone exists để set readOnly
-        _emailExists = userData?['email'] != null && userData?['email']!.isNotEmpty;
-        _phoneExists = userData?['phone'] != null && userData?['phone']!.isNotEmpty;
+          final dobRaw = userData?['dateOfBirth'];
+          if (dobRaw != null) {
+            try {
+              _selectedDob = DateTime.tryParse(dobRaw.toString());
+            } catch (_) {
+              _selectedDob = null;
+            }
+          }
 
-        // Cập nhật UI nếu cần
-        if (mounted) {
-          setState(() {}); // Đảm bảo UI rebuild với readOnly mới
-        }
-      });
-    } else {
-      setState(() {
-        _isLoading = false;
-      });
+          // Kiểm tra email/phone exists để set readOnly
+          _emailExists = _emailController.text.isNotEmpty;
+          _phoneExists = _phoneController.text.isNotEmpty && !_phoneController.text.startsWith('0000');
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        showAppSnackBar(context, 'Không thể tải dữ liệu profile: $e');
+      }
     }
   }
 
@@ -168,25 +157,13 @@ class _EditProfileState extends State<EditProfileScreen> {
     }
   }
 
-  // --- LOGIC SAVE (Cập nhật để kiểm tra email/phone exists và báo OTP nếu cần) ---
+  // --- LOGIC SAVE ---
   Future<void> _saveProfile() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = AuthService.currentUser;
     if (user == null) return;
 
     if (_nameController.text.trim().isEmpty) {
       showAppSnackBar(context, 'Vui lòng nhập tên hiển thị');
-      return;
-    }
-
-    // Kiểm tra nếu email hoặc phone đã tồn tại và có thay đổi, báo OTP
-    if (_emailExists && _emailController.text != userData?['email']) {
-      showAppSnackBar(context, 'Email đã tồn tại. Vui lòng xác thực OTP để thay đổi.');
-      // TODO: Tích hợp OTP verification logic here
-      return;
-    }
-    if (_phoneExists && _phoneController.text != userData?['phone']) {
-      showAppSnackBar(context, 'Số điện thoại đã tồn tại. Vui lòng xác thực OTP để thay đổi.');
-      // TODO: Tích hợp OTP verification logic here
       return;
     }
 
@@ -196,7 +173,7 @@ class _EditProfileState extends State<EditProfileScreen> {
         'phone': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
         'gender': _selectedGender,
-        'dateOfBirth': _selectedDob?.toIso8601String(),
+        'dateOfBirth': _selectedDob != null ? DateFormat('yyyy-MM-dd').format(_selectedDob!) : null,
         'medicalHistory': _medicalHistoryController.text.trim(),
         'insuranceId': _insuranceController.text.trim(),
         'address': {
@@ -206,7 +183,7 @@ class _EditProfileState extends State<EditProfileScreen> {
         },
       };
 
-      await FirebaseDatabase.instance.ref('users/${user.uid}').update(updates);
+      await _authService.updateProfile(user.uid, updates);
 
       if (context.mounted) {
         showAppSnackBar(context, 'Cập nhật hồ sơ thành công');
@@ -219,12 +196,12 @@ class _EditProfileState extends State<EditProfileScreen> {
     }
   }
 
-  // --- LOGIC XÓA TÀI KHOẢN (Giữ nguyên) ---
+  // --- LOGIC XÓA TÀI KHOẢN ---
   Future<void> _deleteAccount() async {
     showAppSnackBar(context, 'Chức năng xóa tài khoản đang phát triển...');
   }
 
-  // --- WIDGET TEXTFIELD CÓ KHUNG (Cập nhật readOnly động cho email/phone) ---
+  // --- WIDGET TEXTFIELD CÓ KHUNG ---
   Widget _buildFramedTextField({
     required TextEditingController controller,
     required String labelText,
@@ -242,16 +219,14 @@ class _EditProfileState extends State<EditProfileScreen> {
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: prefixIcon,
-        suffixIcon: readOnly ? Icon(Icons.verified, color: Colors.green.shade600, size: 20) : null, // Icon verified nếu readOnly
+        suffixIcon: readOnly ? Icon(Icons.verified, color: Colors.green.shade600, size: 20) : null,
         labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-
-        // Styling khung
         filled: true,
         fillColor: readOnly ? Colors.green.shade50 : _inputFillColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none, // Viền mỏng sẽ được thay thế bằng fill color
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -259,7 +234,7 @@ class _EditProfileState extends State<EditProfileScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: primaryColor, width: 2), // Viền xanh khi focus
+          borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -272,7 +247,7 @@ class _EditProfileState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final labelStyle = TextStyle(fontSize: 16, color: Colors.black87);
+    const labelStyle = TextStyle(fontSize: 16, color: Colors.black87);
 
     if (_isLoading) {
       return const Scaffold(
@@ -282,12 +257,12 @@ class _EditProfileState extends State<EditProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Nền nhẹ nhàng hơn
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text("Tài khoản", style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
-        elevation: 0.5, // Shadow nhẹ
+        elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.pop(context),
@@ -298,19 +273,19 @@ class _EditProfileState extends State<EditProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- 1. KHỐI ẢNH ĐẠI DIỆN (Thu khoảng cách top/bottom) ---
+            // --- 1. KHỐI ẢNH ĐẠI DIỆN ---
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0), // Giảm padding từ 20 xuống 16
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildSectionHeader('Ảnh đại diện'),
-                    const SizedBox(height: 12), // Giảm từ 16 xuống 12
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Container(
@@ -343,13 +318,13 @@ class _EditProfileState extends State<EditProfileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4), // Giảm từ 8 xuống 4
+                    const SizedBox(height: 4),
                     Text('JPG, PNG. Tối đa 2MB', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20), // Giảm từ 24 xuống 20
+            const SizedBox(height: 20),
 
             // --- 2. KHỐI THÔNG TIN CÁ NHÂN ---
             Card(
@@ -365,7 +340,7 @@ class _EditProfileState extends State<EditProfileScreen> {
                     _buildSectionHeader('Thông tin cá nhân'),
                     const SizedBox(height: 16),
 
-                    // Họ và tên (TextFormField)
+                    // Họ và tên
                     _buildFramedTextField(
                       controller: _nameController,
                       labelText: 'Họ và tên *',
@@ -374,7 +349,7 @@ class _EditProfileState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Giới tính (Dropdown bọc trong Container để có khung nền)
+                    // Giới tính
                     _buildFramedTextField(
                       controller: TextEditingController(text: _selectedGender),
                       labelText: 'Giới tính',
@@ -384,7 +359,7 @@ class _EditProfileState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Ngày sinh (Custom Input Field)
+                    // Ngày sinh
                     GestureDetector(
                       onTap: _pickDate,
                       child: _buildFramedTextField(
@@ -424,9 +399,9 @@ class _EditProfileState extends State<EditProfileScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20), // Giảm từ 24 xuống 20
+            const SizedBox(height: 20),
 
-            // --- 3. KHỐI THÔNG TIN LIÊN HỆ & ĐỊA CHỈ (Tách địa chỉ thành 3 field) ---
+            // --- 3. KHỐI THÔNG TIN LIÊN HỆ & ĐỊA CHỈ ---
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -440,29 +415,29 @@ class _EditProfileState extends State<EditProfileScreen> {
                     _buildSectionHeader('Thông tin liên hệ'),
                     const SizedBox(height: 16),
 
-                    // Email (readOnly nếu exists)
+                    // Email
                     _buildFramedTextField(
                       controller: _emailController,
                       labelText: 'Email *',
                       textStyle: labelStyle,
                       prefixIcon: const Icon(Icons.email_outlined, size: 20, color: Colors.grey),
                       keyboardType: TextInputType.emailAddress,
-                      readOnly: _emailExists, // Xám nếu exists
+                      readOnly: _emailExists,
                     ),
                     const SizedBox(height: 16),
 
-                    // Số điện thoại (readOnly nếu exists)
+                    // Số điện thoại
                     _buildFramedTextField(
                       controller: _phoneController,
                       labelText: 'Số điện thoại *',
                       textStyle: labelStyle,
                       prefixIcon: const Icon(Icons.phone_outlined, size: 20, color: Colors.grey),
                       keyboardType: TextInputType.phone,
-                      readOnly: _phoneExists, // Xám nếu exists
+                      readOnly: _phoneExists,
                     ),
                     const SizedBox(height: 16),
 
-                    // Địa chỉ - tách riêng
+                    // Địa chỉ
                     _buildFramedTextField(
                       controller: _streetController,
                       labelText: 'Số nhà, đường *',

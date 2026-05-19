@@ -13,7 +13,9 @@ import '../subscreens/booking/step7_area_selection.dart'; // step7_payment
 import '../subscreens/booking/step8_area_selection.dart'; // step8_confirmation
 
 class BookingScreen extends StatefulWidget {
-  const BookingScreen({super.key});
+  final Map<String, dynamic>? initialDoctorData;
+
+  const BookingScreen({super.key, this.initialDoctorData});
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -21,6 +23,7 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   int currentStep = 1; // Bắt đầu từ step 1
+  bool isDirectBooking = false;
 
   // Màu chủ đạo giả định (cho AppBar)
   final Color primaryDarkColor = const Color(0xFF1B5E20);
@@ -30,21 +33,64 @@ class _BookingScreenState extends State<BookingScreen> {
   String selectedCity = '';
   Color? cityColor;
   String selectedHospital = '';
+  int? selectedHospitalId; // MỚI: Lưu ID thật từ backend
   String selectedSpecialty = '';
+  int? selectedCategoryId; // MỚI: Lưu ID thật từ backend
   Color specialtyColor = Colors.greenAccent;
   String selectedDoctor = '';
+  int? selectedDoctorId; // MỚI: Lưu ID thật từ backend
   double selectedPrice = 0.0;
   DateTime selectedDate = DateTime.now();
   String selectedTimeSlot = '';
   String fullName = '';
   String phone = '';
   String email = '';
-  String reason = ''; // <-- Dùng biến này để lưu trạng thái
-  String note = '';   // <-- Dùng biến này để lưu trạng thái
+  String reason = ''; // Dùng biến này để lưu trạng thái
+  String note = '';   // Dùng biến này để lưu trạng thái
+  String bookingCode = ''; // MỚI: Mã lịch khám trả về từ Backend
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialDoctorData != null) {
+      isDirectBooking = true;
+      currentStep = 4; // Nhảy cóc đến bước chọn Ngày/Giờ
+
+      final doc = widget.initialDoctorData!;
+      selectedDoctorId = doc['id'] != null ? int.tryParse(doc['id'].toString()) : null;
+      selectedDoctor = doc['name'] ?? 'Bác sĩ';
+      
+      final category = doc['category'];
+      if (category != null) {
+        selectedCategoryId = category['id'] != null ? int.tryParse(category['id'].toString()) : null;
+        selectedSpecialty = category['name'] ?? '';
+      }
+
+      // --- TÍNH TOÁN GIÁ THẬT (Chuẩn Enterprise) ---
+      final double doctorFee = (doc['consultation_fee'] ?? 0).toDouble();
+      double facilityFee = 0;
+
+      final hospitals = doc['hospitals'] as List?;
+      if (hospitals != null && hospitals.isNotEmpty) {
+        final hos = hospitals.first;
+        facilityFee = (hos['facility_fee'] ?? 0).toDouble();
+        selectedHospitalId = hos['id'] != null ? int.tryParse(hos['id'].toString()) : null;
+        selectedHospital = hos['name'] ?? '';
+        selectedCity = 'Hà Nội'; // Fallback
+      }
+      
+      selectedPrice = doctorFee + facilityFee;
+    }
+  }
 
   // Callback để cập nhật state khi chuyển step
   void goToStep(int step, {Map<String, dynamic>? data}) {
     setState(() {
+      if (isDirectBooking) {
+        if (step == 5) step = 6; // Bỏ qua bước chọn bác sĩ (vì đã chọn rồi)
+        if (step < 4) return; // Không cho lùi về các bước chọn khu vực
+      }
+
       // Logic chỉ cho phép chuyển tiến hoặc quay lại bước đã hoàn thành
       if (step > currentStep && step > 8) return;
 
@@ -55,27 +101,28 @@ class _BookingScreenState extends State<BookingScreen> {
           cityColor = data['color'];
         } else if (step == 3) {
           selectedHospital = data['hospital'] ?? '';
+          selectedHospitalId = data['hospitalId']; // Nhận ID Bệnh viện thật
         } else if (step == 4) {
           selectedSpecialty = data['specialty'] ?? '';
+          selectedCategoryId = data['categoryId']; // Nhận ID Chuyên khoa thật
           specialtyColor = data['color'] ?? Colors.greenAccent;
         } else if (step == 5) {
           // Step 5: Chọn Ngày/Giờ
           selectedDate = data['date'] is DateTime ? data['date'] : (data['date'] as DateTime? ?? DateTime.now());
           selectedTimeSlot = data['timeSlot'] ?? '';
         } else if (step == 6) {
-          // Step 6: Chọn Bác sĩ
-          selectedDoctor = data['doctor'] ?? '';
+          // Step 6: Chọn Bác sĩ (Tránh ghi đè null khi nhảy cóc từ Step 4)
+          if (data != null && data.containsKey('doctor')) {
+            selectedDoctor = data['doctor'] ?? selectedDoctor;
+            selectedDoctorId = data['doctorId'] ?? selectedDoctorId;
 
-          // --- SỬA LỖI: ÉP KIỂU SANG DOUBLE ---
-          final priceData = data['price'];
-          if (priceData is int) {
-            selectedPrice = priceData.toDouble();
-          } else if (priceData is double) {
-            selectedPrice = priceData;
-          } else {
-            selectedPrice = 0.0;
+            final priceData = data['price'];
+            if (priceData is int) {
+              selectedPrice = priceData.toDouble();
+            } else if (priceData is double) {
+              selectedPrice = priceData;
+            }
           }
-          // ------------------------------------
 
         } else if (step == 7) {
           // Step 7: Thông tin Bệnh nhân
@@ -84,14 +131,27 @@ class _BookingScreenState extends State<BookingScreen> {
           email = data['email'] ?? '';
           reason = data['reason'] ?? '';
           note = data['note'] ?? '';
+        } else if (step == 8) {
+          // Step 8: Lưu mã xác nhận từ API Backend đặt lịch trả về
+          bookingCode = data['bookingCode'] ?? '';
         }
-        // Step 8 (Thanh toán) và Step 9 (Xác nhận) không cần lưu data tạm
       }
     });
   }
 
   // Back to previous step
   void goBack() {
+    if (isDirectBooking) {
+      if (currentStep == 4) {
+        Navigator.pop(context); // Quay về màn hình hồ sơ bác sĩ
+        return;
+      }
+      if (currentStep == 6) {
+        setState(() => currentStep = 4); // Từ thông tin BN lùi về chọn Ngày/Giờ
+        return;
+      }
+    }
+
     if (currentStep > 1) {
       setState(() => currentStep--);
     }
@@ -126,6 +186,7 @@ class _BookingScreenState extends State<BookingScreen> {
       case 4:
       // Step 4: Chọn Ngày/Giờ (Sử dụng specialtyColor cho accent)
         body = Step4DateTimeSelection(
+          doctorId: isDirectBooking ? selectedDoctorId : null,
           onNext: (data) => goToStep(5, data: data),
           onBack: goBack,
         );
@@ -133,9 +194,14 @@ class _BookingScreenState extends State<BookingScreen> {
       case 5:
       // Step 5: Chọn Bác sĩ
         body = Step5DoctorSelection(
+          cityName: selectedCity,
           specialtyName: selectedSpecialty,
           hospitalName: selectedHospital,
+          hospitalId: selectedHospitalId, // Truyền ID để lọc API
+          categoryId: selectedCategoryId, // Truyền ID để lọc API
           specialtyColor: specialtyColor,
+          selectedDate: selectedDate,
+          selectedTimeSlot: selectedTimeSlot,
           onNext: (data) => goToStep(6, data: data), // Chuyển sang Step 6 (Thông tin BN)
           onBack: goBack, // Quay lại Step 4
         );
@@ -153,11 +219,15 @@ class _BookingScreenState extends State<BookingScreen> {
       // Step 7: Thanh toán
         body = Step7Payment(
           hospitalName: selectedHospital,
+          hospitalId: selectedHospitalId, // Truyền vào để gọi API
           doctor: selectedDoctor,
+          doctorId: selectedDoctorId, // Truyền vào để gọi API
           date: selectedDate,
           timeSlot: selectedTimeSlot,
           fullName: fullName,
           phone: phone,
+          email: email,
+          reason: reason,
           bookingPrice: selectedPrice,
           onNext: (data) => goToStep(8, data: data), // Chuyển sang Step 8 (Xác nhận)
           onBack: goBack, // Quay lại Step 6
@@ -167,6 +237,7 @@ class _BookingScreenState extends State<BookingScreen> {
       default:
       // Step 8: Xác nhận Đặt lịch Thành công
         body = Step8Confirmation(
+          bookingCode: bookingCode, // Truyền mã lịch thực từ Backend
           hospitalName: selectedHospital,
           cityName: selectedCity,
           specialty: selectedSpecialty,
@@ -188,64 +259,77 @@ class _BookingScreenState extends State<BookingScreen> {
     const Color appBarColor = Colors.white;
     const Color foregroundColor = Colors.black87;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            // Icon / Logo
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/images/LOGOmain.jpg',
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
+    return WillPopScope(
+      onWillPop: () async {
+        if (isDirectBooking) {
+          if (currentStep == 4) return true; // Cho phép thoát khỏi BookingScreen
+          goBack();
+          return false; // Chặn thoát, chỉ lùi step
+        } else {
+          if (currentStep == 1) return true;
+          goBack();
+          return false;
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              // Icon / Logo
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/images/LOGOmain.jpg',
+                  width: 36,
+                  height: 36,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
 
-            const SizedBox(width: 10),
+              const SizedBox(width: 10),
 
-            // Text phần tên & mô tả
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'HealthCare VN',
-                  style: TextStyle(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+              // Text phần tên & mô tả
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'HealthCare VN',
+                    style: TextStyle(
+                      color: foregroundColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                Text(
-                  'Đặt lịch khám bệnh trực tuyến',
-                  style: TextStyle(
-                    color: foregroundColor.withOpacity(0.8),
-                    fontSize: 12,
+                  Text(
+                    'Đặt lịch khám bệnh trực tuyến',
+                    style: TextStyle(
+                      color: foregroundColor.withOpacity(0.8),
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ],
+          ),
+          // Nền luôn là màu trắng (hoặc màu mặc định)
+          backgroundColor: appBarColor,
+          foregroundColor: foregroundColor, // Chữ/icon luôn màu tối
+          automaticallyImplyLeading: false,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 10),
+            BookingProgressBar(
+              currentStep: currentStep,
+              totalSteps: 8, // TỔNG CỘNG 8 BƯỚC
+              onStepTap: (step) => goToStep(step),
             ),
+            Expanded(child: body),
           ],
         ),
-        // Nền luôn là màu trắng (hoặc màu mặc định)
-        backgroundColor: appBarColor,
-        foregroundColor: foregroundColor, // Chữ/icon luôn màu tối
-        automaticallyImplyLeading: false,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          BookingProgressBar(
-            currentStep: currentStep,
-            totalSteps: 8, // TỔNG CỘNG 8 BƯỚC
-            onStepTap: (step) => goToStep(step),
-          ),
-          Expanded(child: body),
-        ],
       ),
     );
   }

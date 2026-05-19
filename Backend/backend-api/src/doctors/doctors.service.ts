@@ -23,10 +23,59 @@ export class DoctorsService {
     private usersService: UsersService,
   ) {}
 
-  findAll(): Promise<Doctor[]> {
-    return this.doctorsRepository.find({
-      relations: ['category', 'hospitals'],
-    });
+  async findTopRated(): Promise<Doctor[]> {
+    // Lấy tất cả bác sĩ hoạt động, sắp xếp theo Rating (giảm dần) và Review Count (giảm dần) để tránh bias
+    const doctors = await this.doctorsRepository.createQueryBuilder('doctor')
+      .leftJoinAndSelect('doctor.category', 'category')
+      .leftJoinAndSelect('doctor.hospitals', 'hospital')
+      .where('doctor.is_active = :isActive', { isActive: true })
+      .orderBy('doctor.rating', 'DESC')
+      .addOrderBy('doctor.review_count', 'DESC')
+      .getMany();
+
+    // Group theo chuyên khoa và chỉ lấy bác sĩ xuất sắc nhất của mỗi khoa (Top 1 per Specialty)
+    const topRatedPerCategory = new Map<number, Doctor>();
+    for (const doc of doctors) {
+      const catId = doc.category?.id;
+      if (catId && !topRatedPerCategory.has(catId)) {
+        topRatedPerCategory.set(catId, doc);
+      }
+    }
+
+    return Array.from(topRatedPerCategory.values());
+  }
+
+  async findAll(hospitalId?: number, categoryId?: number, date?: string, time?: string): Promise<Doctor[]> {
+    const query = this.doctorsRepository.createQueryBuilder('doctor')
+      .leftJoinAndSelect('doctor.category', 'category')
+      .leftJoinAndSelect('doctor.hospitals', 'hospital');
+
+    if (hospitalId) {
+      query.innerJoin('doctor_hospital', 'dh', 'dh.doctor_id = doctor.id')
+           .andWhere('dh.hospital_id = :hospitalId', { hospitalId });
+    }
+
+    if (categoryId) {
+      query.andWhere('category.id = :categoryId', { categoryId });
+    }
+
+    if (date && time) {
+      // Filter out doctors who have an appointment at this exact date & time
+      query.andWhere(qb => {
+        const subQuery = qb.subQuery()
+          .select('appointment.doctor_id')
+          .from('appointments', 'appointment')
+          .where('appointment.appointment_date = :date')
+          .andWhere('appointment.appointment_time = :time')
+          .andWhere('appointment.status IN (:...statuses)')
+          .getQuery();
+        return 'doctor.id NOT IN ' + subQuery;
+      }).setParameter('date', date)
+        .setParameter('time', time)
+        .setParameter('statuses', ['pending', 'confirmed']);
+    }
+
+    return query.getMany();
   }
 
   findOne(id: number): Promise<Doctor | null> {

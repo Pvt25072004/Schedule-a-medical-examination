@@ -17,6 +17,7 @@ import { FirebaseService } from './firebase/firebase.service';
 import { EmailService } from './email/email.service';
 import { EmailController } from './email/email.controller';
 import { EmailModule } from './email/email.module';
+import { PricingModule } from './pricing/pricing.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { EmailModule } from './email/email.module';
     CategoriesModule,
     AuthModule,
     EmailModule,
+    PricingModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],

@@ -1,11 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:http/http.dart' as http;
+import 'package:shimmer/shimmer.dart';
 import 'chatbot.dart';
+import '../service/category_service.dart';
+import '../service/auth_service.dart';
+import '../service/doctor_service.dart';
+import 'booking.dart';
+import 'specialty_doctors.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 // --- Cài đặt Màu Chủ đạo ---
 const Color primaryColor = Colors.greenAccent; // Xanh lá cây
@@ -13,7 +22,7 @@ const Color primaryDarkColor = Color(0xFF1B5E20); // Xanh lá đậm cho chữ
 const Color primaryLightColor = Color(0xFFE8F5E9); // Xanh lá rất nhạt cho nền
 
 // Giả định: Mock data
-String getUserName() => 'Nguyễn Văn A';
+
 
 final List<Map<String, String>> bannerData = [
   {'image': 'assets/images/banner1.jpg', 'title': 'Ưu đãi khám sức khỏe 50%', 'subtitle': 'Duy nhất trong tháng'},
@@ -21,7 +30,7 @@ final List<Map<String, String>> bannerData = [
   {'image': 'assets/images/banner3.jpg', 'title': 'Tư vấn trực tuyến miễn phí', 'subtitle': 'Đội ngũ chuyên gia'},
 ];
 
-// Hàm lấy icon thời tiết mock
+// Hàm lấy icon thời tiết
 IconData getWeatherIcon(String iconCode) {
   if (iconCode.contains('01')) return Icons.wb_sunny_rounded;
   if (iconCode.contains('09') || iconCode.contains('10')) return Icons.cloudy_snowing;
@@ -29,61 +38,11 @@ IconData getWeatherIcon(String iconCode) {
   return Icons.cloud_outlined;
 }
 
-// Mock weather data - (Giữ nguyên logic fetch/mock)
-Future<Map<String, dynamic>> fetchWeather() async {
-  return {
-    'name': 'Hà Nội',
-    'main': {'temp': 28.0, 'humidity': 70},
-    'weather': [
-      {'description': 'Trời nắng', 'icon': '01d'}
-    ],
-  };
-}
 
-// Icon data cho chuyên khoa (Thêm nhiều hơn 5)
-final List<Map<String, dynamic>> allSpecialties = [
-  {'title': 'Nha khoa', 'icon': Icons.density_small},
-  {'title': 'Da liễu', 'icon': Icons.spa_outlined},
-  {'title': 'Nội khoa', 'icon': Icons.heart_broken_outlined},
-  {'title': 'Sản phụ khoa', 'icon': Icons.woman_outlined},
-  {'title': 'Tai Mũi Họng', 'icon': Icons.earbuds},
-  {'title': 'Cơ Xương Khớp', 'icon': Icons.accessible_outlined},
-  {'title': 'Nhãn khoa', 'icon': Icons.visibility_outlined},
-  {'title': 'Ung bướu', 'icon': Icons.biotech_outlined},
-];
+
 const int initialSpecialtyCount = 5;
 
-// Mock data cho bác sĩ nổi tiếng
-final List<Map<String, dynamic>> famousDoctors = [
-  {
-    'name': 'BS. Trần Văn Khánh',
-    'specialty': 'Tim mạch',
-    'rating': 4.9,
-    'image': 'assets/doctors/doctor1.jpg',
-    'bio': 'Bệnh viện Hồng Ngọc',
-  },
-  {
-    'name': 'BS. Nguyễn Thị Hoa',
-    'specialty': 'Da liễu',
-    'rating': 4.8,
-    'image': 'assets/doctors/doctor2.jpg',
-    'bio': 'Phòng khám Sài Gòn',
-  },
-  {
-    'name': 'TS. Lê Văn Tín',
-    'specialty': 'Cơ Xương Khớp',
-    'rating': 4.7,
-    'image': 'assets/doctors/doctor1.jpg',
-    'bio': 'Bệnh viện 108',
-  },
-  {
-    'name': 'BS. Phạm Thanh',
-    'specialty': 'Nhi Khoa',
-    'rating': 5.0,
-    'image': 'assets/doctors/doctor2.jpg',
-    'bio': 'Bệnh viện Nhi TW',
-  },
-];
+
 
 // Fallback mock news
 final List<Map<String, dynamic>> mockNews = [
@@ -110,8 +69,9 @@ Future<List<Map<String, dynamic>>> fetchHealthNews() async {
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onBookingTap;
+  final List<dynamic>? initialCategories;
 
-  const HomeScreen({super.key, this.onBookingTap});
+  const HomeScreen({super.key, this.onBookingTap, this.initialCategories});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -125,14 +85,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   int _currentBannerIndex = 0;
   Map<String, dynamic>? _weatherData;
-  bool _isLoadingWeather = true;
-  List<Map<String, dynamic>> _healthNews = [];
-  bool _isLoadingNews = true;
+  bool _isLoadingWeather = false;
+  List<dynamic> _healthNews = [];
+  bool _isLoadingNews = false;
   bool _showAllSpecialties = false;
+  
+  final CategoryService _categoryService = CategoryService();
+  final DoctorService _doctorService = DoctorService();
+  
+  List<dynamic> _categories = [];
+  List<dynamic> _topDoctors = [];
+  bool _isLoadingCategories = false;
+  bool _isLoadingTopDoctors = false;
 
   @override
   void initState() {
     super.initState();
+    // Gán ngay chuyên khoa đã preload từ Splash
+    _categories = widget.initialCategories ?? [];
+    if (_categories.isNotEmpty) {
+      _isLoadingCategories = false;
+    } else {
+      _isLoadingCategories = true;
+    }
 
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 1000),
@@ -151,31 +126,126 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
 
     _fadeController.forward().then((_) => _slideController.forward());
-    _loadWeather();
-    _loadNews();
-  }
-
-  Future<void> _loadNews() async {
-    setState(() => _isLoadingNews = true);
-    final news = await fetchHealthNews();
-    setState(() {
-      _healthNews = news;
-      _isLoadingNews = false;
-    });
-  }
-
-  Future<void> _loadWeather() async {
-    setState(() => _isLoadingWeather = true);
-    final data = await fetchWeather();
-    setState(() {
-      _weatherData = data;
-      _isLoadingWeather = false;
-    });
+    
+    // --- PARALLEL LOADING (Tăng hiệu năng) ---
+    _refresh();
   }
 
   Future<void> _refresh() async {
-    await Future.wait([_loadWeather(), _loadNews()]);
+    // Gọi song song các API để tối ưu tốc độ load
+    await Future.wait([
+      _loadWeather(), 
+      _loadNews(), 
+      _loadCategories(),
+      _loadTopDoctors(),
+    ]);
   }
+
+  Future<void> _loadCategories() async {
+    if (mounted) setState(() => _isLoadingCategories = true);
+    try {
+      final cats = await _categoryService.fetchCategories();
+      if (mounted) {
+        setState(() {
+          _categories = cats;
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingCategories = false);
+    }
+  }
+
+  Future<void> _loadTopDoctors() async {
+    if (mounted) setState(() => _isLoadingTopDoctors = true);
+    try {
+      final docs = await _doctorService.fetchTopRatedDoctors();
+      if (mounted) {
+        setState(() {
+          _topDoctors = docs;
+          _isLoadingTopDoctors = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingTopDoctors = false);
+    }
+  }
+
+  Future<void> _loadNews() async {
+    if (mounted) setState(() => _isLoadingNews = true);
+    try {
+      final news = await fetchHealthNews();
+      if (mounted) {
+        setState(() {
+          _healthNews = news;
+          _isLoadingNews = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingNews = false);
+    }
+  }
+
+  /// --- HONEST UX WEATHER (Non-blocking) ---
+  Future<void> _loadWeather() async {
+    if (mounted) setState(() => _isLoadingWeather = true);
+    try {
+      // 1. Kiểm tra quyền định vị
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
+        throw Exception('Quyền định vị bị từ chối');
+      }
+
+      // 2. Lấy vị trí hiện tại (Timeout 5s để không block UI quá lâu)
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+      ).timeout(const Duration(seconds: 5));
+
+      // 3. Lấy tên địa danh (Reverse Geocoding)
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      String locationName = placemarks.isNotEmpty 
+          ? (placemarks.first.administrativeArea ?? placemarks.first.locality ?? 'Vị trí lạ') 
+          : 'Vị trí lạ';
+
+      // 4. Gọi API thời tiết miễn phí (Open-Meteo)
+      final response = await http.get(Uri.parse(
+        'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true'
+      ));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final temp = data['current_weather']['temperature'];
+        if (mounted) {
+          setState(() {
+            _weatherData = {
+              'name': locationName,
+              'main': {'temp': temp},
+              'weather': [{'icon': '01d'}]
+            };
+            _isLoadingWeather = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('🔥 Weather Fallback (Honest UX): $e');
+      if (mounted) {
+        setState(() {
+          _weatherData = {
+            'name': 'Chưa có vị trí',
+            'main': {'temp': '--'},
+            'weather': [{'icon': '01d'}]
+          };
+          _isLoadingWeather = false;
+        });
+      }
+    }
+  }
+
+
 
   @override
   void dispose() {
@@ -188,15 +258,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildWeatherWidget() {
     if (_isLoadingWeather) {
       return const SizedBox(
-        width: 120,
-        height: 32,
+        width: 110,
+        height: 28,
         child: Center(
-          child: LinearProgressIndicator(color: primaryColor),
+          child: LinearProgressIndicator(
+            backgroundColor: Color(0xFFE8F5E9),
+            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+            minHeight: 2,
+          ),
         ),
       );
     }
 
-    final temp = _weatherData?['main']['temp']?.toStringAsFixed(1) ?? 'N/A';
+    final dynamic tempVal = _weatherData?['main']['temp'];
+    final String temp = tempVal is num ? tempVal.toStringAsFixed(1) : (tempVal?.toString() ?? '--');
     final city = _weatherData?['name'] ?? 'Vị trí';
     final iconCode = _weatherData?['weather'][0]['icon'] ?? '01d';
 
@@ -301,12 +376,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     widget.onBookingTap?.call();
   }
 
+  IconData _getCategoryIcon(String catName) {
+    final name = catName.toLowerCase();
+    if (name.contains('tim mạch')) return Icons.favorite_outline;
+    if (name.contains('nha khoa')) return Icons.density_small;
+    if (name.contains('da liễu')) return Icons.spa_outlined;
+    if (name.contains('nhi')) return Icons.child_care;
+    if (name.contains('sản') || name.contains('phụ khoa')) return Icons.woman_outlined;
+    if (name.contains('tai mũi họng')) return Icons.earbuds;
+    if (name.contains('khớp') || name.contains('xương')) return Icons.accessible_outlined;
+    if (name.contains('mắt') || name.contains('nhãn khoa')) return Icons.visibility_outlined;
+    if (name.contains('ung bướu')) return Icons.biotech_outlined;
+    if (name.contains('nội khoa')) return Icons.heart_broken_outlined;
+    return Icons.medical_services_outlined;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final userName = getUserName();
+    final String userName = AuthService.currentUser?.displayName ?? 'Người dùng';
     final screenWidth = MediaQuery.of(context).size.width;
-    // Tính số lượng chuyên khoa cần hiển thị
-    final specialtiesToShow = _showAllSpecialties ? allSpecialties.length : initialSpecialtyCount;
+    // Tính số lượng chuyên khoa cần hiển thị từ Database
+    final specialtiesToShow = _isLoadingCategories 
+        ? 0 
+        : (_showAllSpecialties 
+            ? _categories.length 
+            : (_categories.length > 5 ? 5 : _categories.length));
 
     // Chiều cao nền top
     const double topBackgroundHeight = 175.0;
@@ -708,87 +802,112 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 5,
-                            childAspectRatio: 0.8,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: specialtiesToShow,
-                          itemBuilder: (context, index) {
-                            if (index == initialSpecialtyCount - 1 && !_showAllSpecialties) {
-                              return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _showAllSpecialties = true;
-                                  });
-                                },
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: const BoxDecoration(
-                                        color: primaryColor,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.more_horiz_outlined,
-                                        size: 24,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Expanded(
-                                      child: Text(
-                                        'Xem tất cả',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: primaryColor,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ],
+                        _isLoadingCategories
+                            ? const Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(strokeWidth: 2.5, color: primaryDarkColor),
+                                  ),
                                 ),
-                              );
-                            }
+                              )
+                            : GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 5,
+                                  childAspectRatio: 0.8,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: specialtiesToShow,
+                                itemBuilder: (context, index) {
+                                  if (index == 4 && !_showAllSpecialties && _categories.length > 5) {
+                                    return InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _showAllSpecialties = true;
+                                        });
+                                      },
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: const BoxDecoration(
+                                              color: primaryColor,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.more_horiz_outlined,
+                                              size: 24,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Expanded(
+                                            child: Text(
+                                              'Xem tất cả',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: primaryColor,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
 
-                            final specialty = allSpecialties[index];
-                            return Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: primaryColor.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    specialty['icon'],
-                                    size: 24,
-                                    color: primaryColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Expanded(
-                                  child: Text(
-                                    specialty['title'],
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[700],
-                                      fontWeight: FontWeight.w500,
+                                  final specialty = _categories[index];
+                                  return InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => SpecialtyDoctorsScreen(
+                                            category: specialty,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: primaryColor.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            _getCategoryIcon(specialty['name'] ?? ''),
+                                            size: 24,
+                                            color: primaryColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Expanded(
+                                          child: Text(
+                                            specialty['name'] ?? 'Chuyên khoa',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[700],
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                                  );
+                                },
+                              ),
 
                         // Nút "Thu gọn" nếu đang show tất cả
                         if (_showAllSpecialties)
@@ -825,104 +944,147 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        SizedBox(
-                          height: 180,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            itemCount: famousDoctors.length,
-                            itemBuilder: (context, index) {
-                              final doctor = famousDoctors[index];
-                              final rating = doctor['rating'] as double;
-                              return Container(
-                                width: 150,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Card(
-                                  elevation: 6,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: InkWell(
-                                    onTap: () {
-                                      showAppSnackBar(context, 'Xem chi tiết BS. ${doctor['name']}');
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(10),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          ClipOval(
-                                            child: Image.asset(
-                                              doctor['image'],
-                                              height: 60,
-                                              width: 60,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            doctor['name'],
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: primaryDarkColor,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            '${doctor['specialty']} - ${doctor['bio']}',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey[600],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: List.generate(5, (i) {
-                                              if (i < rating.floor()) {
-                                                return const Icon(Icons.star, color: Colors.amber, size: 14);
-                                              } else if (i < rating) {
-                                                return const Icon(Icons.star_half, color: Colors.amber, size: 14);
-                                              } else {
-                                                return Icon(Icons.star_border, color: Colors.grey[300], size: 14);
-                                              }
-                                            }),
-                                          ),
-                                          const Spacer(),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            height: 28,
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                showAppSnackBar(context, 'Đặt lịch ${doctor['name']}');
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: primaryColor,
-                                                foregroundColor: Colors.white,
-                                                padding: EdgeInsets.zero,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(20),
-                                                ),
-                                              ),
-                                              child: const Text('Đặt lịch', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                        _isLoadingTopDoctors
+                            ? const SizedBox(
+                                height: 185,
+                                child: Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 40),
+                                    child: LinearProgressIndicator(
+                                      backgroundColor: Color(0xFFE8F5E9),
+                                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                                      minHeight: 2,
                                     ),
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                        ),
+                              )
+                            : SizedBox(
+                                height: 185,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  itemCount: _topDoctors.length,
+                                  itemBuilder: (context, index) {
+                                    final doctor = _topDoctors[index];
+                                    final double rating = (doctor['rating'] ?? 5.0).toDouble();
+                                    final String hospitalName = (doctor['hospitals'] != null && (doctor['hospitals'] as List).isNotEmpty)
+                                        ? doctor['hospitals'][0]['name']
+                                        : 'Phòng khám riêng';
+
+                                    return Container(
+                                      width: 160,
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      child: Card(
+                                        elevation: 4,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: InkWell(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => BookingScreen(initialDoctorData: doctor),
+                                              ),
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(10),
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                ClipOval(
+                                                  child: Container(
+                                                    color: primaryColor.withOpacity(0.1),
+                                                    child: (doctor['avatar_url'] != null && doctor['avatar_url'] != '')
+                                                      ? Image.network(
+                                                          doctor['avatar_url'],
+                                                          height: 55,
+                                                          width: 55,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (c, e, s) => const Icon(Icons.person, size: 35, color: primaryColor),
+                                                        )
+                                                      : const Icon(Icons.person, size: 35, color: primaryColor),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  doctor['name'] ?? 'Bác sĩ',
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: primaryDarkColor,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  doctor['category']?['name'] ?? 'Chuyên gia',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: primaryColor,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  '🏥 $hospitalName',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: List.generate(5, (i) {
+                                                    if (i < rating.floor()) {
+                                                      return const Icon(Icons.star, color: Colors.amber, size: 12);
+                                                    } else {
+                                                      return Icon(Icons.star_border, color: Colors.grey[300], size: 12);
+                                                    }
+                                                  }),
+                                                ),
+                                                const Spacer(),
+                                                SizedBox(
+                                                  width: double.infinity,
+                                                  height: 26,
+                                                  child: ElevatedButton(
+                                                    onPressed: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) => BookingScreen(initialDoctorData: doctor),
+                                                        ),
+                                                      );
+                                                    },
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: primaryColor,
+                                                      foregroundColor: Colors.white,
+                                                      padding: EdgeInsets.zero,
+                                                      elevation: 0,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(20),
+                                                      ),
+                                                    ),
+                                                    child: const Text('Đặt lịch ngay', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                         // Xít Bác sĩ và Tin tức lại
                         const SizedBox(height: 8),
 
