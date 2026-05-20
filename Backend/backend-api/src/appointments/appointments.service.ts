@@ -4,7 +4,10 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Appointment } from './entities/appointment.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
+import { Doctor } from '../doctors/doctor.entity';
+import { Hospital } from '../hospitals/entities/hospital.entity';
 import { Repository, MoreThanOrEqual, In } from 'typeorm';
+import { PricingService } from '../pricing/pricing.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -13,74 +16,113 @@ export class AppointmentsService {
     private appointmentsRepository: Repository<Appointment>,
     @InjectRepository(Schedule)
     private schedulesRepository: Repository<Schedule>,
+    @InjectRepository(Doctor)
+    private doctorsRepository: Repository<Doctor>,
+    @InjectRepository(Hospital)
+    private hospitalsRepository: Repository<Hospital>,
+    private pricingService: PricingService,
   ) {}
 
   async create(
     createAppointmentDto: CreateAppointmentDto,
   ): Promise<Appointment> {
-    // Tìm schedule dựa vào schedule_id (nếu có) hoặc tìm theo doctor_id, date, time
     let schedule: Schedule | null = null;
-    
+    const appointmentDateStr = createAppointmentDto.appointment_date.slice(
+      0,
+      10,
+    ); // YYYY-MM-DD
+    const appointmentTime = createAppointmentDto.appointment_time; // Đã được DTO validate format HH:mm
+
+    // 1. Tìm kiếm lịch làm việc (Schedule)
     if (createAppointmentDto.schedule_id) {
       schedule = await this.schedulesRepository.findOne({
         where: { id: createAppointmentDto.schedule_id },
       });
     } else {
-      // Nếu không có schedule_id, tìm schedule dựa vào doctor_id, date, time
-      // Format date string để so sánh chính xác (YYYY-MM-DD)
-      const appointmentDateStr = createAppointmentDto.appointment_date.slice(0, 10);
-      const appointmentTime = createAppointmentDto.appointment_time;
-      
-      const allSchedules = await this.schedulesRepository.find({
-        where: {
-          doctor_id: createAppointmentDto.doctor_id,
-        },
-      });
-
-      // Lọc schedules theo date và tìm schedule có time slot chứa appointment_time
-      for (const sch of allSchedules) {
-        const schDateStr = sch.work_date instanceof Date
-          ? sch.work_date.toISOString().slice(0, 10)
-          : String(sch.work_date).slice(0, 10);
-        
-        if (schDateStr === appointmentDateStr) {
-          const start = sch.start_time.slice(0, 5); // HH:mm
-          const end = sch.end_time.slice(0, 5);
-          if (appointmentTime >= start && appointmentTime <= end) {
-            schedule = sch;
-            break;
-          }
-        }
-      }
+      // KHẮC PHỤC: Dùng QueryBuilder để truy vấn trực tiếp trên DB thay vì tải hết lên RAM
+      schedule = await this.schedulesRepository
+        .createQueryBuilder('schedule')
+        .where('schedule.doctor_id = :doctorId', {
+          doctorId: createAppointmentDto.doctor_id,
+        })
+        .andWhere('schedule.hospital_id = :hospitalId', {
+          hospitalId: createAppointmentDto.hospital_id,
+        })
+        .andWhere('schedule.work_date = :workDate', {
+          workDate: appointmentDateStr,
+        })
+        .andWhere('schedule.start_time <= :appointmentTime', {
+          appointmentTime,
+        })
+        .andWhere('schedule.end_time >= :appointmentTime', {
+          appointmentTime,
+        })
+        .getOne();
     }
 
-    // Nếu tìm thấy schedule, kiểm tra capacity
-    if (schedule) {
-      // Đếm số appointments đã có trong schedule này với cùng date và time
-      // Chỉ đếm các appointment có status pending hoặc confirmed (chưa bị hủy/từ chối)
-      const appointmentDate = new Date(createAppointmentDto.appointment_date);
-      const existingAppointments = await this.appointmentsRepository.count({
-        where: {
-          schedule_id: schedule.id,
-          appointment_date: appointmentDate,
-          appointment_time: createAppointmentDto.appointment_time,
-          status: In(['pending', 'confirmed']),
-        },
-      });
-
-      // Kiểm tra capacity
-      if (existingAppointments >= schedule.max_patients) {
-        throw new BadRequestException(
-          `Ca làm việc này đã đầy (tối đa ${schedule.max_patients} bệnh nhân)`,
-        );
-      }
-
-      // Đảm bảo schedule_id được set đúng
-      createAppointmentDto.schedule_id = schedule.id;
+    // 2. Kiểm tra sự tồn tại của lịch làm việc
+    if (!schedule) {
+      throw new BadRequestException(
+        'Không tìm thấy lịch làm việc phù hợp của bác sĩ vào thời gian đã chọn!',
+      );
     }
 
-    const appointment =
-      this.appointmentsRepository.create(createAppointmentDto);
+    // 3. KHẮC PHỤC: Bổ sung kiểm tra trạng thái sẵn sàng (is_available) của ca khám
+    if (!schedule.is_available) {
+      throw new BadRequestException(
+        'Ca làm việc này của bác sĩ hiện đã tạm ngưng hoặc không khả dụng. Vui lòng chọn ca khác!',
+      );
+    }
+
+    // 4. KHẮC PHỤC: Tính tổng số bệnh nhân đã đặt trong CẢ CA LÀM VIỆC (Bỏ filter trùng giờ chi tiết)
+    // Chỉ đếm các appointment có status pending hoặc confirmed (chưa bị hủy/từ chối)
+    const existingAppointmentsCount = await this.appointmentsRepository.count({
+      where: {
+        schedule_id: schedule.id,
+        status: In(['pending', 'confirmed']),
+      },
+    });
+
+    // 5. Kiểm tra giới hạn tải (Capacity)
+    if (existingAppointmentsCount >= schedule.max_patients) {
+      throw new BadRequestException(
+        `Ca làm việc này đã đầy bệnh nhân (tối đa ${schedule.max_patients} người/ca). Vui lòng chọn ca khám khác!`,
+      );
+    }
+
+    // Cập nhật lại chính xác schedule_id trước khi tạo bản ghi
+    createAppointmentDto.schedule_id = schedule.id;
+
+    // --- Lấy dữ liệu Bác sĩ & Bệnh viện để thực hiện Snapshot giá và thông tin (Chuẩn Enterprise) ---
+    const [doctor, hospital] = await Promise.all([
+      this.doctorsRepository.findOneBy({ id: createAppointmentDto.doctor_id }),
+      this.hospitalsRepository.findOneBy({
+        id: createAppointmentDto.hospital_id,
+      }),
+    ]);
+
+    if (!doctor || !hospital) {
+      throw new BadRequestException(
+        'Thông tin bác sĩ hoặc bệnh viện không hợp lệ!',
+      );
+    }
+
+    // Tính toán giá bằng Stateless PricingService (Pure Function Style)
+    const pricing = this.pricingService.calculateAppointmentFee(
+      doctor,
+      hospital,
+    );
+
+    const appointment = this.appointmentsRepository.create({
+      ...createAppointmentDto,
+      doctor_fee_snapshot: pricing.doctorFeeSnapshot,
+      hospital_fee_snapshot: pricing.hospitalFeeSnapshot,
+      total_fee: pricing.totalFee,
+      doctor_name_snapshot: pricing.doctorNameSnapshot,
+      hospital_name_snapshot: pricing.hospitalNameSnapshot,
+      currency_snapshot: pricing.currencySnapshot,
+    });
+
     return await this.appointmentsRepository.save(appointment);
   }
 
@@ -106,16 +148,15 @@ export class AppointmentsService {
     return this.appointmentsRepository.remove(appointment);
   }
 
-  async findByDoctor(
-    doctorId: number,
-    date?: string,
-  ): Promise<Appointment[]> {
+  async findByDoctor(doctorId: number, date?: string): Promise<Appointment[]> {
     const where: any = { doctor_id: doctorId };
     if (date) {
       where.appointment_date = date;
     } else {
       // mặc định lấy từ hôm nay trở đi
-      where.appointment_date = MoreThanOrEqual(new Date().toISOString().slice(0, 10));
+      where.appointment_date = MoreThanOrEqual(
+        new Date().toISOString().slice(0, 10),
+      );
     }
 
     return this.appointmentsRepository.find({
@@ -129,7 +170,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where: { user_id: userId },
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['doctor', 'hospital'],
+      relations: ['doctor', 'hospital', 'review'],
     });
   }
 

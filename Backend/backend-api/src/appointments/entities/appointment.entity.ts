@@ -2,6 +2,7 @@ import { Doctor } from 'src/doctors/doctor.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Payment } from 'src/payments/entities/payment.entity';
 import { User } from 'src/users/entities/user.entity';
+import { Review } from 'src/reviews/entities/review.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -82,6 +83,52 @@ export class Appointment {
   @Column({ type: 'text', nullable: true })
   cancel_reason: string | null;
 
+  // --- Snapshot Fields ---
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  doctor_fee_snapshot: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  hospital_fee_snapshot: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  total_fee: number;
+
+  @Column({ length: 10, default: 'VND' })
+  currency_snapshot: string;
+
+  @Column({ length: 255, nullable: true })
+  doctor_name_snapshot: string;
+
+  @Column({ length: 255, nullable: true })
+  hospital_name_snapshot: string;
+
   @ApiProperty({ example: '2025-02-27T08:00:00.000Z' })
   @CreateDateColumn()
   created_at: Date;
@@ -109,4 +156,7 @@ export class Appointment {
   @ManyToOne(() => Hospital, (hospital) => hospital.appointments)
   @JoinColumn({ name: 'hospital_id' })
   hospital?: Hospital | null;
+
+  @OneToOne(() => Review, (review) => review.appointment)
+  review?: Review | null;
 }

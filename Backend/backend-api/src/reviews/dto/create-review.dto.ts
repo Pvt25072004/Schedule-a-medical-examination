@@ -1,9 +1,15 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min, Max } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CreateReviewDto {
   @IsInt()
+  @Min(1)
+  @Max(5)
   @IsNotEmpty()
-  appointment_id: number;
+  rating: number;
+
+  @IsString()
+  @IsOptional()
+  comment?: string;
 
   @IsInt()
   @IsNotEmpty()
@@ -14,11 +20,6 @@ export class CreateReviewDto {
   doctor_id: number;
 
   @IsInt()
-  @Min(1)
-  @Max(5)
-  rating: number;
-
-  @IsString()
-  @IsOptional()
-  comment?: string;
+  @IsNotEmpty()
+  appointment_id: number;
 }

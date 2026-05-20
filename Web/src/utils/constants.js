@@ -23,6 +23,9 @@ export const APPOINTMENT_STATUS = {
   REJECTED: "rejected",
 };
 
+// API Endpoints
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+
 // User Roles
 export const USER_ROLES = {
   PATIENT: "patient",

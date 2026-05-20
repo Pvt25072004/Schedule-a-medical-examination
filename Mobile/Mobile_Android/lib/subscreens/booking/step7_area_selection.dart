@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../service/appointment_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 class Step7Payment extends StatefulWidget {
   final double bookingPrice;
@@ -9,8 +11,12 @@ class Step7Payment extends StatefulWidget {
 
   final String fullName;
   final String doctor;
+  final int? doctorId; // MỚI
   final String hospitalName;
+  final int? hospitalId; // MỚI
   final String phone;
+  final String? email; // MỚI
+  final String? reason; // MỚI
   final DateTime date;
   final String timeSlot;
 
@@ -21,8 +27,12 @@ class Step7Payment extends StatefulWidget {
     required this.onBack,
     required this.fullName,
     required this.doctor,
+    this.doctorId,
     required this.hospitalName,
+    this.hospitalId,
     required this.phone,
+    this.email,
+    this.reason,
     required this.date,
     required this.timeSlot,
   });
@@ -34,6 +44,7 @@ class Step7Payment extends StatefulWidget {
 class _Step7PaymentState extends State<Step7Payment> {
   final Color primaryColor = Colors.greenAccent;
   final Color primaryDarkColor = const Color(0xFF1B5E20);
+  final AppointmentService _appointmentService = AppointmentService();
 
   String _formatPrice(double price) {
     final formatter = NumberFormat('###,###', 'vi_VN');
@@ -81,8 +92,9 @@ class _Step7PaymentState extends State<Step7Payment> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        int countdown = 5;
+        int countdown = 3; // Giảm countdown xuống 3s cho demo nhanh hơn
         bool isButtonEnabled = false;
+        bool isSubmitting = false;
         Timer? timer;
 
         return StatefulBuilder(builder: (context, setStateInDialog) {
@@ -108,7 +120,7 @@ class _Step7PaymentState extends State<Step7Payment> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Vui lòng kiểm tra lại thông tin cuối cùng trước khi xác nhận. Sau bước này, bạn không thể quay lại để chỉnh sửa.',
+                    'Vui lòng kiểm tra lại thông tin cuối cùng trước khi xác nhận. Sau bước này, lịch hẹn sẽ được gửi lên hệ thống.',
                     style: TextStyle(color: Colors.red),
                   ),
                   const Divider(height: 20),
@@ -122,10 +134,23 @@ class _Step7PaymentState extends State<Step7Payment> {
                   _buildPopupInfo('SĐT:', widget.phone),
                   _buildPopupInfo('Phí:', _formatPrice(widget.bookingPrice),
                       isPrice: true),
+                  
+                  if (isSubmitting) ...[
+                    const SizedBox(height: 20),
+                    const Center(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(color: Colors.green),
+                          SizedBox(height: 8),
+                          Text('Đang xử lý dữ liệu đặt lịch...', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                        ],
+                      ),
+                    )
+                  ]
                 ],
               ),
             ),
-            actions: [
+            actions: isSubmitting ? [] : [
               TextButton(
                 onPressed: () {
                   timer?.cancel();
@@ -135,11 +160,46 @@ class _Step7PaymentState extends State<Step7Payment> {
               ),
               ElevatedButton(
                 onPressed: isButtonEnabled
-                    ? () {
-                  timer?.cancel();
-                  Navigator.of(dialogContext).pop();
-                  widget.onNext({});
-                }
+                    ? () async {
+                        setStateInDialog(() {
+                          isSubmitting = true;
+                          isButtonEnabled = false;
+                        });
+                        
+                        try {
+                          // Chuyển đổi Date thành ISO yyyy-MM-dd
+                          final String dateStr = DateFormat('yyyy-MM-dd').format(widget.date);
+                          
+                          // Gọi API đặt lịch thực tế
+                          final response = await _appointmentService.createAppointment(
+                            doctorId: widget.doctorId ?? 1,
+                            hospitalId: widget.hospitalId ?? 1,
+                            date: dateStr,
+                            time: widget.timeSlot,
+                            symptoms: widget.reason ?? 'Khám sức khỏe định kỳ',
+                            patientEmail: widget.email ?? 'patient@example.com',
+                            patientName: widget.fullName,
+                            patientPhone: widget.phone,
+                          );
+                          
+                          timer?.cancel();
+                          Navigator.of(dialogContext).pop();
+                          
+                          // Lấy ID trả về từ Backend để làm mã Booking
+                          final String realBookingCode = response != null ? response['id'].toString() : 'STL-${DateTime.now().millisecondsSinceEpoch % 10000}';
+                          
+                          widget.onNext({
+                            'bookingCode': realBookingCode,
+                          });
+                          
+                        } catch (e) {
+                          setStateInDialog(() {
+                            isSubmitting = false;
+                            isButtonEnabled = true;
+                          });
+                          showAppSnackBar(context, '🔥 Lỗi đặt lịch: $e', color: Colors.red);
+                        }
+                      }
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
@@ -157,9 +217,7 @@ class _Step7PaymentState extends State<Step7Payment> {
           );
         });
       },
-    ).then((_) {
-      // Đảm bảo timer bị hủy khi popup đóng
-    });
+    );
   }
 
   Widget _buildPopupInfo(String label, String value, {bool isPrice = false}) {

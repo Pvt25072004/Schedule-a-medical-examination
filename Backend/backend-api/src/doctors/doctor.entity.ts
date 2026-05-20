@@ -44,6 +44,24 @@ export class Doctor {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 200000,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  consultation_fee: number;
+
+  @Column({ type: 'float', default: 5.0 })
+  rating: number;
+
+  @Column({ default: 0 })
+  review_count: number;
+
   @CreateDateColumn()
   created_at: Date;
 

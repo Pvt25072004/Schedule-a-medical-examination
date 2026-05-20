@@ -47,6 +47,11 @@ const BookingPage = ({ navigate }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  useEffect(() => {
+    if (formData.doctorId && formData.date) {
+      loadSlotsFromSchedules(formData.doctorId, formData.date);
+    }
+  }, [formData.doctorId, formData.date]);
 
   // Tính số sao trung bình cho mỗi doctor từ reviews
   const doctorRatingsMap = useMemo(() => {
@@ -77,13 +82,13 @@ const BookingPage = ({ navigate }) => {
       ...doctor,
       averageRating: doctorRatingsMap.get(doctor.id) || "0.0",
       totalReviews: reviews.filter(
-        (r) => (r.doctor_id || r.doctor?.id) === doctor.id
+        (r) => (r.doctor_id || r.doctor?.id) === doctor.id,
       ).length,
     }));
   }, [doctors, doctorRatingsMap, reviews]);
 
   const selectedDoctor = doctorsWithRatings.find(
-    (d) => d.id === formData.doctorId
+    (d) => d.id === formData.doctorId,
   );
 
   const filteredDoctors = doctorsWithRatings.filter((doctor) => {
@@ -140,6 +145,20 @@ const BookingPage = ({ navigate }) => {
     }
   };
 
+  const formatLocalDate = (dateInput) => {
+    if (!dateInput) return "";
+    // If it's already a simple YYYY-MM-DD string, just return it
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      return dateInput;
+    }
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput).slice(0, 10);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const loadSlotsFromSchedules = async (doctorId, date) => {
     if (!doctorId || !date) return;
     try {
@@ -147,10 +166,7 @@ const BookingPage = ({ navigate }) => {
       const schedulesData = await getSchedulesByDoctor(doctorId);
       setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
       const daySchedules = (schedulesData || []).filter((s) => {
-        const workDate =
-          typeof s.work_date === "string"
-            ? s.work_date.slice(0, 10)
-            : s.work_date?.toString().slice(0, 10);
+        const workDate = formatLocalDate(s.work_date);
         return workDate === date;
       });
 
@@ -205,7 +221,7 @@ const BookingPage = ({ navigate }) => {
       // Khi chuyển sang bước 2, load slot từ schedules
       void loadSlotsFromSchedules(
         formData.doctorId,
-        formData.date || getMinDate()
+        formData.date || getMinDate(),
       );
     }
     if (step === 2 && formData.doctorId && formData.date) {
@@ -217,6 +233,7 @@ const BookingPage = ({ navigate }) => {
 
   const handleSubmit = async () => {
     const newErrors = validate();
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -230,48 +247,69 @@ const BookingPage = ({ navigate }) => {
     setIsLoading(true);
 
     try {
-      // Tìm schedule_id từ date và time
-      const workDate = formData.date;
-      const appointmentTime = formData.time;
-      let foundSchedule = null;
-      
-      for (const sch of schedules) {
-        const schDate =
-          typeof sch.work_date === "string"
-            ? sch.work_date.slice(0, 10)
-            : sch.work_date?.toString().slice(0, 10);
-        if (schDate === workDate) {
-          const start = (sch.start_time || "").slice(0, 5);
-          const end = (sch.end_time || "").slice(0, 5);
-          if (start && end && appointmentTime >= start && appointmentTime <= end) {
-            foundSchedule = sch;
-            break;
-          }
-        }
-      }
+      console.log("ALL SCHEDULES:", schedules);
 
-      // Lấy hospital_id từ schedule hoặc từ doctor
-      let hospitalId = 1; // fallback
-      if (foundSchedule?.hospital_id) {
-        hospitalId = foundSchedule.hospital_id;
-      } else if (selectedDoctor?.hospitals?.[0]?.id) {
-        hospitalId = selectedDoctor.hospitals[0].id;
+      const workDate = formData.date;
+
+      const appointmentTime =
+        formData.time.length === 5 ? `${formData.time}:00` : formData.time;
+
+      // tìm schedule theo ngày
+      const foundSchedule = schedules.find((sch) => {
+        const schDate = formatLocalDate(sch.work_date);
+
+        const start =
+          sch.start_time?.length === 5
+            ? `${sch.start_time}:00`
+            : sch.start_time?.slice(0, 8);
+
+        const end =
+          sch.end_time?.length === 5
+            ? `${sch.end_time}:00`
+            : sch.end_time?.slice(0, 8);
+
+        console.log({
+          schId: sch.id,
+          schDate,
+          workDate,
+          start,
+          end,
+          appointmentTime,
+        });
+
+        return (
+          schDate === workDate &&
+          appointmentTime >= start &&
+          appointmentTime < end
+        );
+      });
+
+      console.log("FOUND SCHEDULE:", foundSchedule);
+
+      if (!foundSchedule) {
+        alert(
+          "Ngày bạn chọn chưa có lịch làm việc của bác sĩ. Hãy chọn ngày khác.",
+        );
+        return;
       }
 
       const payload = {
-        user_id: user.id,
-        doctor_id: formData.doctorId,
-        hospital_id: hospitalId,
-        schedule_id: foundSchedule?.id,
-        appointment_date: formData.date,
+        user_id: Number(user.id),
+        doctor_id: Number(formData.doctorId),
+        hospital_id: Number(foundSchedule.hospital_id),
+        schedule_id: Number(foundSchedule.id),
+        appointment_date: workDate,
         appointment_time: formData.time,
         examination_type: "offline",
         symptoms: formData.type,
       };
 
+      console.log("PAYLOAD:", payload);
+
       const created = await apiCreateAppointment(payload);
 
-      // Demo payment sau khi tạo appointment thành công
+      console.log("CREATED:", created);
+
       try {
         await createPaymentDemo({
           appointment_id: created?.id,
@@ -283,7 +321,6 @@ const BookingPage = ({ navigate }) => {
         console.warn("Demo payment failed:", err);
       }
 
-      // Đồng bộ vào context để AppointmentsPage có dữ liệu ngay
       addAppointment({
         doctorId: formData.doctorId,
         doctorName: selectedDoctor?.name || "",
@@ -295,21 +332,30 @@ const BookingPage = ({ navigate }) => {
         backendId: created?.id,
       });
 
-      setIsLoading(false);
       setShowSuccess(true);
 
       setTimeout(() => {
         navigate(PAGES.APPOINTMENTS);
       }, 2000);
     } catch (error) {
+      console.error(error);
+
+      alert(
+        error?.response?.data?.message ||
+          error.message ||
+          "Không thể tạo lịch hẹn",
+      );
+    } finally {
       setIsLoading(false);
-      alert(error.message || "Không thể tạo lịch hẹn");
     }
   };
 
   const getMinDate = () => {
     const today = new Date();
-    return today.toISOString().split("T")[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   const steps = [
@@ -617,13 +663,13 @@ const BookingPage = ({ navigate }) => {
                   Chọn khung giờ <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {(availableSlots.length ? availableSlots : TIME_SLOTS).map(
-                    (time) => {
+                  {availableSlots.length > 0 ? (
+                    availableSlots.map((time) => {
                       const available = formData.date
                         ? isSlotAvailable(
                             formData.doctorId,
                             formData.date,
-                            time
+                            time,
                           )
                         : true;
                       return (
@@ -637,8 +683,8 @@ const BookingPage = ({ navigate }) => {
                             formData.time === time
                               ? "bg-blue-600 text-white border-blue-600 shadow-lg"
                               : available
-                              ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
-                              : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                                ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
+                                : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
                           }`}
                         >
                           <Clock className="w-4 h-4 inline mr-1" />
@@ -648,7 +694,11 @@ const BookingPage = ({ navigate }) => {
                           )}
                         </button>
                       );
-                    }
+                    })
+                  ) : (
+                    <div className="col-span-full text-gray-500 py-6 text-center border-2 border-dashed border-gray-200 rounded-lg">
+                      Không có ca khám nào khả dụng trong ngày này. Vui lòng chọn ngày khác.
+                    </div>
                   )}
                 </div>
                 {errors.time && (

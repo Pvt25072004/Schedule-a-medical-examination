@@ -1,7 +1,7 @@
 // Admin Categories (Chuyên khoa) API
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const CATEGORIES_ENDPOINT = `${API_BASE_URL}/categories`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -72,5 +72,3 @@ export const deleteCategory = async (id) => {
   });
   return handleResponse(response, "Không thể xóa chuyên khoa");
 };
-
-

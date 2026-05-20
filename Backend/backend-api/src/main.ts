@@ -20,7 +20,7 @@ async function bootstrap() {
   );
 
   // Prefix global /api
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api/v1');
 
   const allowedOrigins = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim())

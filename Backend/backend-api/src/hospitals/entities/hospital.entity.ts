@@ -38,6 +38,18 @@ export class Hospital {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 100000,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
+  facility_fee: number;
+
   @CreateDateColumn()
   created_at: Date;
 

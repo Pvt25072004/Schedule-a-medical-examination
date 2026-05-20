@@ -3,7 +3,7 @@
 
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const HOSPITALS_ENDPOINT = `${API_BASE_URL}/hospitals`;
 
 const handleResponse = async (response, defaultErrorMessage) => {

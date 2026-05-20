@@ -12,16 +12,16 @@ import {
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
-  full_name: string;
+  full_name?: string;
 
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @Matches(/^[0-9]{10,11}$/)
-  phone: string;
+  phone?: string;
 
   @IsString()
   @IsOptional()
@@ -29,15 +29,22 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
-  firebase_uid?: string;
+  provider_id?: string;
 
   @IsDateString()
   @IsOptional()
   date_of_birth?: string;
 
   @IsEnum(['male', 'female', 'other'])
-  @IsNotEmpty()
-  gender: string;
+  @IsOptional()
+  gender?: string;
+
+  @IsEnum(['local', 'google', 'facebook'])
+  @IsOptional()
+  auth_provider?: string;
+
+  @IsOptional()
+  is_email_verified?: boolean;
 
   @IsString()
   @IsOptional()
@@ -65,4 +72,7 @@ export class CreateUserDto {
 
   @IsOptional()
   is_active?: boolean;
+
+  @IsOptional()
+  is_welcome?: boolean;
 }
