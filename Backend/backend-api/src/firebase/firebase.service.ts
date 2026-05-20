@@ -40,4 +40,51 @@ export class FirebaseService implements OnModuleInit {
   get auth() {
     return this._admin.auth();
   }
+
+  // Gửi thông báo đẩy qua FCM
+  async sendPushNotification(fcmToken: string, title: string, body: string, data?: any) {
+    if (!fcmToken) {
+      console.warn('⚠️ Không thể gửi thông báo đẩy: FCM Token rỗng.');
+      return;
+    }
+    if (!this._admin) {
+      console.warn('⚠️ Firebase Admin SDK chưa được khởi tạo.');
+      return;
+    }
+    try {
+      const message: admin.messaging.Message = {
+        token: fcmToken,
+        notification: {
+          title,
+          body,
+        },
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'default',
+            vibrateTimingsMillis: [0, 500, 200, 500], // Rung 2 nhịp chuyên nghiệp
+            channelId: 'high_importance_channel', // Kênh có độ ưu tiên cao để kích hoạt rung/chuông trên Android
+            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+              badge: 1,
+            },
+          },
+        },
+        data: data ? Object.keys(data).reduce((acc, key) => {
+          acc[key] = String(data[key]);
+          return acc;
+        }, {}) : {},
+      };
+      const response = await this._admin.messaging().send(message);
+      console.log('✅ Đã gửi thành công thông báo đẩy FCM (có âm thanh/rung):', response);
+      return response;
+    } catch (error) {
+      console.error('🔥 Lỗi khi gửi thông báo đẩy FCM:', error);
+    }
+  }
 }

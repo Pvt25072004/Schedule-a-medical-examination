@@ -15,6 +15,7 @@ import 'booking.dart';
 import 'specialty_doctors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import '../subscreens/profile/notification_history.dart';
 
 // --- Cài đặt Màu Chủ đạo ---
 const Color primaryColor = Colors.greenAccent; // Xanh lá cây
@@ -455,7 +456,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined),
                   onPressed: () {
-                    showAppSnackBar(context, 'Thông báo');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationHistoryScreen(),
+                      ),
+                    );
                   },
                 ),
                 Positioned(

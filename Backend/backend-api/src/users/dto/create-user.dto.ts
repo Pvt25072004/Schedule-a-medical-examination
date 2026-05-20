@@ -75,4 +75,10 @@ export class CreateUserDto {
 
   @IsOptional()
   is_welcome?: boolean;
+
+  @IsOptional()
+  fcm_token?: string;
+
+  @IsOptional()
+  notification_settings?: any;
 }
