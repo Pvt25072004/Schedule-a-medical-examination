@@ -33,14 +33,10 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
   final ScheduleService _scheduleService = ScheduleService();
   List<dynamic> _doctorSchedules = [];
   Set<String> _availableDates = {};
-  Set<String> _bookedSlots = {};
   bool _isLoadingSchedules = false;
+  bool _isLoadingTimes = false;
 
-  final List<String> timeSlots = [
-    '08:00','08:30','09:00','09:30','10:00','10:30',
-    '11:00','13:00','13:30','14:00','14:30','15:00',
-    '15:30','16:00','16:30',
-  ];
+  List<String> timeSlots = [];
 
   final GlobalKey<FlipCardState> _flipCardKey = GlobalKey<FlipCardState>();
 
@@ -59,7 +55,6 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
     setState(() => _isLoadingSchedules = true);
     
     final schedules = await _scheduleService.fetchDoctorSchedules(widget.doctorId!);
-    final appointments = await AppointmentService().fetchDoctorAppointments(doctorId: widget.doctorId!);
 
     final Set<String> dates = {};
     for (var s in schedules) {
@@ -68,60 +63,32 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
       }
     }
 
-    final Set<String> booked = {};
-    for (var a in appointments) {
-      if (a['status'] == 'pending' || a['status'] == 'confirmed') {
-        if (a['appointment_date'] != null && a['appointment_time'] != null) {
-          final dateStr = a['appointment_date'].toString().substring(0, 10);
-          final timeStr = a['appointment_time'].toString().substring(0, 5); // Extract HH:mm
-          booked.add('$dateStr $timeStr');
-        }
-      }
-    }
-
     if (mounted) {
       setState(() {
         _doctorSchedules = schedules;
         _availableDates = dates;
-        _bookedSlots = booked;
         _isLoadingSchedules = false;
       });
     }
   }
 
+  Future<void> _loadAvailableTimes(DateTime date) async {
+    if (widget.doctorId == null) return;
+    setState(() => _isLoadingTimes = true);
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final times = await _scheduleService.fetchAvailableTimes(widget.doctorId!, dateStr);
+    
+    if (mounted) {
+      setState(() {
+        timeSlots = times;
+        _isLoadingTimes = false;
+      });
+    }
+  }
+
   bool _isSlotAvailable(String slot) {
-    if (widget.doctorId == null || selectedDate == null) return true;
-    
-    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate!);
-
-    // Kiểm tra xem slot này đã có người đặt chưa
-    if (_bookedSlots.contains('$dateStr $slot')) {
-      return false;
-    }
-
-    final daySchedules = _doctorSchedules.where((s) => 
-      s['work_date'].toString().startsWith(dateStr) && s['is_available'] == true
-    ).toList();
-    
-    if (daySchedules.isEmpty) return false;
-
-    final parts = slot.split(':');
-    final slotMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
-    
-    for (var s in daySchedules) {
-       if (s['start_time'] == null || s['end_time'] == null) continue;
-       final startStr = s['start_time'].toString();
-       final endStr = s['end_time'].toString();
-       final startParts = startStr.split(':');
-       final endParts = endStr.split(':');
-       final startMins = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-       final endMins = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
-       
-       if (slotMinutes >= startMins && slotMinutes < endMins) {
-          return true;
-       }
-    }
-    return false;
+    // Backend API already filtered times, so all times in timeSlots are available
+    return true;
   }
 
   Future<void> _selectDate(DateTime date) async {
@@ -129,9 +96,13 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
       selectedDate = date;
       selectedTimeSlot = '';
     });
-    // Lật flashcard 1 giây sau khi chọn ngày
+    
+    // Load available times from backend
+    await _loadAvailableTimes(date);
+
+    // Lật flashcard sau khi chọn ngày
     if (_flipCardKey.currentState != null) {
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(const Duration(milliseconds: 500), () {
         _flipCardKey.currentState?.toggleCard();
       });
     }
@@ -267,7 +238,9 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
               Text('Chọn giờ khám:', style: const TextStyle(fontSize:16,fontWeight: FontWeight.bold)),
               const SizedBox(height:8),
               Expanded(
-                child: timeSlots.isEmpty
+                child: _isLoadingTimes
+                ? const Center(child: CircularProgressIndicator())
+                : timeSlots.isEmpty
                 ? const Center(child: Text('Không có ca khám khả dụng ngày này.', style: TextStyle(color: Colors.red)))
                 : GridView.builder(
                   shrinkWrap: true,

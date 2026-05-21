@@ -5,6 +5,7 @@ export const PAGES = {
   LOGIN: "/login",
   REGISTER: "/register",
   BOOKING: "/booking",
+  BOOK_DOCTOR: "/book-doctor",
   APPOINTMENTS: "/appointments",
   CHAT: "/chat",
   SETTINGS: "/settings",
@@ -12,6 +13,7 @@ export const PAGES = {
   YOUR_PAGE: "/your-page",
   ADMIN_DASHBOARD: "/admin",
   DOCTOR_DASHBOARD: "/doctor",
+  DOCTORS: "/doctors",
 };
 
 // Appointment Status

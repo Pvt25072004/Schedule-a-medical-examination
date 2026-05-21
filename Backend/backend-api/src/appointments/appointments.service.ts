@@ -192,4 +192,76 @@ export class AppointmentsService {
     }
     return this.appointmentsRepository.save(appointment);
   }
+
+  async getAvailableTimes(doctorId: number, date: string): Promise<string[]> {
+    // 1. Fetch all schedules for this doctor on this date
+    const schedules = await this.schedulesRepository.find({
+      where: { doctor_id: doctorId, work_date: date as any, is_available: true },
+    });
+
+    if (schedules.length === 0) {
+      return [];
+    }
+
+    // 2. Fetch all appointments for this doctor on this date
+    const appointments = await this.appointmentsRepository.find({
+      where: {
+        doctor_id: doctorId,
+        appointment_date: date as any, // TypeORM expected Date object but string "YYYY-MM-DD" works for DB
+        status: In(['pending', 'confirmed']),
+      },
+    });
+
+    // 3. Collect booked times
+    const bookedTimes = new Set(
+      appointments.map((a) => a.appointment_time.slice(0, 5)), // "HH:mm"
+    );
+
+    // 4. Generate all 30-min slots based on schedules
+    const availableSlots = new Set<string>();
+    const now = new Date();
+    const isToday = date === now.toISOString().slice(0, 10);
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTotalMins = currentHour * 60 + currentMinute;
+
+    for (const schedule of schedules) {
+      const start = schedule.start_time.slice(0, 5); // "HH:mm"
+      const end = schedule.end_time.slice(0, 5);
+
+      if (!start || !end) continue;
+
+      let [h, m] = start.split(':').map(Number);
+      const [endH, endM] = end.split(':').map(Number);
+      const endTotalMins = endH * 60 + endM;
+
+      while (h * 60 + m < endTotalMins) {
+        const hh = String(h).padStart(2, '0');
+        const mm = String(m).padStart(2, '0');
+        const timeStr = `${hh}:${mm}`;
+
+        // Check if past current time (if today)
+        let isPast = false;
+        if (isToday) {
+          const slotTotalMins = h * 60 + m;
+          // Thêm 30p buffer cho an toàn
+          if (slotTotalMins <= currentTotalMins + 30) {
+            isPast = true;
+          }
+        }
+
+        if (!isPast && !bookedTimes.has(timeStr)) {
+          availableSlots.add(timeStr);
+        }
+
+        m += 30;
+        if (m >= 60) {
+          h += 1;
+          m -= 60;
+        }
+      }
+    }
+
+    return Array.from(availableSlots).sort();
+  }
 }

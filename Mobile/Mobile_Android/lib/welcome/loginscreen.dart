@@ -431,19 +431,18 @@ class _Loginscreen extends State<Loginscreen> with TickerProviderStateMixin {
           showLoadingDialog("Đang gửi mã xác minh qua Email...");
 
           // Gửi OTP Email
-          final otp = generateOtp();
-          await EmailService.sendOtpEmail(input, otp);
+          await EmailService.sendOtpEmail(input);
           safePopDialog();
 
-          final enteredOtp = await showOtpDialog(context, otp);
-          if (enteredOtp == null || enteredOtp != otp) {
-            _showSnack("⚠️ Sai OTP hoặc hủy xác minh.");
+          final enteredOtp = await showOtpDialog(context, null);
+          if (enteredOtp == null || enteredOtp.isEmpty) {
+            _showSnack("⚠️ Bạn chưa nhập OTP hoặc đã hủy.");
             return;
           }
 
           showLoadingDialog("Đang tạo tài khoản...");
           final AppUserCredential createdCred =
-              await _authService.signUpWithEmail(input, password, displayName);
+              await _authService.signUpWithEmail(input, password, displayName, enteredOtp);
 
           if (createdCred.user != null) {
             await _authService.updateProfile(createdCred.user!.uid, {
