@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/api_config.dart';
 
 class SetPassScreen extends StatefulWidget {
   final String email;
@@ -57,7 +58,7 @@ class _SetPassScreenState extends State<SetPassScreen>
 
     setState(() => _loading = true);
     final resp = await http.post(
-      Uri.parse("http://192.168.1.23:3000/api/auth/verify-reset"),
+      Uri.parse("${ApiConfig.baseUrl}/auth/verify-reset"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "email": widget.email,

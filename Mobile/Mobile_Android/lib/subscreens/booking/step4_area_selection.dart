@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flip_card/flip_card.dart';
 import '../../service/schedule_service.dart';
+import '../../service/appointment_service.dart';
 
 class Step4DateTimeSelection extends StatefulWidget {
   final int? doctorId;
@@ -32,6 +33,7 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
   final ScheduleService _scheduleService = ScheduleService();
   List<dynamic> _doctorSchedules = [];
   Set<String> _availableDates = {};
+  Set<String> _bookedSlots = {};
   bool _isLoadingSchedules = false;
 
   final List<String> timeSlots = [
@@ -55,17 +57,33 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
 
   Future<void> _loadSchedules() async {
     setState(() => _isLoadingSchedules = true);
+    
     final schedules = await _scheduleService.fetchDoctorSchedules(widget.doctorId!);
+    final appointments = await AppointmentService().fetchDoctorAppointments(doctorId: widget.doctorId!);
+
     final Set<String> dates = {};
     for (var s in schedules) {
       if (s['is_available'] == true && s['work_date'] != null) {
         dates.add(s['work_date'].toString().substring(0, 10)); // Extract YYYY-MM-DD
       }
     }
+
+    final Set<String> booked = {};
+    for (var a in appointments) {
+      if (a['status'] == 'pending' || a['status'] == 'confirmed') {
+        if (a['appointment_date'] != null && a['appointment_time'] != null) {
+          final dateStr = a['appointment_date'].toString().substring(0, 10);
+          final timeStr = a['appointment_time'].toString().substring(0, 5); // Extract HH:mm
+          booked.add('$dateStr $timeStr');
+        }
+      }
+    }
+
     if (mounted) {
       setState(() {
         _doctorSchedules = schedules;
         _availableDates = dates;
+        _bookedSlots = booked;
         _isLoadingSchedules = false;
       });
     }
@@ -75,6 +93,12 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
     if (widget.doctorId == null || selectedDate == null) return true;
     
     final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate!);
+
+    // Kiểm tra xem slot này đã có người đặt chưa
+    if (_bookedSlots.contains('$dateStr $slot')) {
+      return false;
+    }
+
     final daySchedules = _doctorSchedules.where((s) => 
       s['work_date'].toString().startsWith(dateStr) && s['is_available'] == true
     ).toList();
