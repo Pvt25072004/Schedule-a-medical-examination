@@ -2,6 +2,9 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
@@ -10,6 +13,8 @@ import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
 import { Category } from 'src/categories/entities/category.entity';
 import { Doctor } from 'src/doctors/doctor.entity';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class BannerService {
@@ -23,7 +28,39 @@ export class BannerService {
     @InjectRepository(Doctor)
     private readonly doctorRepository: Repository<Doctor>,
   ) {}
+  // async create(dto: CreateBannerDto, hospitalId: number): Promise<Banner> {
+  //   if (dto.doctor_id) {
+  //     const doctor = await this.doctorRepository.findOne({
+  //       where: {
+  //         id: dto.doctor_id,
+  //       },
+  //       relations: ['hospitals'],
+  //     });
 
+  //     if (!doctor) {
+  //       throw new NotFoundException('Không tìm thấy bác sĩ');
+  //     }
+
+  //     const belongsToHospital = doctor.hospitals.some(
+  //       (hospital) => hospital.id === hospitalId,
+  //     );
+
+  //     if (!belongsToHospital) {
+  //       throw new BadRequestException(
+  //         'Bác sĩ này không thuộc bệnh viện của bạn',
+  //       );
+  //     }
+  //   }
+
+  //   const banner = this.bannerRepository.create({
+  //     ...dto,
+  //     hospital_id: hospitalId,
+  //     start_date: dto.start_date ? new Date(dto.start_date) : null,
+  //     end_date: dto.end_date ? new Date(dto.end_date) : null,
+  //   });
+
+  //   return this.bannerRepository.save(banner);
+  // }
   async create(dto: CreateBannerDto): Promise<Banner> {
     if (dto.category_id) {
       const category = await this.categoryRepository.findOne({
@@ -107,6 +144,44 @@ export class BannerService {
 
     return banner;
   }
+  async findByHospital(hospitalId: number): Promise<Banner[]> {
+    return this.bannerRepository.find({
+      where: {
+        hospital_id: hospitalId,
+      },
+      relations: ['hospital', 'category', 'doctor'],
+      order: {
+        priority: 'DESC',
+        created_at: 'DESC',
+      },
+    });
+  }
+  // async update(
+  //   id: number,
+  //   dto: UpdateBannerDto,
+  //   hospitalId: number,
+  // ): Promise<Banner> {
+  //   const banner = await this.bannerRepository.findOne({
+  //     where: {
+  //       id,
+  //       hospital_id: hospitalId,
+  //     },
+  //   });
+
+  //   if (!banner) {
+  //     throw new NotFoundException(
+  //       'Không tìm thấy banner hoặc bạn không có quyền sửa',
+  //     );
+  //   }
+
+  //   Object.assign(banner, {
+  //     ...dto,
+  //     start_date: dto.start_date ? new Date(dto.start_date) : banner.start_date,
+  //     end_date: dto.end_date ? new Date(dto.end_date) : banner.end_date,
+  //   });
+
+  //   return this.bannerRepository.save(banner);
+  // }
 
   async update(id: number, dto: UpdateBannerDto): Promise<Banner> {
     const banner = await this.findOne(id);

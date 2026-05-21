@@ -1,5 +1,6 @@
 import { Category } from 'src/categories/entities/category.entity';
 import { Doctor } from 'src/doctors/doctor.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import {
   Column,
   CreateDateColumn,
@@ -19,13 +20,16 @@ export class Banner {
   title: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({ length: 500 })
   image_url: string;
 
-  @Column({ length: 500, nullable: true })
-  redirect_url: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  image_public_id: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  redirect_url: string | null;
 
   @Column({ default: true })
   is_active: boolean;
@@ -34,32 +38,37 @@ export class Banner {
   priority: number;
 
   @Column({ type: 'timestamp', nullable: true })
-  start_date: Date;
+  start_date: Date | null;
 
   @Column({ type: 'timestamp', nullable: true })
-  end_date: Date;
+  end_date: Date | null;
 
   @Column({ nullable: true })
-  category_id: number;
+  category_id: number | null;
 
-  @ManyToOne(() => Category, {
+  @ManyToOne(() => Category, (category) => category.banners, {
     nullable: true,
     onDelete: 'SET NULL',
-    type: 'int',
   })
   @JoinColumn({ name: 'category_id' })
   category?: Category | null;
 
   @Column({ nullable: true })
-  doctor_id: number;
+  doctor_id: number | null;
 
-  @ManyToOne(() => Doctor, {
+  @ManyToOne(() => Doctor, (doctor) => doctor.banners, {
     nullable: true,
     onDelete: 'SET NULL',
-    type: 'int',
   })
   @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor | null;
+
+  @Column({ nullable: true })
+  hospital_id: number;
+
+  @ManyToOne(() => Hospital, (hospital) => hospital.banners)
+  @JoinColumn({ name: 'hospital_id' })
+  hospital?: Hospital | null;
 
   @CreateDateColumn()
   created_at: Date;

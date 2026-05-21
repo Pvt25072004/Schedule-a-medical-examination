@@ -14,6 +14,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { Banner } from 'src/banner/entities/banner.entity';
 
 @Entity('doctors')
 export class Doctor {
@@ -85,4 +86,7 @@ export class Doctor {
   @ManyToOne(() => Category, { nullable: true })
   @JoinColumn({ name: 'category_id' })
   category: Category;
+
+  @OneToMany(() => Banner, (banner) => banner.doctor)
+  banners?: Banner[] | null;
 }

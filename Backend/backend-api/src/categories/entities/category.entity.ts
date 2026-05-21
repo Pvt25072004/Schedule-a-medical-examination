@@ -1,7 +1,9 @@
+import { Banner } from 'src/banner/entities/banner.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -25,4 +27,7 @@ export class Category {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @OneToMany(() => Banner, (banner) => banner.category)
+  banners?: Banner[] | null;
 }

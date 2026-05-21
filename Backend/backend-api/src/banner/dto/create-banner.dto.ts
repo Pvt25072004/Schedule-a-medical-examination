@@ -27,6 +27,10 @@ export class CreateBannerDto {
 
   @IsString()
   @IsOptional()
+  image_public_id?: string;
+
+  @IsString()
+  @IsOptional()
   @MaxLength(500)
   redirect_url?: string;
 

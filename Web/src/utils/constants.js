@@ -12,6 +12,7 @@ export const PAGES = {
   YOUR_PAGE: "/your-page",
   ADMIN_DASHBOARD: "/admin",
   DOCTOR_DASHBOARD: "/doctor",
+  BANNER_MANAGEMENT: "/admin/banners",
 };
 
 // Appointment Status
