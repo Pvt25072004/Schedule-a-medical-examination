@@ -23,6 +23,7 @@ import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import DoctorDashboardPage from "./pages/DoctorDashboardPage";
+import BannerPage from "./pages/BannerPage";
 import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
 

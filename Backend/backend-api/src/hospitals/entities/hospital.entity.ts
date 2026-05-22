@@ -7,10 +7,12 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Banner } from 'src/banner/entities/banner.entity';
 
 @Entity('hospitals')
 export class Hospital {
@@ -68,5 +70,8 @@ export class Hospital {
     joinColumn: { name: 'hospital_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
   })
-  categories: Category[];
+  categories?: Category[];
+
+  @OneToMany(() => Banner, (banner) => banner.hospital)
+  banners?: Banner[];
 }

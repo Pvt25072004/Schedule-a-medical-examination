@@ -18,6 +18,8 @@ import { EmailService } from './email/email.service';
 import { EmailController } from './email/email.controller';
 import { EmailModule } from './email/email.module';
 import { PricingModule } from './pricing/pricing.module';
+import { BannerModule } from './banner/banner.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -56,6 +58,8 @@ import { PricingModule } from './pricing/pricing.module';
     AuthModule,
     EmailModule,
     PricingModule,
+    BannerModule,
+    CloudinaryModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],

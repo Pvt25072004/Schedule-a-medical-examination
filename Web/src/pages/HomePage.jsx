@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -21,12 +21,21 @@ import { useAppointments } from "../contexts/AppointmentContext";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { PAGES, HEALTH_TIPS, SPECIALTIES } from "../utils/constants";
-import { formatDate, getInitials, getRelativeDate, getStatusText, getStatusColor } from "../utils/helpers";
+import {
+  formatDate,
+  getInitials,
+  getRelativeDate,
+  getStatusText,
+  getStatusColor,
+} from "../utils/helpers";
+import { getActiveHospitalBanners } from "../services/admin.hospital.banner.api";
+import BannerPage from "./BannerPage";
 
 const HomePage = ({ navigate }) => {
   const { user } = useAuth();
   const { getUpcomingAppointments, getStatistics } = useAppointments();
   const [searchQuery, setSearchQuery] = useState("");
+  const [banners, setBanners] = useState([]);
 
   const upcomingAppointments = getUpcomingAppointments().slice(0, 3);
   const stats = getStatistics();
@@ -86,10 +95,57 @@ const HomePage = ({ navigate }) => {
       change: "+3%",
     },
   ];
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const data = await getActiveHospitalBanners();
+        setBanners(data || []);
+      } catch (error) {
+        console.error(error.message);
+      }
+    };
+
+    fetchBanners();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header is managed globally in AppRoutes */}
+
+      {/* Banner Section */}
+      {/* <BannerPage /> */}
+      {/* Banner Section */}
+      {banners.length > 0 && (
+        <section className="flex flex-col items-center justify-center mb-4 mt-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {banners.map((banner) => (
+              <a
+                key={banner.id}
+                href={banner.redirect_url || "#"}
+                className="group overflow-hidden rounded-2xl bg-white shadow hover:shadow-lg"
+              >
+                <img
+                  src={banner.image_url}
+                  alt={banner.title}
+                  className="h-48 w-full object-cover transition group-hover:scale-105"
+                />
+
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {banner.title}
+                  </h3>
+
+                  {banner.description && (
+                    <p className="mt-1 text-sm text-gray-500">
+                      {banner.description}
+                    </p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -212,17 +268,19 @@ const HomePage = ({ navigate }) => {
                             </span>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                          apt.status === "pending" 
-                            ? "bg-yellow-100 text-yellow-700"
-                            : apt.status === "confirmed"
-                            ? "bg-green-100 text-green-700"
-                            : apt.status === "rejected"
-                            ? "bg-red-100 text-red-700"
-                            : apt.status === "completed"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}>
+                        <span
+                          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            apt.status === "pending"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : apt.status === "confirmed"
+                                ? "bg-green-100 text-green-700"
+                                : apt.status === "rejected"
+                                  ? "bg-red-100 text-red-700"
+                                  : apt.status === "completed"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
                           {getStatusText(apt.status)}
                         </span>
                       </div>

@@ -46,6 +46,7 @@ import {
 } from "../services/admin.categories.api";
 import { getAllPayments } from "../services/admin.payments.api";
 import { getAllReviews } from "../services/reviews.api";
+import BannerPage from "./BannerPage";
 
 const AdminDashboardPage = ({ navigate }) => {
   const [hospitals, setHospitals] = useState([]);
@@ -394,6 +395,7 @@ const AdminDashboardPage = ({ navigate }) => {
           </div>
         </div>
       </div>
+      <BannerPage />
 
       <div className="max-w-7xl mx-auto px-4 py-10 space-y-8">
         {/* KPI */}
@@ -605,7 +607,7 @@ const AdminDashboardPage = ({ navigate }) => {
                               return {
                                 ...prev,
                                 categoryIds: current.filter(
-                                  (id) => id !== cat.id
+                                  (id) => id !== cat.id,
                                 ),
                               };
                             });
@@ -755,7 +757,7 @@ const AdminDashboardPage = ({ navigate }) => {
                         ? Number(e.target.value)
                         : "";
                       const selected = categories.find(
-                        (c) => c.id === Number(e.target.value)
+                        (c) => c.id === Number(e.target.value),
                       );
                       setDoctorForm((prev) => ({
                         ...prev,
@@ -981,7 +983,7 @@ const AdminDashboardPage = ({ navigate }) => {
                             className="inline-flex items-center gap-1 text-sm text-gray-600"
                             onClick={() => handleToggleUser(user)}
                           >
-                            {user.is_active ?? true ? (
+                            {(user.is_active ?? true) ? (
                               <>
                                 <ToggleRight className="w-4 h-4 text-green-500" />
                                 <span>Đang hoạt động</span>
