@@ -36,6 +36,16 @@ export const getSchedulesByDoctor = async (doctorId) => {
   return handleResponse(response, "Không thể tải lịch làm việc");
 };
 
+export const getAvailableTimes = async (doctorId, date) => {
+  const response = await fetch(`${API_BASE_URL}/appointments/available-times?doctorId=${doctorId}&date=${date}`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+    credentials: "include",
+  });
+  return handleResponse(response, "Không thể tải danh sách giờ khả dụng");
+};
+
 export const createSchedule = async (payload) => {
   const response = await fetch(SCHEDULES_ENDPOINT, {
     method: "POST",

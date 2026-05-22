@@ -6,28 +6,16 @@ class EmailService {
   static const String templateId = 'template_3wprs1q';
   static const String publicKey = '9hi25va7h963miNGI';
 
-  static Future<void> sendOtpEmail(String email, String otp) async {
-    final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
-    final reponse = await http.post(
+  static Future<void> sendOtpEmail(String email) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/auth/send-registration-otp');
+    final response = await http.post(
       url,
-      headers: {
-        'origin': 'http://localhost',
-        'Content-type': 'application/json',
-      },
-      body: json.encode({
-        'service_id': serviceId,
-        'template_id': templateId,
-        'user_id': publicKey,
-        'template_params': {
-          'to_email': email, // biến này phải truyền đúng email người đăng ký
-          'otp': otp,
-          'name': 'STL - Clinic Booking',
-        },
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
     );
 
-    if (reponse.statusCode != 200) {
-      throw Exception('Gửi OTP thất bại: ${reponse.body}');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Gửi OTP thất bại: ${response.body}');
     }
   }
 }

@@ -110,68 +110,7 @@ const HomePage = ({ navigate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <a href={PAGES.HOME} className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">S</span>
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">STL Clinic</h1>
-                {/* <p className="text-xs text-gray-500">Dashboard</p> */}
-              </div>
-            </a>
-
-            {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-lg mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm bác sĩ, chuyên khoa..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* User Actions */}
-            <div className="flex items-center gap-3">
-              <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                <Bell className="w-6 h-6" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-
-              <div
-                className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition"
-                onClick={() => navigate(PAGES.SETTINGS)}
-              >
-                {user?.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full object-cover shadow-lg border"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                    {getInitials(user?.fullName || "User")}
-                  </div>
-                )}
-                <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {user?.fullName || "Người dùng"}
-                  </p>
-                  <p className="text-xs text-gray-500">Bệnh nhân</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header is managed globally in AppRoutes */}
 
       {/* Banner Section */}
       {/* <BannerPage /> */}
@@ -356,7 +295,7 @@ const HomePage = ({ navigate }) => {
                   <p className="text-gray-600 mb-4">Bạn chưa có lịch hẹn nào</p>
                   <Button
                     variant="primary"
-                    onClick={() => navigate(PAGES.BOOKING)}
+                    onClick={() => navigate(PAGES.DOCTORS)}
                     icon={Plus}
                   >
                     Đặt lịch ngay
@@ -375,7 +314,7 @@ const HomePage = ({ navigate }) => {
                   <div
                     key={specialty.id}
                     className="p-4 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition cursor-pointer text-center group"
-                    onClick={() => navigate(PAGES.BOOKING)}
+                    onClick={() => navigate(PAGES.DOCTORS)}
                   >
                     <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">
                       {specialty.icon}
@@ -416,7 +355,7 @@ const HomePage = ({ navigate }) => {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate(PAGES.BOOKING)}
+                onClick={() => navigate(PAGES.DOCTORS)}
                 icon={Calendar}
               >
                 Đặt lịch ngay

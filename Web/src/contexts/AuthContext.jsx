@@ -1,7 +1,9 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import {
   login as apiLogin,
   register as apiRegister,
+  socialLogin as apiSocialLogin,
   updateUser as apiUpdateUser,
 } from "../services/api";
 
@@ -53,6 +55,26 @@ export const AuthProvider = ({ children }) => {
       throw error;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loginWithSocial = async (token, provider) => {
+    try {
+      const data = await apiSocialLogin({ token, provider });
+      const decoded = jwtDecode(data.access_token);
+
+      const userData = {
+        ...data.user,
+        role: decoded.role,
+      };
+
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
+      return data;
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -190,6 +212,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     isAuthReady,
     login,
+    loginWithSocial,
     logout,
     register,
     updateProfile,
