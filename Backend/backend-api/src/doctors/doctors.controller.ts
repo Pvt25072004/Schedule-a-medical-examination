@@ -15,11 +15,11 @@ import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorProfileDto } from './dto/update-doctor-profile.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
-@UseGuards(JwtAuthGuard)
 @Controller('doctors')
 export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Req() req: any) {
     const user = req.user as { email?: string } | undefined;
@@ -55,16 +55,19 @@ export class DoctorsController {
     return this.doctorsService.findOne(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() dto: CreateDoctorDto) {
     return this.doctorsService.createDoctor(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/toggle-active')
   toggleActive(@Param('id') id: string) {
     return this.doctorsService.toggleActive(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('me')
   updateMe(@Req() req: any, @Body() dto: UpdateDoctorProfileDto) {
     const user = req.user as { email?: string } | undefined;
@@ -74,6 +77,7 @@ export class DoctorsController {
     return this.doctorsService.updateProfileByEmail(user.email, dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.doctorsService.remove(+id);

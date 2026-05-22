@@ -167,7 +167,7 @@ const AppointmentsPage = ({ navigate }) => {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate(PAGES.BOOKING)}
+              onClick={() => navigate(PAGES.DOCTORS)}
               icon={Plus}
             >
               Đặt lịch mới
@@ -331,7 +331,7 @@ const AppointmentsPage = ({ navigate }) => {
                         icon={Edit}
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(PAGES.BOOKING);
+                          navigate(PAGES.DOCTORS);
                         }}
                         className="flex-1 md:flex-none"
                       >
@@ -372,7 +372,7 @@ const AppointmentsPage = ({ navigate }) => {
             <Button
               variant="primary"
               size="lg"
-              onClick={() => navigate(PAGES.BOOKING)}
+              onClick={() => navigate(PAGES.DOCTORS)}
               icon={Plus}
             >
               Đặt lịch ngay

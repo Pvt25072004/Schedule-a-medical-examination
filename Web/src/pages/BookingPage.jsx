@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -20,6 +21,7 @@ import { createPaymentDemo } from "../services/payments.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
+import ProgressBar from "../components/common/ProgressBar";
 import { PAGES, TIME_SLOTS } from "../utils/constants";
 import { formatDate, formatCurrency } from "../utils/helpers";
 import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
@@ -28,6 +30,9 @@ import { getAllReviews } from "../services/reviews.api";
 const BookingPage = ({ navigate }) => {
   const { addAppointment, isSlotAvailable } = useAppointments();
   const { user } = useAuth();
+  const location = useLocation();
+  const initialDoctorId = location.state?.doctorId || "";
+
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [doctors, setDoctors] = useState([]);
@@ -35,10 +40,10 @@ const BookingPage = ({ navigate }) => {
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [schedules, setSchedules] = useState([]);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: Date/Time, 2: Confirm
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
-    doctorId: "",
+    doctorId: initialDoctorId,
     date: "",
     time: "",
     type: "",
@@ -47,6 +52,12 @@ const BookingPage = ({ navigate }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  useEffect(() => {
+    if (!initialDoctorId) {
+      navigate(PAGES.DOCTORS);
+    }
+  }, [initialDoctorId, navigate]);
+
   useEffect(() => {
     if (formData.doctorId && formData.date) {
       loadSlotsFromSchedules(formData.doctorId, formData.date);
@@ -209,23 +220,9 @@ const BookingPage = ({ navigate }) => {
   };
 
   const handleNext = () => {
-    if (step === 1 && !formData.doctorId) {
-      setErrors({ doctorId: "Vui lòng chọn bác sĩ" });
-      return;
-    }
-    if (step === 2 && (!formData.date || !formData.time)) {
+    if (step === 1 && (!formData.date || !formData.time)) {
       setErrors({ date: "Vui lòng chọn đầy đủ ngày và giờ" });
       return;
-    }
-    if (step === 1 && formData.doctorId) {
-      // Khi chuyển sang bước 2, load slot từ schedules
-      void loadSlotsFromSchedules(
-        formData.doctorId,
-        formData.date || getMinDate(),
-      );
-    }
-    if (step === 2 && formData.doctorId && formData.date) {
-      void loadSlotsFromSchedules(formData.doctorId, formData.date);
     }
     setStep(step + 1);
     window.scrollTo(0, 0);
@@ -359,9 +356,8 @@ const BookingPage = ({ navigate }) => {
   };
 
   const steps = [
-    { number: 1, title: "Chọn bác sĩ", icon: User },
-    { number: 2, title: "Chọn thời gian", icon: Clock },
-    { number: 3, title: "Xác nhận", icon: CheckCircle },
+    { number: 1, title: "Chọn thời gian", icon: Clock },
+    { number: 2, title: "Xác nhận", icon: CheckCircle },
   ];
 
   // Success Modal
@@ -412,190 +408,20 @@ const BookingPage = ({ navigate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <button
-              onClick={() =>
-                step > 1 ? setStep(step - 1) : navigate(PAGES.HOME)
-              }
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>{step > 1 ? "Quay lại" : "Trang chủ"}</span>
-            </button>
-
-            <h1 className="text-xl font-bold text-gray-900">Đặt lịch khám</h1>
-            <div className="w-20"></div>
-          </div>
-        </div>
-      </header>
+      {/* Header is managed globally in AppRoutes */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Steps */}
-        <Card className="mb-8">
-          <div className="flex items-center justify-between">
-            {steps.map((s, index) => (
-              <React.Fragment key={s.number}>
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
-                      step >= s.number
-                        ? "bg-blue-600 text-white scale-110 shadow-lg"
-                        : "bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {step > s.number ? (
-                      <CheckCircle className="w-6 h-6" />
-                    ) : (
-                      <s.icon className="w-6 h-6" />
-                    )}
-                  </div>
-                  <p
-                    className={`text-sm mt-2 font-medium hidden sm:block ${
-                      step >= s.number ? "text-blue-600" : "text-gray-500"
-                    }`}
-                  >
-                    {s.title}
-                  </p>
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-1 mx-2 transition-all ${
-                      step > s.number ? "bg-blue-600" : "bg-gray-200"
-                    }`}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </Card>
+        <ProgressBar 
+          steps={steps} 
+          currentStep={step} 
+          onStepClick={(n) => {
+            if (n < step) setStep(n);
+          }} 
+        />
 
-        {/* Step 1: Doctor Selection */}
+        {/* Step 1: Date & Time */}
         {step === 1 && (
-          <div className="space-y-6">
-            <Card>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Chọn bác sĩ
-              </h2>
-
-              {/* Search */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Tìm bác sĩ theo tên hoặc chuyên khoa..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Doctors List */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {filteredDoctors.map((doctor) => (
-                  <Card
-                    key={doctor.id}
-                    hover
-                    onClick={() => handleChange("doctorId", doctor.id)}
-                    className={`cursor-pointer border-2 transition-all ${
-                      formData.doctorId === doctor.id
-                        ? "border-blue-500 bg-blue-50 shadow-lg"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex gap-4">
-                      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 shadow-lg">
-                        {doctor.avatar}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg text-gray-900 mb-1">
-                          {doctor.name}
-                        </h3>
-                        <p className="text-blue-600 font-medium text-sm mb-2">
-                          {doctor.specialty}
-                        </p>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                          <span className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                            {doctor.averageRating || "0.0"}
-                            {doctor.totalReviews > 0 && (
-                              <span className="text-gray-400">
-                                ({doctor.totalReviews})
-                              </span>
-                            )}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Award className="w-4 h-4" />
-                            {doctor.experience || "N/A"} năm
-                          </span>
-                        </div>
-
-                        <p className="text-sm font-medium text-gray-900 mb-2">
-                          {formatCurrency(doctor.consultationFee)}
-                        </p>
-                        {Array.isArray(doctor.hospitals) &&
-                          doctor.hospitals.length > 0 && (
-                            <div className="flex items-start gap-1 text-xs text-gray-500">
-                              <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <span className="font-medium">
-                                  {doctor.hospitals[0].name}
-                                </span>
-                                {doctor.hospitals[0].city && (
-                                  <span className="text-blue-600">
-                                    {" "}
-                                    · {doctor.hospitals[0].city}
-                                  </span>
-                                )}
-                                {doctor.hospitals[0].address && (
-                                  <span className="block text-gray-400 mt-0.5">
-                                    {doctor.hospitals[0].address}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                      </div>
-
-                      {formData.doctorId === doctor.id && (
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                            <CheckCircle className="w-5 h-5 text-white" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              {errors.doctorId && (
-                <p className="text-red-600 text-sm mt-4">{errors.doctorId}</p>
-              )}
-            </Card>
-
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              onClick={handleNext}
-              disabled={!formData.doctorId}
-              icon={ArrowRight}
-              iconPosition="right"
-            >
-              Tiếp tục
-            </Button>
-          </div>
-        )}
-
-        {/* Step 2: Date & Time */}
-        {step === 2 && (
           <div className="space-y-6">
             <Card>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -711,7 +537,7 @@ const BookingPage = ({ navigate }) => {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => setStep(1)}
+                onClick={() => navigate(-1)}
                 icon={ArrowLeft}
                 className="flex-1"
               >
@@ -732,8 +558,8 @@ const BookingPage = ({ navigate }) => {
           </div>
         )}
 
-        {/* Step 3: Confirmation */}
-        {step === 3 && (
+        {/* Step 2: Confirmation */}
+        {step === 2 && (
           <div className="space-y-6">
             <Card>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">

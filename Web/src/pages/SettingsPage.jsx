@@ -143,14 +143,12 @@ const SettingsPage = ({ navigate }) => {
   const ToggleSwitch = ({ enabled, onChange }) => (
     <button
       onClick={onChange}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        enabled ? "bg-green-500" : "bg-gray-300"
-      }`}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? "bg-green-500" : "bg-gray-300"
+        }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          enabled ? "translate-x-6" : "translate-x-1"
-        }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"
+          }`}
       />
     </button>
   );
@@ -574,11 +572,10 @@ const SettingsPage = ({ navigate }) => {
           </div>
           {passwordMessage && (
             <p
-              className={`text-sm ${
-                passwordMessage.type === "error"
-                  ? "text-red-600"
-                  : "text-green-600"
-              }`}
+              className={`text-sm ${passwordMessage.type === "error"
+                ? "text-red-600"
+                : "text-green-600"
+                }`}
             >
               {passwordMessage.text}
             </p>
@@ -743,11 +740,10 @@ const SettingsPage = ({ navigate }) => {
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => setSettings((prev) => ({ ...prev, theme: "light" }))}
-            className={`p-4 border-2 rounded-lg transition-all ${
-              settings.theme === "light"
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
+            className={`p-4 border-2 rounded-lg transition-all ${settings.theme === "light"
+              ? "border-green-500 bg-green-50"
+              : "border-gray-200 hover:border-gray-300"
+              }`}
           >
             <div className="w-full h-20 bg-white rounded mb-2 border border-gray-200"></div>
             <p className="font-medium text-gray-800">Sáng</p>
@@ -757,11 +753,10 @@ const SettingsPage = ({ navigate }) => {
           </button>
           <button
             onClick={() => setSettings((prev) => ({ ...prev, theme: "dark" }))}
-            className={`p-4 border-2 rounded-lg transition-all ${
-              settings.theme === "dark"
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
+            className={`p-4 border-2 rounded-lg transition-all ${settings.theme === "dark"
+              ? "border-green-500 bg-green-50"
+              : "border-gray-200 hover:border-gray-300"
+              }`}
           >
             <div className="w-full h-20 bg-gray-800 rounded mb-2"></div>
             <p className="font-medium text-gray-800">Tối</p>
@@ -824,29 +819,6 @@ const SettingsPage = ({ navigate }) => {
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)]">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white py-8 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Settings className="w-8 h-8" />
-              <h1 className="text-3xl font-bold">Cài đặt</h1>
-            </div>
-            <p className="text-green-50">
-              Quản lý tài khoản và tùy chỉnh trải nghiệm
-            </p>
-          </div>
-
-          {/* Nút quay về Dashboard (Home) */}
-          <button
-            type="button"
-            onClick={() => navigate(PAGES.HOME)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium border border-white/30 transition-colors"
-          >
-            <span>← Trang chủ</span>
-          </button>
-        </div>
-      </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -860,11 +832,10 @@ const SettingsPage = ({ navigate }) => {
                   <button
                     key={item.id}
                     onClick={() => setActiveSection(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-4 text-left transition-all ${
-                      activeSection === item.id
-                        ? "bg-green-50 border-l-4 border-green-500 text-green-700"
-                        : "hover:bg-gray-50 text-gray-700 border-l-4 border-transparent"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-4 py-4 text-left transition-all ${activeSection === item.id
+                      ? "bg-green-50 border-l-4 border-green-500 text-green-700"
+                      : "hover:bg-gray-50 text-gray-700 border-l-4 border-transparent"
+                      }`}
                   >
                     <Icon className="w-5 h-5" />
                     <div className="flex-1">
@@ -875,18 +846,6 @@ const SettingsPage = ({ navigate }) => {
                   </button>
                 );
               })}
-
-              {/* Đăng xuất: clear AuthContext + điều hướng về màn Welcome */}
-              <button
-                className="w-full flex items-center gap-3 px-4 py-4 text-left text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
-                onClick={() => {
-                  logout();
-                  navigate(PAGES.WELCOME);
-                }}
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Đăng xuất</span>
-              </button>
             </div>
           </div>
 

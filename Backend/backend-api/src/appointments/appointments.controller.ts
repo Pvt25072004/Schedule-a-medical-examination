@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -26,6 +27,17 @@ import { Appointment } from './entities/appointment.entity';
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
+
+  @Get('available-times')
+  async getAvailableTimes(
+    @Query('doctorId') doctorId: string,
+    @Query('date') date: string,
+  ) {
+    if (!doctorId || !date) {
+      throw new BadRequestException('Thiếu doctorId hoặc date');
+    }
+    return this.appointmentsService.getAvailableTimes(+doctorId, date);
+  }
 
   @Post('/')
   @ApiOperation({ summary: 'Tạo lịch hẹn mới' }) // Mô tả chức năng
