@@ -20,6 +20,7 @@ import { EmailModule } from './email/email.module';
 import { PricingModule } from './pricing/pricing.module';
 import { BannerModule } from './banner/banner.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     PricingModule,
     BannerModule,
     CloudinaryModule,
+    NewsModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],
