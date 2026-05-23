@@ -27,16 +27,18 @@ import {
   getRelativeDate,
   getStatusText,
   getStatusColor,
+  getCategoryIcon,
 } from "../utils/helpers";
 import { getActiveHospitalBanners } from "../services/admin.hospital.banner.api";
 import BannerPage from "./BannerPage";
+import { getCategories } from "../services/admin.categories.api";
 
 const HomePage = ({ navigate }) => {
   const { user } = useAuth();
   const { getUpcomingAppointments, getStatistics } = useAppointments();
   const [searchQuery, setSearchQuery] = useState("");
   const [banners, setBanners] = useState([]);
-
+  const [categoriesList, setCategoriesList] = useState([]);
   const upcomingAppointments = getUpcomingAppointments().slice(0, 3);
   const stats = getStatistics();
   const randomTip = HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)];
@@ -105,7 +107,20 @@ const HomePage = ({ navigate }) => {
       }
     };
 
+    const loadCategories = async () => {
+      try {
+        const cats = await getCategories();
+
+        console.log("Categories API:", cats);
+
+        setCategoriesList(Array.isArray(cats) ? cats : cats?.data || []);
+      } catch (err) {
+        console.error("Error loading categories:", err);
+      }
+    };
+
     fetchBanners();
+    loadCategories();
   }, []);
 
   return (
@@ -309,8 +324,8 @@ const HomePage = ({ navigate }) => {
               <h3 className="text-xl font-bold text-gray-900 mb-6">
                 Chuyên khoa phổ biến
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {SPECIALTIES.slice(0, 8).map((specialty) => (
+              {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {categoriesList.slice(0, 8).map((specialty) => (
                   <div
                     key={specialty.id}
                     className="p-4 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition cursor-pointer text-center group"
@@ -323,6 +338,27 @@ const HomePage = ({ navigate }) => {
                       {specialty.name}
                     </p>
                   </div>
+                ))}
+              </div> */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6">
+                {categoriesList.map((specialty) => (
+                  <Card
+                    key={specialty.id}
+                    hover
+                    className="text-center cursor-pointer group"
+                    onClick={() =>
+                      navigate(PAGES.DOCTORS, {
+                        state: { specialty: specialty.name },
+                      })
+                    }
+                  >
+                    <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">
+                      {specialty.icon || getCategoryIcon(specialty.name)}
+                    </div>
+                    <h3 className="font-semibold text-gray-900">
+                      {specialty.name}
+                    </h3>
+                  </Card>
                 ))}
               </div>
             </Card>

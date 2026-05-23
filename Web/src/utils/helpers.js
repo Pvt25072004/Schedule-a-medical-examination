@@ -108,13 +108,20 @@ export const getCategoryIcon = (name) => {
   if (normalized.includes("nội")) return "🩺";
   if (normalized.includes("nha") || normalized.includes("răng")) return "🦷";
   if (normalized.includes("da")) return "💆";
-  if (normalized.includes("tai") || normalized.includes("mũi") || normalized.includes("họng")) return "👂";
+  if (
+    normalized.includes("tai") ||
+    normalized.includes("mũi") ||
+    normalized.includes("họng")
+  )
+    return "👂";
   if (normalized.includes("mắt") || normalized.includes("nhãn")) return "👁️";
   if (normalized.includes("nhi")) return "👶";
   if (normalized.includes("thần kinh")) return "🧠";
   if (normalized.includes("xương") || normalized.includes("khớp")) return "🦴";
-  if (normalized.includes("tiêu hóa") || normalized.includes("dạ dày")) return "胃";
-  if (normalized.includes("phụ sản") || normalized.includes("thai")) return "🤰";
+  if (normalized.includes("tiêu hóa") || normalized.includes("dạ dày"))
+    return "胃";
+  if (normalized.includes("phụ sản") || normalized.includes("thai"))
+    return "🤰";
   if (normalized.includes("phổi") || normalized.includes("hô hấp")) return "🫁";
   return "🏥";
 };

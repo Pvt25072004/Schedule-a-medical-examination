@@ -71,18 +71,108 @@ const AppRoutes = () => {
     <>
       <Header />
       <Routes>
-        <Route path={PAGES.WELCOME} element={<WelcomePage navigate={navigateTo} />} />
-        <Route path={PAGES.LOGIN} element={<LoginPage navigate={navigateTo} />} />
-        <Route path={PAGES.REGISTER} element={<RegisterPage navigate={navigateTo} />} />
-        <Route path={PAGES.HOME} element={isAuthenticated ? <HomePage navigate={navigateTo} /> : <Navigate to={PAGES.WELCOME} replace />} />
-        <Route path={PAGES.BOOKING} element={isAuthenticated ? <BookingFlowPage navigate={navigateTo} /> : <Navigate to={PAGES.WELCOME} replace />} />
-        <Route path={PAGES.BOOK_DOCTOR} element={isAuthenticated ? <BookingPage navigate={navigateTo} /> : <Navigate to={PAGES.WELCOME} replace />} />
-        <Route path={PAGES.DOCTORS} element={<DoctorListPage navigate={navigateTo} />} />
-        <Route path={PAGES.APPOINTMENTS} element={isAuthenticated ? <AppointmentsPage navigate={navigateTo} /> : <Navigate to={PAGES.WELCOME} replace />} />
-        <Route path={PAGES.CHAT} element={isAuthenticated ? <ChatPage navigate={navigateTo} /> : <Navigate to={PAGES.WELCOME} replace />} />
-        <Route path={PAGES.SETTINGS} element={isAuthenticated ? <SettingsPage navigate={navigateTo} /> : <Navigate to={PAGES.WELCOME} replace />} />
-        <Route path={PAGES.ADMIN_DASHBOARD} element={<RoleProtectedRoute roles={["admin"]}><AdminDashboardPage navigate={navigateTo} /></RoleProtectedRoute>} />
-        <Route path={PAGES.DOCTOR_DASHBOARD} element={<RoleProtectedRoute roles={["doctor"]}><DoctorDashboardPage navigate={navigateTo} /></RoleProtectedRoute>} />
+        <Route
+          path={PAGES.WELCOME}
+          element={<WelcomePage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.LOGIN}
+          element={<LoginPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.REGISTER}
+          element={<RegisterPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.HOME}
+          element={
+            isAuthenticated ? (
+              <HomePage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.BANNER_MANAGEMENT}
+          element={
+            isAuthenticated ? (
+              <BannerPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.BOOKING}
+          element={
+            isAuthenticated ? (
+              <BookingFlowPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.BOOK_DOCTOR}
+          element={
+            isAuthenticated ? (
+              <BookingPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.DOCTORS}
+          element={<DoctorListPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.APPOINTMENTS}
+          element={
+            isAuthenticated ? (
+              <AppointmentsPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.CHAT}
+          element={
+            isAuthenticated ? (
+              <ChatPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.SETTINGS}
+          element={
+            isAuthenticated ? (
+              <SettingsPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.ADMIN_DASHBOARD}
+          element={
+            <RoleProtectedRoute roles={["admin"]}>
+              <AdminDashboardPage navigate={navigateTo} />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path={PAGES.DOCTOR_DASHBOARD}
+          element={
+            <RoleProtectedRoute roles={["doctor"]}>
+              <DoctorDashboardPage navigate={navigateTo} />
+            </RoleProtectedRoute>
+          }
+        />
         <Route path="/" element={<Navigate to={PAGES.WELCOME} replace />} />
         <Route path="*" element={<Navigate to={PAGES.WELCOME} replace />} />
       </Routes>
@@ -90,7 +180,8 @@ const AppRoutes = () => {
   );
 };
 
-const GOOGLE_CLIENT_ID = "359909618045-mvoc5piuvt19siurfk0bf8226sqicqb6.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  "359909618045-mvoc5piuvt19siurfk0bf8226sqicqb6.apps.googleusercontent.com";
 
 const App = () => {
   return (
