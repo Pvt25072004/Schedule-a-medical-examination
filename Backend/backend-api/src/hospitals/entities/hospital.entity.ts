@@ -13,6 +13,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Banner } from 'src/banner/entities/banner.entity';
+import { SocialPost } from 'src/social/entities/social-post.entity';
 
 @Entity('hospitals')
 export class Hospital {
@@ -74,4 +75,7 @@ export class Hospital {
 
   @OneToMany(() => Banner, (banner) => banner.hospital)
   banners?: Banner[];
+
+  @OneToMany(() => SocialPost, (post) => post.hospital)
+  social_posts?: SocialPost[];
 }
