@@ -20,6 +20,7 @@ import { EmailModule } from './email/email.module';
 import { PricingModule } from './pricing/pricing.module';
 import { BannerModule } from './banner/banner.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { NewsModule } from './news/news.module';
 import { SocialModule } from './social/social.module';
 
 @Module({
@@ -61,6 +62,7 @@ import { SocialModule } from './social/social.module';
     PricingModule,
     BannerModule,
     CloudinaryModule,
+    NewsModule,
     SocialModule,
   ],
   controllers: [AppController, EmailController],
