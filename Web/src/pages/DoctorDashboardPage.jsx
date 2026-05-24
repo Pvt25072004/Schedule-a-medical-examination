@@ -131,11 +131,10 @@ const DoctorDashboardPage = ({ navigate }) => {
   useEffect(() => {
     if (!doctorProfile?.id) return;
     void loadSchedules(doctorProfile.id);
-    const today = new Date().toISOString().slice(0, 10);
     (async () => {
       try {
         setLoadingAppointments(true);
-        const apps = await getAppointmentsByDoctor(doctorProfile.id, today);
+        const apps = await getAppointmentsByDoctor(doctorProfile.id);
         setDoctorAppointments(Array.isArray(apps) ? apps : []);
       } catch (e) {
         console.error("Load doctor appointments error:", e);
@@ -873,7 +872,7 @@ const DoctorDashboardPage = ({ navigate }) => {
               )}
               {!loadingAppointments && doctorAppointments.length === 0 && (
                 <p className="text-sm text-slate-500">
-                  Hôm nay chưa có lịch hẹn nào.
+                  Chưa có lịch hẹn nào sắp tới.
                 </p>
               )}
               {doctorAppointments.slice(0, 6).map((appointment) => (
