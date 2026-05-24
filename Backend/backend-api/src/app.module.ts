@@ -20,6 +20,10 @@ import { EmailModule } from './email/email.module';
 import { PricingModule } from './pricing/pricing.module';
 import { BannerModule } from './banner/banner.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { FanpagesModule } from './fanpages/fanpages.module';
+import { PostsModule } from './posts/posts.module';
+import { LikesModule } from './likes/likes.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -60,6 +64,10 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     PricingModule,
     BannerModule,
     CloudinaryModule,
+    FanpagesModule,
+    PostsModule,
+    LikesModule,
+    CommentsModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],

@@ -24,6 +24,8 @@ import SettingsPage from "./pages/SettingsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 import BannerPage from "./pages/BannerPage";
+import FanpagePage from "./pages/FanpagePage";
+import FanpageDetailPage from "./pages/FanpageDetailPage";
 import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
 
@@ -126,6 +128,14 @@ const AppRoutes = () => {
         <Route
           path={PAGES.DOCTORS}
           element={<DoctorListPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.FANPAGE}
+          element={<FanpagePage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.FANPAGE_DETAIL}
+          element={<FanpageDetailPage />}
         />
         <Route
           path={PAGES.APPOINTMENTS}

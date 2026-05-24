@@ -15,6 +15,8 @@ export const PAGES = {
   DOCTOR_DASHBOARD: "/doctor",
   BANNER_MANAGEMENT: "/admin/banners",
   DOCTORS: "/doctors",
+  FANPAGE: "/fanpage",
+  FANPAGE_DETAIL: "/fanpage/:id",
 };
 
 // Appointment Status

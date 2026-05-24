@@ -13,6 +13,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Banner } from 'src/banner/entities/banner.entity';
+import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
+import { OneToOne } from 'typeorm';
 
 @Entity('hospitals')
 export class Hospital {
@@ -74,4 +76,7 @@ export class Hospital {
 
   @OneToMany(() => Banner, (banner) => banner.hospital)
   banners?: Banner[];
+
+  @OneToOne(() => Fanpage, (fanpage) => fanpage.hospital)
+  fanpage?: Fanpage;
 }

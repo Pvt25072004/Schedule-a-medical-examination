@@ -100,6 +100,7 @@ export const AuthProvider = ({ children }) => {
         gender: userData.gender,
         address: userData.address || "",
         city: userData.city || "",
+        otp: userData.otp,
       };
 
       const response = await apiRegister(registerData);
