@@ -471,8 +471,16 @@ const BookingFlowPage = ({ navigate }) => {
                       }`}
                     >
                       <div className="flex gap-4">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl flex-shrink-0">
-                          {doctor.avatar || "👨‍⚕️"}
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+                          {doctor.avatar_url ? (
+                            <img
+                              src={doctor.avatar_url}
+                              alt={doctor.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            doctor.avatar || "👨‍⚕️"
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex justify-between">
@@ -607,8 +615,16 @@ const BookingFlowPage = ({ navigate }) => {
                     <p className="font-bold text-gray-900 text-lg">{selectedDoctor?.name}</p>
                     <p className="text-blue-600 text-sm">{selectedDoctor?.specialty}</p>
                   </div>
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm">
-                    {selectedDoctor?.avatar || "👨‍⚕️"}
+                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm overflow-hidden border">
+                    {selectedDoctor?.avatar_url ? (
+                      <img
+                        src={selectedDoctor.avatar_url}
+                        alt={selectedDoctor.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      selectedDoctor?.avatar || "👨‍⚕️"
+                    )}
                   </div>
                 </div>
 

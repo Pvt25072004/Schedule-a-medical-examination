@@ -27,6 +27,8 @@ export class BannerService {
 
     @InjectRepository(Doctor)
     private readonly doctorRepository: Repository<Doctor>,
+
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
   // async create(dto: CreateBannerDto, hospitalId: number): Promise<Banner> {
   //   if (dto.doctor_id) {
@@ -218,17 +220,33 @@ export class BannerService {
       throw new BadRequestException('start_date không được lớn hơn end_date');
     }
 
+    const oldImagePublicId = banner.image_public_id;
+
     Object.assign(banner, {
       ...dto,
       start_date: dto.start_date ? new Date(dto.start_date) : banner.start_date,
       end_date: dto.end_date ? new Date(dto.end_date) : banner.end_date,
     });
 
-    return this.bannerRepository.save(banner);
+    const savedBanner = await this.bannerRepository.save(banner);
+
+    if (
+      dto.image_public_id &&
+      oldImagePublicId &&
+      oldImagePublicId !== dto.image_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldImagePublicId);
+    }
+
+    return savedBanner;
   }
 
   async remove(id: number): Promise<{ message: string }> {
     const banner = await this.findOne(id);
+
+    if (banner.image_public_id) {
+      await this.cloudinaryService.deleteImage(banner.image_public_id);
+    }
 
     await this.bannerRepository.remove(banner);
 

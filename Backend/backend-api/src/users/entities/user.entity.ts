@@ -9,6 +9,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Unique,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 @Entity()
 @Unique(['auth_provider', 'provider_id'])
@@ -21,7 +23,7 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['patient', 'doctor', 'admin'],
+    enum: ['patient', 'doctor', 'admin', 'admin_hospital'],
     default: 'patient',
   })
   role: string;
@@ -64,13 +66,22 @@ export class User {
   @Column({ type: 'longtext', nullable: true })
   avatar_url: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  avatar_public_id: string;
+
   // Lưu ảnh CCCD mặt trước
   @Column({ type: 'longtext', nullable: true })
   id_card_front_url: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  id_card_front_public_id: string;
+
   // Lưu ảnh CCCD mặt sau
   @Column({ type: 'longtext', nullable: true })
   id_card_back_url: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  id_card_back_public_id: string;
 
   @Column({ default: false })
   is_welcome: boolean;

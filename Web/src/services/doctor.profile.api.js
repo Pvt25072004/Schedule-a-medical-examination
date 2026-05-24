@@ -48,3 +48,18 @@ export const updateMyDoctorProfile = async (payload) => {
   });
   return handleResponse(response, "Không thể cập nhật hồ sơ bác sĩ");
 };
+
+export const uploadDoctorAvatar = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${DOCTORS_ENDPOINT}/upload`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+    },
+    body: formData,
+    credentials: "include",
+  });
+  return handleResponse(response, "Không thể tải lên ảnh đại diện");
+};

@@ -24,6 +24,10 @@ export class UpdateDoctorProfileDto {
 
   @IsOptional()
   @IsString()
+  avatar_public_id?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()

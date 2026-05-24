@@ -42,6 +42,7 @@ export const AppointmentProvider = ({ children }) => {
             apt.doctor?.specialty ||
             apt.doctor?.category?.name ||
             "Chuyên khoa",
+          avatar_url: apt.doctor?.avatar_url || "",
           date: rawDate,
           time: rawTime,
           type: apt.symptoms || "",
