@@ -24,6 +24,8 @@ import { FanpagesModule } from './fanpages/fanpages.module';
 import { PostsModule } from './posts/posts.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
+import { NewsModule } from './news/news.module';
+import { SocialModule } from './social/social.module';
 
 @Module({
   imports: [
@@ -68,6 +70,8 @@ import { CommentsModule } from './comments/comments.module';
     PostsModule,
     LikesModule,
     CommentsModule,
+    NewsModule,
+    SocialModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],

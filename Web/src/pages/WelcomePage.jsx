@@ -430,8 +430,16 @@ const WelcomePage = ({ navigate }) => {
             {doctorsList.slice(0, 6).map((doctor) => (
               <Card key={doctor.id} hover className="group">
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 group-hover:scale-110 transition-transform text-white">
-                    {doctor.avatar || "👨‍⚕️"}
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 group-hover:scale-110 transition-transform text-white overflow-hidden border-2 border-white shadow-sm">
+                    {doctor.avatar_url ? (
+                      <img
+                        src={doctor.avatar_url}
+                        alt={doctor.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      doctor.avatar || "👨‍⚕️"
+                    )}
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">

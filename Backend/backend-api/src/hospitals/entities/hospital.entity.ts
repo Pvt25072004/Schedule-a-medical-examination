@@ -15,6 +15,7 @@ import {
 import { Banner } from 'src/banner/entities/banner.entity';
 import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
 import { OneToOne } from 'typeorm';
+import { SocialPost } from 'src/social/entities/social-post.entity';
 
 @Entity('hospitals')
 export class Hospital {
@@ -79,4 +80,7 @@ export class Hospital {
 
   @OneToOne(() => Fanpage, (fanpage) => fanpage.hospital)
   fanpage?: Fanpage;
+
+  @OneToMany(() => SocialPost, (post) => post.hospital)
+  social_posts?: SocialPost[];
 }

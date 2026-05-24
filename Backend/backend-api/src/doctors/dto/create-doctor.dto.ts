@@ -33,6 +33,14 @@ export class CreateDoctorDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  avatar_url?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar_public_id?: string;
+
   @IsInt()
   @IsOptional()
   category_id?: number;
