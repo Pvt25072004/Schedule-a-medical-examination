@@ -1,4 +1,5 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import {
   Column,
   Entity,
@@ -7,6 +8,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Unique,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 @Entity()
 @Unique(['auth_provider', 'provider_id'])
@@ -19,7 +22,7 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['patient', 'doctor', 'admin'],
+    enum: ['patient', 'doctor', 'admin', 'admin_hospital'],
     default: 'patient',
   })
   role: string;
@@ -93,4 +96,11 @@ export class User {
 
   @OneToMany(() => Appointment, (appointment) => appointment.user)
   appointments: Appointment[];
+
+  @Column({ nullable: true })
+  hospital_id: number;
+
+  @ManyToOne(() => Hospital, { nullable: true })
+  @JoinColumn({ name: 'hospital_id' })
+  hospital: Hospital;
 }

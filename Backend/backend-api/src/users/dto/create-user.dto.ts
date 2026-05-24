@@ -78,7 +78,7 @@ export class CreateUserDto {
   @IsOptional()
   id_card_back_public_id?: string;
 
-  @IsEnum(['patient', 'doctor', 'admin'])
+  @IsEnum(['patient', 'doctor', 'admin', 'admin_hospital'])
   @IsOptional()
   role?: string;
 
