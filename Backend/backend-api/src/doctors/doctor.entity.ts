@@ -39,8 +39,11 @@ export class Doctor {
   @Column({ length: 255 })
   password_hash: string;
 
-  @Column({ length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   avatar_url: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  avatar_public_id: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;

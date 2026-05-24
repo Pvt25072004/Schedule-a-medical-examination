@@ -5,11 +5,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -63,12 +66,53 @@ export class UsersService {
     //   if (exists) throw new ConflictException('Số điện thoại đã được sử dụng');
     // }
 
+    const oldAvatarPublicId = user.avatar_public_id;
+    const oldFrontPublicId = user.id_card_front_public_id;
+    const oldBackPublicId = user.id_card_back_public_id;
+
     Object.assign(user, dto);
-    return this.usersRepository.save(user);
+    const savedUser = await this.usersRepository.save(user);
+
+    if (
+      dto.avatar_public_id &&
+      oldAvatarPublicId &&
+      oldAvatarPublicId !== dto.avatar_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldAvatarPublicId);
+    }
+
+    if (
+      dto.id_card_front_public_id &&
+      oldFrontPublicId &&
+      oldFrontPublicId !== dto.id_card_front_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldFrontPublicId);
+    }
+
+    if (
+      dto.id_card_back_public_id &&
+      oldBackPublicId &&
+      oldBackPublicId !== dto.id_card_back_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldBackPublicId);
+    }
+
+    return savedUser;
   }
 
   async remove(id: number): Promise<void> {
     const user = (await this.findOne(id)) as User;
+    
+    if (user.avatar_public_id) {
+      await this.cloudinaryService.deleteImage(user.avatar_public_id);
+    }
+    if (user.id_card_front_public_id) {
+      await this.cloudinaryService.deleteImage(user.id_card_front_public_id);
+    }
+    if (user.id_card_back_public_id) {
+      await this.cloudinaryService.deleteImage(user.id_card_back_public_id);
+    }
+
     await this.usersRepository.remove(user);
   }
 }
