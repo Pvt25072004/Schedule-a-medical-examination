@@ -101,7 +101,4 @@ export class User {
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments: Comment[];
-
-  @Column({ nullable: true })
-  hospital_id: number;
 }
