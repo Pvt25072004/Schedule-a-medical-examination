@@ -57,6 +57,11 @@ export class AdminNewsController {
     return this.newsService.create(dto);
   }
 
+  @Post('sync-google')
+  syncGoogleNews() {
+    return this.newsService.syncFromGoogleNews();
+  }
+
   @Get()
   findAllAdmin() {
     return this.newsService.findAllAdmin();

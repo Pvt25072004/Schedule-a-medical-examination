@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import Parser from 'rss-parser';
 import { Repository } from 'typeorm';
-
 import { News } from './entities/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
@@ -9,12 +10,15 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class NewsService {
+  private readonly logger = new Logger(NewsService.name);
+  private readonly parser = new Parser();
+
   constructor(
     @InjectRepository(News)
     private readonly newsRepository: Repository<News>,
 
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   private generateSlug(title: string): string {
     return title
@@ -175,5 +179,72 @@ export class NewsService {
     await this.newsRepository.save(news);
 
     return news;
+  }
+
+  @Cron(CronExpression.EVERY_6_HOURS)
+  async handleCronSync() {
+    this.logger.log('Bắt đầu đồng bộ tin tức định kỳ từ Google News...');
+    await this.syncFromGoogleNews();
+  }
+
+  async syncFromGoogleNews(query: string = 'y tế OR sức khỏe'): Promise<{ message: string, count: number }> {
+    this.logger.log(`Bắt đầu đồng bộ tin tức với từ khóa: ${query}`);
+    let newCount = 0;
+
+    try {
+      // Dùng RSS của Google News Vietnam
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=vi&gl=VN&ceid=VN:vi`;
+      const feed = await this.parser.parseURL(url);
+
+      // Ảnh mặc định cho tin y tế (nếu RSS không có ảnh)
+      const defaultImageUrl = 'https://images.unsplash.com/photo-1576091160550-2173ff9e5c25?q=80&w=2070&auto=format&fit=crop';
+
+      for (const item of feed.items) {
+        // Kiểm tra xem bài báo đã tồn tại chưa (dựa vào link nguồn hoặc title)
+        const exists = await this.newsRepository.findOne({
+          where: [
+            { source: item.link },
+            { title: item.title }
+          ]
+        });
+
+        if (!exists) {
+          // Bóc tách nội dung HTML (nếu có ảnh trong content, rss-parser lấy contentSnippet)
+          // Đôi khi item.content có chứa thẻ <img>
+          let imageUrl = defaultImageUrl;
+          if (item.content && item.content.includes('<img')) {
+            const imgMatch = item.content.match(/src="([^"]+)"/);
+            if (imgMatch && imgMatch[1]) {
+              imageUrl = imgMatch[1];
+            }
+          }
+
+          const safeTitle = (item.title || 'Tin y tế tổng hợp').substring(0, 250);
+          const slug = await this.generateUniqueSlug(safeTitle);
+
+          const news = this.newsRepository.create({
+            title: safeTitle,
+            slug: slug.substring(0, 250),
+            summary: item.contentSnippet ? item.contentSnippet.substring(0, 500) : null,
+            content: item.content || item.contentSnippet || 'Nội dung đang được cập nhật...',
+            source: item.link,
+            author: item.creator || item.publisher || 'Google News',
+            image_url: imageUrl,
+            is_published: true,
+            published_at: item.pubDate ? new Date(item.pubDate) : new Date(),
+          });
+
+          await this.newsRepository.save(news);
+          newCount++;
+        }
+      }
+
+      this.logger.log(`Đồng bộ thành công. Đã thêm ${newCount} bài báo mới.`);
+      return { message: 'Đồng bộ tin tức thành công', count: newCount };
+
+    } catch (error) {
+      this.logger.error(`Lỗi khi đồng bộ Google News: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 }

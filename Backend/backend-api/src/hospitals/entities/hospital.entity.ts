@@ -7,13 +7,13 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Banner } from 'src/banner/entities/banner.entity';
-import { SocialPost } from 'src/social/entities/social-post.entity';
+import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
+import { OneToOne } from 'typeorm';
 
 @Entity('hospitals')
 export class Hospital {
@@ -76,6 +76,7 @@ export class Hospital {
   @OneToMany(() => Banner, (banner) => banner.hospital)
   banners?: Banner[];
 
-  @OneToMany(() => SocialPost, (post) => post.hospital)
-  social_posts?: SocialPost[];
+  @OneToOne(() => Fanpage, (fanpage) => fanpage.hospital)
+  fanpage?: Fanpage;
+
 }
