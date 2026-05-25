@@ -255,7 +255,7 @@ const PostCard = ({ post, onHashtagClick }) => {
 
       {/* Theater Mode Comment Modal */}
       {isCommentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
           <button 
             onClick={() => setIsCommentModalOpen(false)}
             className="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-50"

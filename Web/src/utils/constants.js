@@ -17,6 +17,7 @@ export const PAGES = {
   DOCTORS: "/doctors",
   FANPAGE: "/fanpage",
   FANPAGE_DETAIL: "/fanpage/:id",
+  NEWS: "/news",
 };
 
 // Appointment Status

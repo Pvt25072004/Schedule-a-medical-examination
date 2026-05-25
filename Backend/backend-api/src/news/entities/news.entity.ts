@@ -32,7 +32,7 @@ export class News {
   @Column({ type: 'varchar', length: 255, nullable: true })
   image_public_id: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 1000, nullable: true })
   source: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

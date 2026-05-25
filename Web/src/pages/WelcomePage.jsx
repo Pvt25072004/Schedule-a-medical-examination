@@ -633,16 +633,7 @@ const WelcomePage = ({ navigate }) => {
         </div>
       </footer>
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => requireAuthAndNavigate(PAGES.CHAT)}
-          icon={MessageCircle}
-          className="rounded-full shadow-2xl w-14 h-14 p-0"
-        />
-      </div>
+
 
       <style jsx>{`
         @keyframes float {

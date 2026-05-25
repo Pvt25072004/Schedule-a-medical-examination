@@ -26,8 +26,10 @@ import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 import BannerPage from "./pages/BannerPage";
 import FanpagePage from "./pages/FanpagePage";
 import FanpageDetailPage from "./pages/FanpageDetailPage";
+import NewsPage from "./pages/NewsPage";
 import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
+import FloatingWidgets from "./components/common/FloatingWidgets";
 
 import { PAGES } from "./utils/constants";
 import "./index.css";
@@ -138,6 +140,10 @@ const AppRoutes = () => {
           element={<FanpageDetailPage />}
         />
         <Route
+          path={PAGES.NEWS}
+          element={<NewsPage navigate={navigateTo} />}
+        />
+        <Route
           path={PAGES.APPOINTMENTS}
           element={
             isAuthenticated ? (
@@ -202,6 +208,7 @@ const App = () => {
             <ScrollToTop />
             <div className="font-sans">
               <AppRoutes />
+              <FloatingWidgets />
             </div>
           </BrowserRouter>
         </AppointmentProvider>

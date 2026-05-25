@@ -85,6 +85,12 @@ const Header = () => {
               <div className="absolute top-full left-0 mt-4 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                 <div className="py-2">
                   <button 
+                    onClick={() => navigate(PAGES.NEWS)}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
+                  >
+                    Tin tức y khoa
+                  </button>
+                  <button 
                     onClick={() => navigate(PAGES.FANPAGE)}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
