@@ -87,6 +87,44 @@ const Header = () => {
             >
               Liên hệ
             </button>
+            
+            <div className="relative group">
+              <button className="text-gray-700 hover:text-blue-600 font-medium transition flex items-center gap-1">
+                Đặt lịch
+              </button>
+              <div className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <div className="py-2">
+                  <button
+                    onClick={() => {
+                      if (!isAuthenticated) navigate(PAGES.LOGIN);
+                      else navigate(PAGES.BOOKING);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
+                  >
+                    Đặt lịch theo khu vực
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!isAuthenticated) navigate(PAGES.LOGIN);
+                      else navigate(PAGES.BOOKING);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
+                  >
+                    Đặt lịch theo bác sĩ
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!isAuthenticated) navigate(PAGES.LOGIN);
+                      else navigate(PAGES.BOOKING);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Đặt lịch khám tại nhà
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="relative group">
               <button className="text-gray-700 hover:text-blue-600 font-medium transition flex items-center gap-1">
                 Tin tức

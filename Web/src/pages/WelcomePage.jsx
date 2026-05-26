@@ -49,6 +49,16 @@ const WelcomePage = ({ navigate }) => {
   const [categoriesList, setCategoriesList] = useState([]);
   const [banners, setBanners] = useState([]);
   const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
+  const [singleBannerIdx, setSingleBannerIdx] = useState(0);
+
+  // Auto-play for single banner
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const timer = setInterval(() => {
+      setSingleBannerIdx((prev) => (prev + 1) % banners.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
 
   const features = [
     {
@@ -458,7 +468,7 @@ const WelcomePage = ({ navigate }) => {
                     key={banner.id} 
                     className="w-full md:w-1/3 shrink-0 px-3 group cursor-pointer" 
                     onClick={() => {
-                      if (banner.doctor_id) navigate(PAGES.BOOKING, { state: { doctorId: banner.doctor_id }});
+                      if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
                       else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
                       else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
                     }}
@@ -481,6 +491,21 @@ const WelcomePage = ({ navigate }) => {
                 ))}
               </div>
             </div>
+
+            {/* Dots for multi-item carousel */}
+            {banners.length > 3 && (
+              <div className="flex justify-center mt-6 gap-2">
+                {Array.from({ length: Math.max(1, banners.length - 2) }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIdx(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      currentBannerIdx === idx ? "w-6 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -551,6 +576,65 @@ const WelcomePage = ({ navigate }) => {
           </div>
         </div>
       </section>
+
+      {/* Single Banner Auto-play Section */}
+      {banners.length > 0 && (
+        <section className="py-12 bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div 
+              className="relative rounded-3xl overflow-hidden shadow-xl h-[200px] md:h-[280px] group cursor-pointer"
+              onClick={() => {
+                const banner = banners[singleBannerIdx];
+                if (!banner) return;
+                if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
+                else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+                else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
+              }}
+            >
+              <div 
+                className="flex h-full w-full transition-transform duration-700 ease-in-out"
+                style={{ transform: `translateX(-${singleBannerIdx * 100}%)` }}
+              >
+                {banners.map((banner, idx) => (
+                  <div 
+                    key={banner.id}
+                    className="w-full h-full shrink-0 relative"
+                  >
+                    <img 
+                      src={banner.image_url} 
+                      alt={banner.title} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 md:p-12">
+                      <span className="inline-block px-3 py-1 bg-blue-500/90 text-white text-xs font-bold uppercase tracking-wider rounded-full w-max mb-3 shadow-lg">
+                        Quảng cáo nổi bật
+                      </span>
+                      <h3 className="text-white font-bold text-2xl md:text-4xl mb-2 drop-shadow-md">{banner.title}</h3>
+                      {banner.description && <p className="text-gray-200 text-sm md:text-lg max-w-3xl drop-shadow">{banner.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Dots for single banner */}
+              <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+                {banners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSingleBannerIdx(idx);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
+                      singleBannerIdx === idx ? "w-8 bg-blue-500" : "w-2 bg-white/60 hover:bg-white"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Specialties Section */}
       <section id="specialties" className="py-20 bg-white">

@@ -4,14 +4,13 @@ import PostCard from '../components/fanpage/PostCard';
 import FeaturedHospitals from '../components/fanpage/FeaturedHospitals';
 import { API_BASE_URL } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const BannerCarousel = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [banners, setBanners] = useState([
-    "https://images.unsplash.com/photo-1538108149393-fbbd81895907?q=80&w=2000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?q=80&w=2000&auto=format&fit=crop"
-  ]);
+  const [banners, setBanners] = useState([]);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const fetchBanners = async () => {
@@ -20,7 +19,7 @@ const BannerCarousel = () => {
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) {
-            setBanners(data.map(b => b.image_url));
+            setBanners(data);
           }
         }
       } catch (err) {
@@ -39,22 +38,52 @@ const BannerCarousel = () => {
   }, [banners.length]);
 
   return (
-    <div className="relative w-full h-48 sm:h-64 md:h-80 rounded-2xl overflow-hidden mb-8 shadow-sm">
-      {banners.map((src, idx) => (
+    <div 
+      className="relative w-full h-40 sm:h-48 md:h-64 rounded-2xl overflow-hidden mb-8 shadow-sm group cursor-pointer"
+      onClick={() => {
+        const banner = banners[currentIdx];
+        if (!banner) return;
+        if (banner.doctor_id) {
+          if (!isAuthenticated) navigate('/login');
+          else navigate('/book-doctor', { state: { doctorId: banner.doctor_id }});
+        }
+        else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+        else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
+      }}
+    >
+      {banners.map((banner, idx) => (
         <img
-          key={idx}
-          src={src}
+          key={banner.id || idx}
+          src={banner.image_url}
           alt={`Banner ${idx + 1}`}
-          className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 ${
-            idx === currentIdx ? 'opacity-100' : 'opacity-0'
+          className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 group-hover:scale-105 ease-in-out ${
+            idx === currentIdx ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
         />
       ))}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-6">
-        <div className="text-white">
-          <h2 className="text-2xl font-bold mb-2">Cập nhật tin tức Y tế</h2>
-          <p className="text-white/90">Những thông tin mới nhất từ các bệnh viện hàng đầu</p>
-        </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6 z-20">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white drop-shadow-md">
+          {banners[currentIdx]?.title || "Cập nhật tin tức Y tế"}
+        </h2>
+        <p className="text-white/90 drop-shadow">
+          {banners[currentIdx]?.description || "Những thông tin mới nhất từ các bệnh viện hàng đầu"}
+        </p>
+      </div>
+
+      {/* Dots */}
+      <div className="absolute bottom-4 left-0 right-0 z-30 flex justify-center gap-2">
+        {banners.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentIdx(idx);
+            }}
+            className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
+              currentIdx === idx ? "w-8 bg-blue-500" : "w-2 bg-white/60 hover:bg-white"
+            }`}
+          />
+        ))}
       </div>
     </div>
   );
