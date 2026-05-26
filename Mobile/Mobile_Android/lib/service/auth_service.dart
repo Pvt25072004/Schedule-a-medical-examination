@@ -136,6 +136,7 @@ class AuthService {
       String email,
       String password,
       String displayName,
+      String otp,
       ) async {
     try {
       final url = Uri.parse('${ApiConfig.baseUrl}/auth/register');
@@ -149,6 +150,7 @@ class AuthService {
         'email': email,
         'phone': dummyPhone,
         'password': password,
+        'otp': otp,
         'date_of_birth': '2000-01-01', // Giá trị mặc định, sẽ cập nhật ở Onboarding
         'gender': 'male' // Giá trị mặc định, sẽ cập nhật ở Onboarding
       };

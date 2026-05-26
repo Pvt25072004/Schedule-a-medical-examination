@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const APPOINTMENTS_ENDPOINT = `${API_BASE_URL}/appointments`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -35,11 +35,11 @@ export const getAppointmentsByDoctor = async (doctorId, date) => {
         ...getAuthHeaders(),
       },
       credentials: "include",
-    }
+    },
   );
   return handleResponse(
     response,
-    "Không thể tải danh sách lịch hẹn của bác sĩ"
+    "Không thể tải danh sách lịch hẹn của bác sĩ",
   );
 };
 
@@ -50,14 +50,11 @@ export const updateAppointmentStatus = async (id, status, reason) => {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
     },
-    body: JSON.stringify(
-      reason ? { status, reason } : { status }
-    ),
+    body: JSON.stringify(reason ? { status, reason } : { status }),
     credentials: "include",
   });
   return handleResponse(
     response,
-    "Không thể cập nhật trạng thái lịch hẹn của bác sĩ"
+    "Không thể cập nhật trạng thái lịch hẹn của bác sĩ",
   );
 };
-

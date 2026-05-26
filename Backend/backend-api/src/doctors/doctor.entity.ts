@@ -14,6 +14,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { Banner } from 'src/banner/entities/banner.entity';
 
 @Entity('doctors')
 export class Doctor {
@@ -38,8 +39,11 @@ export class Doctor {
   @Column({ length: 255 })
   password_hash: string;
 
-  @Column({ length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   avatar_url: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  avatar_public_id: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
@@ -85,4 +89,7 @@ export class Doctor {
   @ManyToOne(() => Category, { nullable: true })
   @JoinColumn({ name: 'category_id' })
   category: Category;
+
+  @OneToMany(() => Banner, (banner) => banner.doctor)
+  banners?: Banner[] | null;
 }

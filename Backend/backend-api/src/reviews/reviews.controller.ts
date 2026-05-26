@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Patch, Delete, UseGuards } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
@@ -14,6 +14,16 @@ export class ReviewsController {
     return this.reviewsService.create(createReviewDto);
   }
 
+  @Get()
+  findAll() {
+    return this.reviewsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.reviewsService.findOne(+id);
+  }
+
   @Get('doctor/:doctorId')
   findByDoctor(@Param('doctorId') doctorId: string) {
     return this.reviewsService.findByDoctor(+doctorId);
@@ -23,5 +33,11 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard)
   update(@Param('id') id: string, @Body() updateReviewDto: UpdateReviewDto) {
     return this.reviewsService.update(+id, updateReviewDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard) // Admin/User deletion
+  remove(@Param('id') id: string) {
+    return this.reviewsService.remove(+id);
   }
 }

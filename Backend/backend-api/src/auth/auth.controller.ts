@@ -21,6 +21,17 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Post('send-registration-otp')
+  @HttpCode(HttpStatus.OK)
+  async sendRegistrationOtp(@Body('email') email: string) {
+    try {
+      await this.authService.sendRegistrationOtp(email);
+      return { success: true, message: 'Mã OTP đã được gửi về email' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto) {

@@ -1,7 +1,7 @@
 // Doctor Profile API
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const DOCTORS_ENDPOINT = `${API_BASE_URL}/doctors`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -49,4 +49,17 @@ export const updateMyDoctorProfile = async (payload) => {
   return handleResponse(response, "Không thể cập nhật hồ sơ bác sĩ");
 };
 
+export const uploadDoctorAvatar = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
 
+  const response = await fetch(`${DOCTORS_ENDPOINT}/upload`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+    },
+    body: formData,
+    credentials: "include",
+  });
+  return handleResponse(response, "Không thể tải lên ảnh đại diện");
+};

@@ -8,10 +8,12 @@ import {
   MapPin,
   Phone,
   Mail,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Button from "../components/common/Button";
 import Card from "../components/common/Card";
-import { PAGES, DOCTORS, SPECIALTIES } from "../utils/constants";
+import { PAGES } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 import {
   getAppointments,
@@ -19,6 +21,10 @@ import {
   updateAppointment,
   deleteAppointment,
 } from "../services/appointments.api";
+import { getDoctors } from "../services/admin.doctors.api";
+import { getCategories } from "../services/admin.categories.api";
+import { getActiveHospitalBanners } from "../services/admin.hospital.banner.api";
+import { getCategoryIcon } from "../utils/helpers";
 const DEFAULT_APPOINTMENT_FORM = Object.freeze({
   user_id: "",
   doctor_id: "",
@@ -31,7 +37,7 @@ const DEFAULT_APPOINTMENT_FORM = Object.freeze({
 });
 
 const WelcomePage = ({ navigate }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [formData, setFormData] = useState({ ...DEFAULT_APPOINTMENT_FORM });
   const [listLoading, setListLoading] = useState(false);
@@ -39,6 +45,20 @@ const WelcomePage = ({ navigate }) => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [doctorsList, setDoctorsList] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [banners, setBanners] = useState([]);
+  const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
+  const [singleBannerIdx, setSingleBannerIdx] = useState(0);
+
+  // Auto-play for single banner
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const timer = setInterval(() => {
+      setSingleBannerIdx((prev) => (prev + 1) % banners.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
 
   const features = [
     {
@@ -75,12 +95,12 @@ const WelcomePage = ({ navigate }) => {
   ];
 
   // Helper: yêu cầu đăng nhập trước khi dùng các dịch vụ
-  const requireAuthAndNavigate = (page) => {
+  const requireAuthAndNavigate = (page, options) => {
     if (!isAuthenticated) {
       // Có thể điều hướng sang LOGIN hoặc REGISTER, ở đây ưu tiên LOGIN
       navigate(PAGES.LOGIN);
     } else {
-      navigate(page);
+      navigate(page, options);
     }
   };
 
@@ -110,6 +130,22 @@ const WelcomePage = ({ navigate }) => {
 
   useEffect(() => {
     fetchAppointments();
+
+    const loadData = async () => {
+      try {
+        const [docs, cats, bannerData] = await Promise.all([
+          getDoctors(),
+          getCategories(),
+          getActiveHospitalBanners()
+        ]);
+        setDoctorsList(Array.isArray(docs) ? docs : []);
+        setCategoriesList(Array.isArray(cats) ? cats : []);
+        setBanners(bannerData || []);
+      } catch (err) {
+        console.error("Error loading welcome data:", err);
+      }
+    };
+    loadData();
   }, [fetchAppointments]);
 
   const handleInputChange = (event) => {
@@ -249,75 +285,11 @@ const WelcomePage = ({ navigate }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header/Navigation */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">S</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">STL Clinic</h1>
-                <p className="text-xs text-gray-500">
-                  Chăm sóc sức khỏe toàn diện
-                </p>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
-              <a
-                href="#features"
-                className="text-gray-700 hover:text-blue-600 font-medium transition"
-              >
-                Tính năng
-              </a>
-              <a
-                href="#doctors"
-                className="text-gray-700 hover:text-blue-600 font-medium transition"
-              >
-                Bác sĩ
-              </a>
-              <a
-                href="#specialties"
-                className="text-gray-700 hover:text-blue-600 font-medium transition"
-              >
-                Chuyên khoa
-              </a>
-              <a
-                href="#contact"
-                className="text-gray-700 hover:text-blue-600 font-medium transition"
-              >
-                Liên hệ
-              </a>
-            </nav>
-
-            {/* Auth Buttons */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(PAGES.LOGIN)}
-              >
-                Đăng nhập
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => navigate(PAGES.REGISTER)}
-              >
-                Đăng ký
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Global Header is rendered outside in AppRoutes */}
 
       {/* Hero Section - MedPro Style */}
       <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div className="space-y-8">
@@ -348,14 +320,16 @@ const WelcomePage = ({ navigate }) => {
                 >
                   Đặt lịch ngay
                 </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => navigate(PAGES.LOGIN)}
-                  className="text-lg"
-                >
-                  Tìm hiểu thêm
-                </Button>
+                {!isAuthenticated && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => navigate(PAGES.LOGIN)}
+                    className="text-lg"
+                  >
+                    Đăng nhập / Đăng ký
+                  </Button>
+                )}
               </div>
 
               {/* Quick Stats */}
@@ -457,6 +431,85 @@ const WelcomePage = ({ navigate }) => {
         </div>
       </section>
 
+      {/* Banner Carousel Section */}
+      {banners.length > 0 && (
+        <section className="py-12 bg-white overflow-hidden border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Chương trình nổi bật</h2>
+                <p className="text-gray-600">Những ưu đãi và sự kiện mới nhất từ STL Clinic</p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setCurrentBannerIdx(Math.max(0, currentBannerIdx - 1))}
+                  disabled={currentBannerIdx === 0}
+                  className="p-3 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors shadow-sm"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => setCurrentBannerIdx(Math.min(Math.max(0, banners.length - 3), currentBannerIdx + 1))}
+                  disabled={currentBannerIdx >= Math.max(0, banners.length - 3)}
+                  className="p-3 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors shadow-sm"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="overflow-hidden -mx-3 px-3 py-4">
+              <div 
+                className="flex transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${currentBannerIdx * (100 / 3)}%)` }}
+              >
+                {banners.map((banner) => (
+                  <div 
+                    key={banner.id} 
+                    className="w-full md:w-1/3 shrink-0 px-3 group cursor-pointer" 
+                    onClick={() => {
+                      if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
+                      else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+                      else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
+                    }}
+                  >
+                    <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 h-[220px]">
+                      <img 
+                        src={banner.image_url} 
+                        alt={banner.title} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-5">
+                        <span className="inline-block px-2 py-1 bg-blue-500/80 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider rounded w-max mb-2">
+                          Nổi bật
+                        </span>
+                        <h3 className="text-white font-bold text-lg mb-1 leading-tight group-hover:text-blue-200 transition-colors">{banner.title}</h3>
+                        {banner.description && <p className="text-gray-300 text-sm line-clamp-2 opacity-90">{banner.description}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dots for multi-item carousel */}
+            {banners.length > 3 && (
+              <div className="flex justify-center mt-6 gap-2">
+                {Array.from({ length: Math.max(1, banners.length - 2) }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIdx(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      currentBannerIdx === idx ? "w-6 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Doctors Section */}
       <section id="doctors" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -470,24 +523,32 @@ const WelcomePage = ({ navigate }) => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {DOCTORS.slice(0, 6).map((doctor) => (
+            {doctorsList.slice(0, 6).map((doctor) => (
               <Card key={doctor.id} hover className="group">
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 group-hover:scale-110 transition-transform">
-                    {doctor.avatar}
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 group-hover:scale-110 transition-transform text-white overflow-hidden border-2 border-white shadow-sm">
+                    {doctor.avatar_url ? (
+                      <img
+                        src={doctor.avatar_url}
+                        alt={doctor.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      doctor.avatar || "👨‍⚕️"
+                    )}
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">
                       {doctor.name}
                     </h3>
                     <p className="text-blue-600 font-medium text-sm mb-2">
-                      {doctor.specialty}
+                      {doctor.specialty || doctor.category?.name || "Đa khoa"}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
-                        ⭐ {doctor.rating}
+                        ⭐ {doctor.averageRating || "4.8"}
                       </span>
-                      <span>{doctor.experience} năm KN</span>
+                      <span>{doctor.experience || 5} năm KN</span>
                     </div>
                   </div>
                 </div>
@@ -496,7 +557,7 @@ const WelcomePage = ({ navigate }) => {
                   size="sm"
                   fullWidth
                   className="mt-4"
-                  onClick={() => requireAuthAndNavigate(PAGES.BOOKING)}
+                  onClick={() => requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: doctor.id } })}
                 >
                   Đặt lịch khám
                 </Button>
@@ -508,13 +569,72 @@ const WelcomePage = ({ navigate }) => {
             <Button
               variant="primary"
               size="lg"
-              onClick={() => navigate(PAGES.REGISTER)}
+              onClick={() => navigate(PAGES.DOCTORS)}
             >
               Xem tất cả bác sĩ
             </Button>
           </div>
         </div>
       </section>
+
+      {/* Single Banner Auto-play Section */}
+      {banners.length > 0 && (
+        <section className="py-12 bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div 
+              className="relative rounded-3xl overflow-hidden shadow-xl h-[200px] md:h-[280px] group cursor-pointer"
+              onClick={() => {
+                const banner = banners[singleBannerIdx];
+                if (!banner) return;
+                if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
+                else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+                else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
+              }}
+            >
+              <div 
+                className="flex h-full w-full transition-transform duration-700 ease-in-out"
+                style={{ transform: `translateX(-${singleBannerIdx * 100}%)` }}
+              >
+                {banners.map((banner, idx) => (
+                  <div 
+                    key={banner.id}
+                    className="w-full h-full shrink-0 relative"
+                  >
+                    <img 
+                      src={banner.image_url} 
+                      alt={banner.title} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 md:p-12">
+                      <span className="inline-block px-3 py-1 bg-blue-500/90 text-white text-xs font-bold uppercase tracking-wider rounded-full w-max mb-3 shadow-lg">
+                        Quảng cáo nổi bật
+                      </span>
+                      <h3 className="text-white font-bold text-2xl md:text-4xl mb-2 drop-shadow-md">{banner.title}</h3>
+                      {banner.description && <p className="text-gray-200 text-sm md:text-lg max-w-3xl drop-shadow">{banner.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Dots for single banner */}
+              <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+                {banners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSingleBannerIdx(idx);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
+                      singleBannerIdx === idx ? "w-8 bg-blue-500" : "w-2 bg-white/60 hover:bg-white"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Specialties Section */}
       <section id="specialties" className="py-20 bg-white">
@@ -529,15 +649,15 @@ const WelcomePage = ({ navigate }) => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6">
-            {SPECIALTIES.map((specialty) => (
+            {categoriesList.map((specialty) => (
               <Card
                 key={specialty.id}
                 hover
                 className="text-center cursor-pointer group"
-                onClick={() => requireAuthAndNavigate(PAGES.BOOKING)}
+                onClick={() => navigate(PAGES.DOCTORS, { state: { specialty: specialty.name } })}
               >
                 <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">
-                  {specialty.icon}
+                  {specialty.icon || getCategoryIcon(specialty.name)}
                 </div>
                 <h3 className="font-semibold text-gray-900">
                   {specialty.name}
@@ -548,307 +668,37 @@ const WelcomePage = ({ navigate }) => {
         </div>
       </section>
 
-      {/* Appointments CRUD Section */}
-      {/* CRUD lịch hẹn thử nghiệm - chỉ cho xem/ dùng khi đã đăng nhập */}
-      <section id="appointments" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Tạo lịch hẹn trực tuyến
-            </h2>
-            <p className="text-xl text-gray-600">
-              {isAuthenticated
-                ? "Thử đặt lịch ngay nào"
-                : "Vui lòng đăng nhập để sử dụng chức năng đặt lịch"}
-            </p>
-          </div>
 
-          {alert && isAuthenticated && (
-            <div
-              className={`mb-8 rounded-xl px-5 py-4 text-sm font-medium ${
-                alert.type === "success"
-                  ? "bg-green-50 text-green-700 border border-green-200"
-                  : "bg-red-50 text-red-700 border border-red-200"
-              }`}
-            >
-              {alert.message}
-            </div>
-          )}
-
-          {isAuthenticated ? (
-            <div className="grid gap-10 lg:grid-cols-2">
-              <Card shadow="lg" className="border-blue-100">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">
-                  {editingId ? "Chỉnh sửa lịch hẹn" : "Tạo lịch hẹn mới"}
-                </h3>
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        ID bệnh nhân
-                      </label>
-                      <input
-                        type="number"
-                        name="user_id"
-                        value={formData.user_id}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        placeholder="VD: 1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        ID bác sĩ
-                      </label>
-                      <input
-                        type="number"
-                        name="doctor_id"
-                        value={formData.doctor_id}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        placeholder="VD: 2"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        ID bệnh viện
-                      </label>
-                      <input
-                        type="number"
-                        name="hospital_id"
-                        value={formData.hospital_id}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        placeholder="VD: 3"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        ID lịch làm việc
-                      </label>
-                      <input
-                        type="number"
-                        name="schedule_id"
-                        value={formData.schedule_id}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        placeholder="VD: 5"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        Ngày khám
-                      </label>
-                      <input
-                        type="date"
-                        name="appointment_date"
-                        value={formData.appointment_date}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        Giờ khám
-                      </label>
-                      <input
-                        type="time"
-                        name="appointment_time"
-                        value={formData.appointment_time}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      Hình thức khám
-                    </label>
-                    <select
-                      name="examination_type"
-                      value={formData.examination_type}
-                      onChange={handleInputChange}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    >
-                      <option value="online">Online</option>
-                      <option value="offline">Offline</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      Triệu chứng (tùy chọn)
-                    </label>
-                    <textarea
-                      name="symptoms"
-                      value={formData.symptoms}
-                      onChange={handleInputChange}
-                      rows="3"
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="Mô tả nhanh triệu chứng..."
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="lg"
-                      loading={formLoading}
-                      fullWidth
-                    >
-                      {editingId ? "Cập nhật lịch hẹn" : "Tạo lịch hẹn"}
-                    </Button>
-                    {editingId && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="lg"
-                        onClick={resetForm}
-                        fullWidth
-                      >
-                        Hủy chỉnh sửa
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Card>
-
-              <Card shadow="lg" className="border-green-100">
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-2xl font-semibold text-gray-900">
-                      Danh sách lịch hẹn
-                    </h3>
-                    {/* <p className="text-sm text-gray-500">
-                    Đồng bộ dữ liệu trực tiếp từ API backend
-                  </p> */}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={fetchAppointments}
-                    loading={listLoading}
-                  >
-                    Làm mới
-                  </Button>
-                </div>
-
-                {listLoading ? (
-                  <p className="text-center text-gray-500">
-                    Đang tải dữ liệu...
-                  </p>
-                ) : appointments.length === 0 ? (
-                  <p className="text-center text-gray-500">
-                    Chưa có lịch hẹn nào. Hãy tạo mới ở bên cạnh nhé!
-                  </p>
-                ) : (
-                  <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-1">
-                    {appointments.map((appointment) => (
-                      <div
-                        key={appointment.id}
-                        className="rounded-xl border border-gray-200 p-4"
-                      >
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <p className="text-lg font-semibold text-gray-900">
-                              Lịch #{appointment.id}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {displayDate(appointment.appointment_date)} ·{" "}
-                              {displayTime(appointment.appointment_time)} ·{" "}
-                              {appointment.examination_type}
-                            </p>
-                          </div>
-                          <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-                            {appointment.status || "pending"}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-2">
-                          <p>Người bệnh: #{appointment.user_id}</p>
-                          <p>Bác sĩ: #{appointment.doctor_id}</p>
-                          <p>Bệnh viện: #{appointment.hospital_id}</p>
-                          <p>
-                            Lịch làm việc: #{appointment.schedule_id || "—"}
-                          </p>
-                        </div>
-
-                        {appointment.symptoms && (
-                          <p className="mt-3 text-sm italic text-gray-600">
-                            Triệu chứng: {appointment.symptoms}
-                          </p>
-                        )}
-
-                        <div className="mt-4 flex flex-wrap gap-3 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(appointment)}
-                            disabled={deletingId === appointment.id}
-                          >
-                            Sửa
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleDelete(appointment.id)}
-                            loading={deletingId === appointment.id}
-                          >
-                            Xóa
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            </div>
-          ) : (
-            <div className="text-center">
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={() => navigate(PAGES.LOGIN)}
-              >
-                Đăng nhập để đặt lịch
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-4">Sẵn sàng bắt đầu?</h2>
-          <p className="text-xl mb-8 text-blue-100">
-            Đặt lịch khám ngay hôm nay để nhận được sự chăm sóc tốt nhất
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => navigate(PAGES.REGISTER)}
-              className="bg-white text-blue-600 hover:bg-gray-50"
-            >
-              Đăng ký miễn phí
-            </Button>
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={() => navigate(PAGES.LOGIN)}
-              className="text-white border-2 border-white hover:bg-white/10"
-            >
-              Đăng nhập ngay
-            </Button>
+      {!isAuthenticated && (
+        <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-4xl font-bold mb-4">Sẵn sàng bắt đầu?</h2>
+            <p className="text-xl mb-8 text-blue-100">
+              Đặt lịch khám ngay hôm nay để nhận được sự chăm sóc tốt nhất
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => navigate(PAGES.REGISTER)}
+                className="bg-white text-blue-600 hover:bg-gray-50"
+              >
+                Đăng ký miễn phí
+              </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={() => navigate(PAGES.LOGIN)}
+                className="text-white border-2 border-white hover:bg-white/10"
+              >
+                Đăng nhập ngay
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Footer */}
       <footer id="contact" className="bg-gray-900 text-white py-12">
@@ -938,16 +788,7 @@ const WelcomePage = ({ navigate }) => {
         </div>
       </footer>
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => requireAuthAndNavigate(PAGES.CHAT)}
-          icon={MessageCircle}
-          className="rounded-full shadow-2xl w-14 h-14 p-0"
-        />
-      </div>
+
 
       <style jsx>{`
         @keyframes float {
@@ -959,9 +800,22 @@ const WelcomePage = ({ navigate }) => {
             transform: translateY(-20px);
           }
         }
+        
+        @keyframes marquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
 
         .animate-float {
           animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-marquee {
+          animation: marquee 25s linear infinite;
         }
       `}</style>
     </div>

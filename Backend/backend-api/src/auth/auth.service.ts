@@ -49,6 +49,7 @@ export class AuthService {
       date_of_birth: string;
       gender: string;
       address?: string;
+      otp: string;
     };
     const email = dto.email;
     const phone = dto.phone;
@@ -57,6 +58,13 @@ export class AuthService {
     const date_of_birth = dto.date_of_birth;
     const gender = dto.gender;
     const address = dto.address || '';
+    const otp = dto.otp;
+
+    // Verify OTP first
+    const savedOtp = await this.cacheManager.get<string>(`reg_otp_${email}`);
+    if (!savedOtp || savedOtp !== otp) {
+      throw new HttpException('Mã OTP không chính xác hoặc đã hết hạn', HttpStatus.BAD_REQUEST);
+    }
 
     // Check if user already exists
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
@@ -95,6 +103,9 @@ export class AuthService {
     // Generate JWT token
     const payload = { sub: user.id, email: user.email, role: user.role };
     const access_token = this.jwtService.sign(payload);
+
+    // Xóa OTP khỏi cache
+    await this.cacheManager.del(`reg_otp_${email}`);
 
     // Return user without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -155,6 +166,23 @@ export class AuthService {
   }
 
   // === THÊM LOGIC MỚI VÀO ĐÂY ===
+
+  async sendRegistrationOtp(email: string) {
+    if (!email) {
+      throw new HttpException('Thiếu email', HttpStatus.BAD_REQUEST);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const existingUser = await this.usersService.findByEmail(email);
+    if (existingUser) {
+      throw new HttpException('Email đã được sử dụng', HttpStatus.CONFLICT);
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.cacheManager.set(`reg_otp_${email}`, otp, 5 * 60 * 1000);
+    await this.emailService.sendOtpEmail(email, otp);
+    console.log(`Registration OTP cho ${email}: ${otp}`);
+  }
 
   async requestReset(email: string) {
     if (!email) {

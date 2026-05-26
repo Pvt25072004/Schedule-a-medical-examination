@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -20,6 +21,7 @@ import { createPaymentDemo } from "../services/payments.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
+import ProgressBar from "../components/common/ProgressBar";
 import { PAGES, TIME_SLOTS } from "../utils/constants";
 import { formatDate, formatCurrency } from "../utils/helpers";
 import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
@@ -28,6 +30,9 @@ import { getAllReviews } from "../services/reviews.api";
 const BookingPage = ({ navigate }) => {
   const { addAppointment, isSlotAvailable } = useAppointments();
   const { user } = useAuth();
+  const location = useLocation();
+  const initialDoctorId = location.state?.doctorId || "";
+
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [doctors, setDoctors] = useState([]);
@@ -35,10 +40,10 @@ const BookingPage = ({ navigate }) => {
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [schedules, setSchedules] = useState([]);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: Date/Time, 2: Confirm
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
-    doctorId: "",
+    doctorId: initialDoctorId,
     date: "",
     time: "",
     type: "",
@@ -47,6 +52,17 @@ const BookingPage = ({ navigate }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  useEffect(() => {
+    if (!initialDoctorId) {
+      navigate(PAGES.DOCTORS);
+    }
+  }, [initialDoctorId, navigate]);
+
+  useEffect(() => {
+    if (formData.doctorId && formData.date) {
+      loadSlotsFromSchedules(formData.doctorId, formData.date);
+    }
+  }, [formData.doctorId, formData.date]);
 
   // Tính số sao trung bình cho mỗi doctor từ reviews
   const doctorRatingsMap = useMemo(() => {
@@ -77,13 +93,13 @@ const BookingPage = ({ navigate }) => {
       ...doctor,
       averageRating: doctorRatingsMap.get(doctor.id) || "0.0",
       totalReviews: reviews.filter(
-        (r) => (r.doctor_id || r.doctor?.id) === doctor.id
+        (r) => (r.doctor_id || r.doctor?.id) === doctor.id,
       ).length,
     }));
   }, [doctors, doctorRatingsMap, reviews]);
 
   const selectedDoctor = doctorsWithRatings.find(
-    (d) => d.id === formData.doctorId
+    (d) => d.id === formData.doctorId,
   );
 
   const filteredDoctors = doctorsWithRatings.filter((doctor) => {
@@ -140,6 +156,20 @@ const BookingPage = ({ navigate }) => {
     }
   };
 
+  const formatLocalDate = (dateInput) => {
+    if (!dateInput) return "";
+    // If it's already a simple YYYY-MM-DD string, just return it
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      return dateInput;
+    }
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput).slice(0, 10);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const loadSlotsFromSchedules = async (doctorId, date) => {
     if (!doctorId || !date) return;
     try {
@@ -147,10 +177,7 @@ const BookingPage = ({ navigate }) => {
       const schedulesData = await getSchedulesByDoctor(doctorId);
       setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
       const daySchedules = (schedulesData || []).filter((s) => {
-        const workDate =
-          typeof s.work_date === "string"
-            ? s.work_date.slice(0, 10)
-            : s.work_date?.toString().slice(0, 10);
+        const workDate = formatLocalDate(s.work_date);
         return workDate === date;
       });
 
@@ -193,23 +220,9 @@ const BookingPage = ({ navigate }) => {
   };
 
   const handleNext = () => {
-    if (step === 1 && !formData.doctorId) {
-      setErrors({ doctorId: "Vui lòng chọn bác sĩ" });
-      return;
-    }
-    if (step === 2 && (!formData.date || !formData.time)) {
+    if (step === 1 && (!formData.date || !formData.time)) {
       setErrors({ date: "Vui lòng chọn đầy đủ ngày và giờ" });
       return;
-    }
-    if (step === 1 && formData.doctorId) {
-      // Khi chuyển sang bước 2, load slot từ schedules
-      void loadSlotsFromSchedules(
-        formData.doctorId,
-        formData.date || getMinDate()
-      );
-    }
-    if (step === 2 && formData.doctorId && formData.date) {
-      void loadSlotsFromSchedules(formData.doctorId, formData.date);
     }
     setStep(step + 1);
     window.scrollTo(0, 0);
@@ -217,6 +230,7 @@ const BookingPage = ({ navigate }) => {
 
   const handleSubmit = async () => {
     const newErrors = validate();
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -230,48 +244,69 @@ const BookingPage = ({ navigate }) => {
     setIsLoading(true);
 
     try {
-      // Tìm schedule_id từ date và time
-      const workDate = formData.date;
-      const appointmentTime = formData.time;
-      let foundSchedule = null;
-      
-      for (const sch of schedules) {
-        const schDate =
-          typeof sch.work_date === "string"
-            ? sch.work_date.slice(0, 10)
-            : sch.work_date?.toString().slice(0, 10);
-        if (schDate === workDate) {
-          const start = (sch.start_time || "").slice(0, 5);
-          const end = (sch.end_time || "").slice(0, 5);
-          if (start && end && appointmentTime >= start && appointmentTime <= end) {
-            foundSchedule = sch;
-            break;
-          }
-        }
-      }
+      console.log("ALL SCHEDULES:", schedules);
 
-      // Lấy hospital_id từ schedule hoặc từ doctor
-      let hospitalId = 1; // fallback
-      if (foundSchedule?.hospital_id) {
-        hospitalId = foundSchedule.hospital_id;
-      } else if (selectedDoctor?.hospitals?.[0]?.id) {
-        hospitalId = selectedDoctor.hospitals[0].id;
+      const workDate = formData.date;
+
+      const appointmentTime =
+        formData.time.length === 5 ? `${formData.time}:00` : formData.time;
+
+      // tìm schedule theo ngày
+      const foundSchedule = schedules.find((sch) => {
+        const schDate = formatLocalDate(sch.work_date);
+
+        const start =
+          sch.start_time?.length === 5
+            ? `${sch.start_time}:00`
+            : sch.start_time?.slice(0, 8);
+
+        const end =
+          sch.end_time?.length === 5
+            ? `${sch.end_time}:00`
+            : sch.end_time?.slice(0, 8);
+
+        console.log({
+          schId: sch.id,
+          schDate,
+          workDate,
+          start,
+          end,
+          appointmentTime,
+        });
+
+        return (
+          schDate === workDate &&
+          appointmentTime >= start &&
+          appointmentTime < end
+        );
+      });
+
+      console.log("FOUND SCHEDULE:", foundSchedule);
+
+      if (!foundSchedule) {
+        alert(
+          "Ngày bạn chọn chưa có lịch làm việc của bác sĩ. Hãy chọn ngày khác.",
+        );
+        return;
       }
 
       const payload = {
-        user_id: user.id,
-        doctor_id: formData.doctorId,
-        hospital_id: hospitalId,
-        schedule_id: foundSchedule?.id,
-        appointment_date: formData.date,
+        user_id: Number(user.id),
+        doctor_id: Number(formData.doctorId),
+        hospital_id: Number(foundSchedule.hospital_id),
+        schedule_id: Number(foundSchedule.id),
+        appointment_date: workDate,
         appointment_time: formData.time,
         examination_type: "offline",
         symptoms: formData.type,
       };
 
+      console.log("PAYLOAD:", payload);
+
       const created = await apiCreateAppointment(payload);
 
-      // Demo payment sau khi tạo appointment thành công
+      console.log("CREATED:", created);
+
       try {
         await createPaymentDemo({
           appointment_id: created?.id,
@@ -283,7 +318,6 @@ const BookingPage = ({ navigate }) => {
         console.warn("Demo payment failed:", err);
       }
 
-      // Đồng bộ vào context để AppointmentsPage có dữ liệu ngay
       addAppointment({
         doctorId: formData.doctorId,
         doctorName: selectedDoctor?.name || "",
@@ -295,27 +329,35 @@ const BookingPage = ({ navigate }) => {
         backendId: created?.id,
       });
 
-      setIsLoading(false);
       setShowSuccess(true);
 
       setTimeout(() => {
         navigate(PAGES.APPOINTMENTS);
       }, 2000);
     } catch (error) {
+      console.error(error);
+
+      alert(
+        error?.response?.data?.message ||
+          error.message ||
+          "Không thể tạo lịch hẹn",
+      );
+    } finally {
       setIsLoading(false);
-      alert(error.message || "Không thể tạo lịch hẹn");
     }
   };
 
   const getMinDate = () => {
     const today = new Date();
-    return today.toISOString().split("T")[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   const steps = [
-    { number: 1, title: "Chọn bác sĩ", icon: User },
-    { number: 2, title: "Chọn thời gian", icon: Clock },
-    { number: 3, title: "Xác nhận", icon: CheckCircle },
+    { number: 1, title: "Chọn thời gian", icon: Clock },
+    { number: 2, title: "Xác nhận", icon: CheckCircle },
   ];
 
   // Success Modal
@@ -366,190 +408,20 @@ const BookingPage = ({ navigate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <button
-              onClick={() =>
-                step > 1 ? setStep(step - 1) : navigate(PAGES.HOME)
-              }
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>{step > 1 ? "Quay lại" : "Trang chủ"}</span>
-            </button>
-
-            <h1 className="text-xl font-bold text-gray-900">Đặt lịch khám</h1>
-            <div className="w-20"></div>
-          </div>
-        </div>
-      </header>
+      {/* Header is managed globally in AppRoutes */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Steps */}
-        <Card className="mb-8">
-          <div className="flex items-center justify-between">
-            {steps.map((s, index) => (
-              <React.Fragment key={s.number}>
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
-                      step >= s.number
-                        ? "bg-blue-600 text-white scale-110 shadow-lg"
-                        : "bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {step > s.number ? (
-                      <CheckCircle className="w-6 h-6" />
-                    ) : (
-                      <s.icon className="w-6 h-6" />
-                    )}
-                  </div>
-                  <p
-                    className={`text-sm mt-2 font-medium hidden sm:block ${
-                      step >= s.number ? "text-blue-600" : "text-gray-500"
-                    }`}
-                  >
-                    {s.title}
-                  </p>
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-1 mx-2 transition-all ${
-                      step > s.number ? "bg-blue-600" : "bg-gray-200"
-                    }`}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </Card>
+        <ProgressBar 
+          steps={steps} 
+          currentStep={step} 
+          onStepClick={(n) => {
+            if (n < step) setStep(n);
+          }} 
+        />
 
-        {/* Step 1: Doctor Selection */}
+        {/* Step 1: Date & Time */}
         {step === 1 && (
-          <div className="space-y-6">
-            <Card>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Chọn bác sĩ
-              </h2>
-
-              {/* Search */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Tìm bác sĩ theo tên hoặc chuyên khoa..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Doctors List */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {filteredDoctors.map((doctor) => (
-                  <Card
-                    key={doctor.id}
-                    hover
-                    onClick={() => handleChange("doctorId", doctor.id)}
-                    className={`cursor-pointer border-2 transition-all ${
-                      formData.doctorId === doctor.id
-                        ? "border-blue-500 bg-blue-50 shadow-lg"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex gap-4">
-                      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 shadow-lg">
-                        {doctor.avatar}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg text-gray-900 mb-1">
-                          {doctor.name}
-                        </h3>
-                        <p className="text-blue-600 font-medium text-sm mb-2">
-                          {doctor.specialty}
-                        </p>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                          <span className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                            {doctor.averageRating || "0.0"}
-                            {doctor.totalReviews > 0 && (
-                              <span className="text-gray-400">
-                                ({doctor.totalReviews})
-                              </span>
-                            )}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Award className="w-4 h-4" />
-                            {doctor.experience || "N/A"} năm
-                          </span>
-                        </div>
-
-                        <p className="text-sm font-medium text-gray-900 mb-2">
-                          {formatCurrency(doctor.consultationFee)}
-                        </p>
-                        {Array.isArray(doctor.hospitals) &&
-                          doctor.hospitals.length > 0 && (
-                            <div className="flex items-start gap-1 text-xs text-gray-500">
-                              <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <span className="font-medium">
-                                  {doctor.hospitals[0].name}
-                                </span>
-                                {doctor.hospitals[0].city && (
-                                  <span className="text-blue-600">
-                                    {" "}
-                                    · {doctor.hospitals[0].city}
-                                  </span>
-                                )}
-                                {doctor.hospitals[0].address && (
-                                  <span className="block text-gray-400 mt-0.5">
-                                    {doctor.hospitals[0].address}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                      </div>
-
-                      {formData.doctorId === doctor.id && (
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                            <CheckCircle className="w-5 h-5 text-white" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              {errors.doctorId && (
-                <p className="text-red-600 text-sm mt-4">{errors.doctorId}</p>
-              )}
-            </Card>
-
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              onClick={handleNext}
-              disabled={!formData.doctorId}
-              icon={ArrowRight}
-              iconPosition="right"
-            >
-              Tiếp tục
-            </Button>
-          </div>
-        )}
-
-        {/* Step 2: Date & Time */}
-        {step === 2 && (
           <div className="space-y-6">
             <Card>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -617,13 +489,13 @@ const BookingPage = ({ navigate }) => {
                   Chọn khung giờ <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {(availableSlots.length ? availableSlots : TIME_SLOTS).map(
-                    (time) => {
+                  {availableSlots.length > 0 ? (
+                    availableSlots.map((time) => {
                       const available = formData.date
                         ? isSlotAvailable(
                             formData.doctorId,
                             formData.date,
-                            time
+                            time,
                           )
                         : true;
                       return (
@@ -637,8 +509,8 @@ const BookingPage = ({ navigate }) => {
                             formData.time === time
                               ? "bg-blue-600 text-white border-blue-600 shadow-lg"
                               : available
-                              ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
-                              : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                                ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
+                                : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
                           }`}
                         >
                           <Clock className="w-4 h-4 inline mr-1" />
@@ -648,7 +520,11 @@ const BookingPage = ({ navigate }) => {
                           )}
                         </button>
                       );
-                    }
+                    })
+                  ) : (
+                    <div className="col-span-full text-gray-500 py-6 text-center border-2 border-dashed border-gray-200 rounded-lg">
+                      Không có ca khám nào khả dụng trong ngày này. Vui lòng chọn ngày khác.
+                    </div>
                   )}
                 </div>
                 {errors.time && (
@@ -661,7 +537,7 @@ const BookingPage = ({ navigate }) => {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => setStep(1)}
+                onClick={() => navigate(-1)}
                 icon={ArrowLeft}
                 className="flex-1"
               >
@@ -682,8 +558,8 @@ const BookingPage = ({ navigate }) => {
           </div>
         )}
 
-        {/* Step 3: Confirmation */}
-        {step === 3 && (
+        {/* Step 2: Confirmation */}
+        {step === 2 && (
           <div className="space-y-6">
             <Card>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">

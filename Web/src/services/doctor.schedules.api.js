@@ -1,7 +1,7 @@
 // Doctor Schedules API
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 const SCHEDULES_ENDPOINT = `${API_BASE_URL}/schedules`;
 
 const handleResponse = async (response, defaultErrorMessage) => {
@@ -34,6 +34,16 @@ export const getSchedulesByDoctor = async (doctorId) => {
     credentials: "include",
   });
   return handleResponse(response, "Không thể tải lịch làm việc");
+};
+
+export const getAvailableTimes = async (doctorId, date) => {
+  const response = await fetch(`${API_BASE_URL}/appointments/available-times?doctorId=${doctorId}&date=${date}`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+    credentials: "include",
+  });
+  return handleResponse(response, "Không thể tải danh sách giờ khả dụng");
 };
 
 export const createSchedule = async (payload) => {

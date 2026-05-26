@@ -12,6 +12,7 @@ import { UsersService } from 'src/users/users.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import * as bcrypt from 'bcrypt';
 import { UpdateDoctorProfileDto } from './dto/update-doctor-profile.dto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class DoctorsService {
@@ -21,6 +22,7 @@ export class DoctorsService {
     @InjectRepository(Hospital)
     private hospitalsRepository: Repository<Hospital>,
     private usersService: UsersService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async findTopRated(): Promise<Doctor[]> {
@@ -124,6 +126,8 @@ export class DoctorsService {
       phone: dto.phone,
       password_hash: passwordHash,
       description: dto.description ?? '',
+      avatar_url: dto.avatar_url,
+      avatar_public_id: dto.avatar_public_id,
       is_active: true,
     };
 
@@ -164,6 +168,11 @@ export class DoctorsService {
     if (!doctor) {
       throw new NotFoundException(`Doctor with ID ${id} not found`);
     }
+    
+    if (doctor.avatar_public_id) {
+      await this.cloudinaryService.deleteImage(doctor.avatar_public_id);
+    }
+    
     await this.doctorsRepository.remove(doctor);
   }
 
@@ -176,6 +185,8 @@ export class DoctorsService {
       throw new NotFoundException(`Doctor with email ${email} not found`);
     }
 
+    const oldAvatarPublicId = doctor.avatar_public_id;
+
     if (dto.name !== undefined) {
       doctor.name = dto.name;
     }
@@ -184,6 +195,9 @@ export class DoctorsService {
     }
     if (dto.avatar_url !== undefined) {
       doctor.avatar_url = dto.avatar_url;
+    }
+    if (dto.avatar_public_id !== undefined) {
+      doctor.avatar_public_id = dto.avatar_public_id;
     }
     if (dto.description !== undefined) {
       doctor.description = dto.description;
@@ -205,6 +219,16 @@ export class DoctorsService {
       doctor.hospitals = hospitals;
     }
 
-    return this.doctorsRepository.save(doctor);
+    const savedDoctor = await this.doctorsRepository.save(doctor);
+
+    if (
+      dto.avatar_public_id &&
+      oldAvatarPublicId &&
+      oldAvatarPublicId !== dto.avatar_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldAvatarPublicId);
+    }
+
+    return savedDoctor;
   }
 }

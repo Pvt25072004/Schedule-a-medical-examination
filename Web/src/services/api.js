@@ -1,7 +1,7 @@
 // Nếu có VITE_API_BASE_URL (trỏ tới backend trên EC2) thì dùng, ngược lại dùng "/api" để proxy local qua Vite/nginx
 import { getAuthHeaders } from "./http";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+import { API_BASE_URL } from "../utils/constants";
 
 const handleResponse = async (response, defaultErrorMessage) => {
   if (response.ok) {
@@ -47,6 +47,26 @@ export const register = async (userData) => {
   return handleResponse(response, "Đăng ký thất bại");
 };
 
+export const sendRegistrationOtp = async (email) => {
+  const response = await fetch(`${API_BASE_URL}/auth/send-registration-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+    credentials: "include",
+  });
+  return handleResponse(response, "Gửi mã OTP thất bại");
+};
+
+export const socialLogin = async (payload) => {
+  const response = await fetch(`${API_BASE_URL}/auth/social-login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    credentials: "include",
+  });
+  return handleResponse(response, "Đăng nhập mạng xã hội thất bại");
+};
+
 // Cập nhật thông tin user (dựa trên id trong URL)
 export const updateUser = async (userId, payload) => {
   const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
@@ -72,4 +92,18 @@ export const changePassword = async (payload) => {
     credentials: "include",
   });
   return handleResponse(response, "Đổi mật khẩu thất bại");
+};
+
+export const uploadUserImage = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(`${API_BASE_URL}/users/upload`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+    },
+    body: formData,
+    credentials: "include",
+  });
+  return handleResponse(response, "Tải ảnh thất bại");
 };

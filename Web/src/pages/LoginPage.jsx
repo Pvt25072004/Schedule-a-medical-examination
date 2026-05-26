@@ -14,9 +14,13 @@ import Input from "../components/common/Input";
 import Card from "../components/common/Card";
 import { PAGES, USER_ROLES } from "../utils/constants";
 import { validateEmail } from "../utils/helpers";
+import { useGoogleLogin } from "@react-oauth/google";
+import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
+
+const FACEBOOK_APP_ID = "963479733091448";
 
 const LoginPage = ({ navigate }) => {
-  const { login } = useAuth();
+  const { login, loginWithSocial } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -75,7 +79,7 @@ const LoginPage = ({ navigate }) => {
         } else if (role === USER_ROLES.DOCTOR) {
           navigate(PAGES.DOCTOR_DASHBOARD);
         } else {
-          navigate(PAGES.HOME);
+          navigate(PAGES.WELCOME);
         }
       }, 1000);
     } catch (error) {
@@ -88,6 +92,43 @@ const LoginPage = ({ navigate }) => {
       setIsLoading(false);
     }
   };
+
+  const handleSocialLogin = async (token, provider) => {
+    setIsLoading(true);
+    try {
+      const { user: loggedInUser } = await loginWithSocial(token, provider);
+      setShowSuccess(true);
+      setTimeout(() => {
+        const role = (loggedInUser?.role || "").toLowerCase();
+        if (role === USER_ROLES.ADMIN) {
+          navigate(PAGES.ADMIN_DASHBOARD);
+        } else if (role === USER_ROLES.DOCTOR) {
+          navigate(PAGES.DOCTOR_DASHBOARD);
+        } else {
+          navigate(PAGES.WELCOME);
+        }
+      }, 1000);
+    } catch (error) {
+      setErrors({ general: error?.message || `Đăng nhập ${provider} thất bại` });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: (codeResponse) => {
+      // access_token từ useGoogleLogin có thể được verify bởi Google Auth Library nếu cấu hình đúng, 
+      // nhưng thường backend verify id_token. Tuy nhiên thư viện @react-oauth/google trả về access_token ở Implicit flow
+      // Nên tốt nhất ta dùng luồng implicit trả id_token hoặc gọi userInfo trên FE r đẩy lên BE.
+      // Do BE mong đợi "token" và gọi verifyIdToken, ta cần trả về id_token.
+      console.log(codeResponse);
+    },
+    onError: (error) => console.log('Login Failed:', error),
+  });
+
+  const googleLoginRef = useGoogleLogin({
+    onSuccess: credentialResponse => handleSocialLogin(credentialResponse.access_token, "google"),
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -289,7 +330,7 @@ const LoginPage = ({ navigate }) => {
               <Button
                 variant="outline"
                 size="md"
-                onClick={() => alert("Tính năng đang phát triển")}
+                onClick={() => googleLoginRef()}
               >
                 <img
                   src="https://www.google.com/favicon.ico"
@@ -298,18 +339,31 @@ const LoginPage = ({ navigate }) => {
                 />
                 Google
               </Button>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => alert("Tính năng đang phát triển")}
-              >
-                <img
-                  src="https://www.facebook.com/favicon.ico"
-                  alt="Facebook"
-                  className="w-5 h-5"
-                />
-                Facebook
-              </Button>
+              <FacebookLogin
+                appId={FACEBOOK_APP_ID}
+                fields="name,email,picture"
+                callback={(response) => {
+                  if (response?.accessToken) {
+                    handleSocialLogin(response.accessToken, "facebook");
+                  } else {
+                    setErrors({ general: "Đăng nhập Facebook bị hủy hoặc thất bại" });
+                  }
+                }}
+                render={(renderProps) => (
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onClick={renderProps.onClick}
+                  >
+                    <img
+                      src="https://www.facebook.com/favicon.ico"
+                      alt="Facebook"
+                      className="w-5 h-5"
+                    />
+                    Facebook
+                  </Button>
+                )}
+              />
             </div>
 
             {/* Register Link */}

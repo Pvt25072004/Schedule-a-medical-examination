@@ -52,7 +52,7 @@ const AppointmentsPage = ({ navigate }) => {
   const sortedAppointments = [...appointments].sort(
     (a, b) =>
       new Date(`${b.date}T${b.time || "00:00"}`) -
-      new Date(`${a.date}T${a.time || "00:00"}`)
+      new Date(`${a.date}T${a.time || "00:00"}`),
   );
 
   const filteredAppointments = sortedAppointments.filter((apt) => {
@@ -167,7 +167,7 @@ const AppointmentsPage = ({ navigate }) => {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate(PAGES.BOOKING)}
+              onClick={() => navigate(PAGES.DOCTORS)}
               icon={Plus}
             >
               Đặt lịch mới
@@ -243,8 +243,16 @@ const AppointmentsPage = ({ navigate }) => {
                 <div className="flex flex-col md:flex-row gap-4">
                   {/* Doctor Info */}
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                      👨‍⚕️
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform overflow-hidden border">
+                      {apt.avatar_url ? (
+                        <img
+                          src={apt.avatar_url}
+                          alt={apt.doctorName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        apt.avatar_url || "👨‍⚕️"
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -259,7 +267,7 @@ const AppointmentsPage = ({ navigate }) => {
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(
-                            apt.status
+                            apt.status,
                           )}`}
                         >
                           {getStatusText(apt.status)}
@@ -331,7 +339,7 @@ const AppointmentsPage = ({ navigate }) => {
                         icon={Edit}
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(PAGES.BOOKING);
+                          navigate(PAGES.DOCTORS);
                         }}
                         className="flex-1 md:flex-none"
                       >
@@ -372,7 +380,7 @@ const AppointmentsPage = ({ navigate }) => {
             <Button
               variant="primary"
               size="lg"
-              onClick={() => navigate(PAGES.BOOKING)}
+              onClick={() => navigate(PAGES.DOCTORS)}
               icon={Plus}
             >
               Đặt lịch ngay
@@ -491,9 +499,8 @@ const AppointmentsPage = ({ navigate }) => {
             </div>
 
             <p className="text-gray-600 mb-4">
-              Bạn đang đánh giá{" "}
-              <strong>{reviewAppointment?.doctorName}</strong> cho buổi khám{" "}
-              {formatDate(reviewAppointment?.date)} lúc{" "}
+              Bạn đang đánh giá <strong>{reviewAppointment?.doctorName}</strong>{" "}
+              cho buổi khám {formatDate(reviewAppointment?.date)} lúc{" "}
               {reviewAppointment?.time}.
             </p>
 

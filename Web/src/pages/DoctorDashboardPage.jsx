@@ -14,6 +14,7 @@ import {
   Plus,
   Edit3,
   Share2,
+  Camera,
 } from "lucide-react";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -28,6 +29,7 @@ import {
 import {
   getMyDoctorProfile,
   updateMyDoctorProfile,
+  uploadDoctorAvatar,
 } from "../services/doctor.profile.api";
 import { getHospitals } from "../services/admin.hospitals.api";
 import {
@@ -47,9 +49,11 @@ const DoctorDashboardPage = ({ navigate }) => {
     specialty: "",
     description: "",
     avatar_url: "",
+    avatar_public_id: "",
     hospitalIds: [],
   });
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [hospitals, setHospitals] = useState([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -86,17 +90,17 @@ const DoctorDashboardPage = ({ navigate }) => {
   const loadProfile = async () => {
     try {
       setLoadingProfile(true);
-      const data = await getMyDoctorProfile();
-      if (data) {
-        setDoctorProfile(data);
+      const profileData = await getMyDoctorProfile();
+      if (profileData) {
+        setDoctorProfile(profileData);
         setProfileForm({
-          name: data.name || user?.fullName || "",
-          specialty: data.specialty || "",
-          description: data.description || "",
-          avatar_url: data.avatar_url || "",
-          hospitalIds: Array.isArray(data.hospitals)
-            ? data.hospitals.map((h) => h.id)
-            : [],
+          name: profileData.name || "",
+          specialty: profileData.specialty || "",
+          description: profileData.description || "",
+          avatar_url: profileData.avatar_url || "",
+          avatar_public_id: profileData.avatar_public_id || "",
+          hospitalIds:
+            profileData.hospitals?.map((h) => h.id || h.hospital_id) || [],
         });
       }
     } catch (e) {
@@ -127,11 +131,10 @@ const DoctorDashboardPage = ({ navigate }) => {
   useEffect(() => {
     if (!doctorProfile?.id) return;
     void loadSchedules(doctorProfile.id);
-    const today = new Date().toISOString().slice(0, 10);
     (async () => {
       try {
         setLoadingAppointments(true);
-        const apps = await getAppointmentsByDoctor(doctorProfile.id, today);
+        const apps = await getAppointmentsByDoctor(doctorProfile.id);
         setDoctorAppointments(Array.isArray(apps) ? apps : []);
       } catch (e) {
         console.error("Load doctor appointments error:", e);
@@ -337,11 +340,51 @@ const DoctorDashboardPage = ({ navigate }) => {
           <Card ref={profileRef}>
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-700">
-                  {(doctorProfile?.name || user?.fullName || "BS")
-                    .split(" ")
-                    .map((p) => p[0])
-                    .join("")}
+                <div className="relative group w-16 h-16 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center text-xl font-semibold text-slate-700 shadow-sm border-2 border-white">
+                  {profileForm.avatar_url ? (
+                    <img
+                      src={profileForm.avatar_url}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    (doctorProfile?.name || user?.fullName || "BS")
+                      .split(" ")
+                      .map((p) => p[0])
+                      .join("")
+                  )}
+
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+
+                  <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                    <Camera className="w-5 h-5 text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        try {
+                          setUploadingAvatar(true);
+                          const result = await uploadDoctorAvatar(file);
+                          setProfileForm((prev) => ({
+                            ...prev,
+                            avatar_url: result.image_url,
+                            avatar_public_id: result.image_public_id,
+                          }));
+                        } catch (err) {
+                          alert(err.message || "Lỗi tải ảnh lên");
+                        } finally {
+                          setUploadingAvatar(false);
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">
@@ -829,7 +872,7 @@ const DoctorDashboardPage = ({ navigate }) => {
               )}
               {!loadingAppointments && doctorAppointments.length === 0 && (
                 <p className="text-sm text-slate-500">
-                  Hôm nay chưa có lịch hẹn nào.
+                  Chưa có lịch hẹn nào sắp tới.
                 </p>
               )}
               {doctorAppointments.slice(0, 6).map((appointment) => (

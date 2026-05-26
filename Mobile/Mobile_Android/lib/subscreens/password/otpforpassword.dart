@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/api_config.dart';
 // Import màn hình tiếp theo
 import 'package:clinic_booking_system/subscreens/password/setpass.dart';
 
@@ -35,7 +36,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final email = widget.email;
 
     // Vui lòng thay đổi IP tĩnh này bằng cấu hình động nếu có thể
-    final url = Uri.parse("http://192.168.1.23:3000/api/auth/request-reset");
+    final url = Uri.parse("${ApiConfig.baseUrl}/auth/request-reset");
 
     try {
       final resp = await http.post(

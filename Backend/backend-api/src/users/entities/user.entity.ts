@@ -1,4 +1,6 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
+import { Like } from 'src/likes/entities/like.entity';
+import { Comment } from 'src/comments/entities/comment.entity';
 import {
   Column,
   Entity,
@@ -19,7 +21,7 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['patient', 'doctor', 'admin'],
+    enum: ['patient', 'doctor', 'admin', 'admin_hospital'],
     default: 'patient',
   })
   role: string;
@@ -62,13 +64,22 @@ export class User {
   @Column({ type: 'longtext', nullable: true })
   avatar_url: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  avatar_public_id: string;
+
   // Lưu ảnh CCCD mặt trước
   @Column({ type: 'longtext', nullable: true })
   id_card_front_url: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  id_card_front_public_id: string;
+
   // Lưu ảnh CCCD mặt sau
   @Column({ type: 'longtext', nullable: true })
   id_card_back_url: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  id_card_back_public_id: string;
 
   @Column({ default: false })
   is_welcome: boolean;
@@ -90,4 +101,10 @@ export class User {
 
   @OneToMany(() => Appointment, (appointment) => appointment.user)
   appointments: Appointment[];
+
+  @OneToMany(() => Like, (like) => like.user)
+  likes: Like[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments: Comment[];
 }

@@ -101,6 +101,31 @@ export const formatTime = (time) => {
   return time;
 };
 
+export const getCategoryIcon = (name) => {
+  if (!name) return "🏥";
+  const normalized = name.toLowerCase();
+  if (normalized.includes("tim")) return "❤️";
+  if (normalized.includes("nội")) return "🩺";
+  if (normalized.includes("nha") || normalized.includes("răng")) return "🦷";
+  if (normalized.includes("da")) return "💆";
+  if (
+    normalized.includes("tai") ||
+    normalized.includes("mũi") ||
+    normalized.includes("họng")
+  )
+    return "👂";
+  if (normalized.includes("mắt") || normalized.includes("nhãn")) return "👁️";
+  if (normalized.includes("nhi")) return "👶";
+  if (normalized.includes("thần kinh")) return "🧠";
+  if (normalized.includes("xương") || normalized.includes("khớp")) return "🦴";
+  if (normalized.includes("tiêu hóa") || normalized.includes("dạ dày"))
+    return "胃";
+  if (normalized.includes("phụ sản") || normalized.includes("thai"))
+    return "🤰";
+  if (normalized.includes("phổi") || normalized.includes("hô hấp")) return "🫁";
+  return "🏥";
+};
+
 // Check if date is today
 export const isToday = (date) => {
   const today = new Date();
@@ -122,4 +147,15 @@ export const isTomorrow = (date) => {
     d.getMonth() === tomorrow.getMonth() &&
     d.getFullYear() === tomorrow.getFullYear()
   );
+};
+
+// Remove diacritics for fuzzy search
+export const removeDiacritics = (str) => {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
 };

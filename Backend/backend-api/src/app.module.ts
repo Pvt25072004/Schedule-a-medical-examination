@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DoctorsModule } from './doctors/doctors.module';
 import { HospitalsModule } from './hospitals/hospitals.module';
 import { UsersModule } from './users/users.module';
@@ -14,11 +15,17 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { CategoriesModule } from './categories/categories.module';
 import { AuthModule } from './auth/auth.module';
 import { FirebaseService } from './firebase/firebase.service';
-import { EmailService } from './email/email.service';
 import { EmailController } from './email/email.controller';
 import { EmailModule } from './email/email.module';
 import { PricingModule } from './pricing/pricing.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { BannerModule } from './banner/banner.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { FanpagesModule } from './fanpages/fanpages.module';
+import { PostsModule } from './posts/posts.module';
+import { LikesModule } from './likes/likes.module';
+import { CommentsModule } from './comments/comments.module';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
@@ -31,6 +38,7 @@ import { NotificationsModule } from './notifications/notifications.module';
       isGlobal: true,
       ttl: 5 * 60 * 1000, // 5 minutes
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -58,8 +66,15 @@ import { NotificationsModule } from './notifications/notifications.module';
     EmailModule,
     PricingModule,
     NotificationsModule,
+    BannerModule,
+    CloudinaryModule,
+    FanpagesModule,
+    PostsModule,
+    LikesModule,
+    CommentsModule,
+    NewsModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],
 })
-export class AppModule {}
+export class AppModule { }
