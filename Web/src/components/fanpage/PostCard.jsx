@@ -11,9 +11,9 @@ import { getAuthHeaders } from '../../services/http';
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-const PostCard = ({ post, onHashtagClick }) => {
+const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modalOnly = false, onClose }) => {
   const { fanpage, title, content, image_url, created_at, id: postId } = post;
-  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(defaultOpenCommentModal);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState([]);
   const [replyingTo, setReplyingTo] = useState(null);
@@ -22,6 +22,7 @@ const PostCard = ({ post, onHashtagClick }) => {
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0);
   const [sharesCount, setSharesCount] = useState(post.shares_count || 0);
   const [isLiked, setIsLiked] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
@@ -44,6 +45,16 @@ const PostCard = ({ post, onHashtagClick }) => {
       }
       return word;
     });
+  };
+
+  // Helper function to render HTML content if it contains tags, otherwise render with hashtags
+  const renderPostContent = (text) => {
+    if (!text) return null;
+    const hasHTML = /<[a-z/][\s\S]*>/i.test(text);
+    if (hasHTML) {
+      return <div dangerouslySetInnerHTML={{ __html: text }} />;
+    }
+    return renderContentWithHashtags(text);
   };
 
   const handleInteraction = (callback) => {
@@ -174,7 +185,8 @@ const PostCard = ({ post, onHashtagClick }) => {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 hover:shadow-md transition-shadow">
+      {!modalOnly && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 hover:shadow-md transition-shadow">
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
           <div 
@@ -208,8 +220,21 @@ const PostCard = ({ post, onHashtagClick }) => {
         {/* Content */}
         <div className="px-4 pb-3">
           {title && <h4 className="font-bold text-gray-800 mb-2">{title}</h4>}
-          <div className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
-            {renderContentWithHashtags(content)}
+          <div className="text-gray-800 text-[15px] leading-relaxed relative">
+            <div className={`${content && content.length > 250 && !isExpanded ? 'max-h-[120px] overflow-hidden' : ''} transition-all duration-300 whitespace-pre-wrap`}>
+              {renderPostContent(content)}
+              {content && content.length > 250 && !isExpanded && (
+                <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+              )}
+            </div>
+            {content && content.length > 250 && (
+              <button 
+                onClick={() => setIsExpanded(!isExpanded)} 
+                className="text-blue-600 hover:underline text-xs font-semibold mt-1 focus:outline-none"
+              >
+                {isExpanded ? 'Rút gọn' : 'Xem thêm'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -251,13 +276,17 @@ const PostCard = ({ post, onHashtagClick }) => {
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Theater Mode Comment Modal */}
       {isCommentModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
           <button 
-            onClick={() => setIsCommentModalOpen(false)}
+            onClick={() => {
+              setIsCommentModalOpen(false);
+              if (onClose) onClose();
+            }}
             className="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-50"
           >
             <X className="w-8 h-8" />
@@ -314,7 +343,7 @@ const PostCard = ({ post, onHashtagClick }) => {
                 <div className="p-4 border-b border-gray-100">
                   {title && <h4 className="font-bold text-gray-800 mb-2 text-sm">{title}</h4>}
                   <div className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
-                    {renderContentWithHashtags(content)}
+                    {renderPostContent(content)}
                   </div>
                 </div>
 

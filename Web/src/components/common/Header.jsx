@@ -87,10 +87,10 @@ const Header = () => {
             >
               Liên hệ
             </button>
-            
+
             <div className="relative group">
               <button className="text-gray-700 hover:text-blue-600 font-medium transition flex items-center gap-1">
-                Đặt lịch
+                Dịch vụ
               </button>
               <div className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <div className="py-2">
