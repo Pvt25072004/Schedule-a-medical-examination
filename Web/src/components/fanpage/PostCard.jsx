@@ -208,9 +208,9 @@ const PostCard = ({ post, onHashtagClick }) => {
         {/* Content */}
         <div className="px-4 pb-3">
           {title && <h4 className="font-bold text-gray-800 mb-2">{title}</h4>}
-          <p className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
+          <div className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
             {renderContentWithHashtags(content)}
-          </p>
+          </div>
         </div>
 
         {/* Image */}
@@ -313,9 +313,9 @@ const PostCard = ({ post, onHashtagClick }) => {
               <div className="flex-1 overflow-y-auto">
                 <div className="p-4 border-b border-gray-100">
                   {title && <h4 className="font-bold text-gray-800 mb-2 text-sm">{title}</h4>}
-                  <p className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
+                  <div className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
                     {renderContentWithHashtags(content)}
-                  </p>
+                  </div>
                 </div>
 
                 {image_url && (

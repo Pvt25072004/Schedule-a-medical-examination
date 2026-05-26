@@ -25,7 +25,7 @@ const FloatingWidgets = () => {
   return (
     <>
       {/* Back to Top Button - Bottom Right */}
-      <div 
+      <div
         className={`fixed bottom-6 right-6 z-50 transition-all duration-300 transform ${showBackToTop ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0 pointer-events-none'}`}
       >
         <button
@@ -39,9 +39,9 @@ const FloatingWidgets = () => {
 
       {/* Chatbot Trigger & Panel - Bottom Left */}
       <div className="fixed bottom-0 left-6 z-50 flex flex-col items-start">
-        
+
         {/* Chatbot Panel (Slide up) */}
-        <div 
+        <div
           className={`bg-white w-80 sm:w-96 rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 ease-in-out origin-bottom ${isChatOpen ? 'max-h-[500px] opacity-100 mb-4' : 'max-h-0 opacity-0 pointer-events-none'}`}
         >
           <div className="bg-blue-600 p-4 flex items-center justify-between text-white rounded-t-2xl">
@@ -49,14 +49,14 @@ const FloatingWidgets = () => {
               <MessageSquare className="w-5 h-5" />
               <span className="font-semibold">Tư vấn sức khỏe</span>
             </div>
-            <button 
+            <button
               onClick={() => setIsChatOpen(false)}
               className="hover:bg-white/20 p-1 rounded-full transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          
+
           <div className="p-4 h-96 flex flex-col items-center justify-center bg-gray-50">
             {/* Chatbot content will go here */}
             <div className="text-gray-400 text-center">
@@ -67,12 +67,12 @@ const FloatingWidgets = () => {
         </div>
 
         {/* Trigger Bar (Sits at the very bottom) */}
-        <div 
-          className={`bg-blue-500 hover:bg-blue-600 text-white cursor-pointer px-6 py-3 rounded-t-xl font-medium shadow-lg flex items-center gap-2 transition-all transform ${isChatOpen ? 'translate-y-full' : 'translate-y-0'}`}
+        <div
+          className={`bg-blue-500 hover:bg-blue-600 text-white cursor-pointer px-2 py-0.5 w-96 justify-center rounded-t font-medium shadow-lg flex items-center gap-2 transition-all transform ${isChatOpen ? 'translate-y-full' : 'translate-y-0'}`}
           onClick={() => setIsChatOpen(true)}
         >
-          <MessageSquare className="w-5 h-5" />
-          <span>Tư vấn trực tuyến</span>
+          <MessageSquare className="w-4 h-4" />
+          <span className="text-sm">Tư vấn trực tuyến</span>
         </div>
       </div>
     </>

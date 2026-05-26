@@ -33,6 +33,9 @@ export class Post {
   @Column({ length: 255, nullable: true })
   image_url: string;
 
+  @Column({ length: 255, nullable: true })
+  image_public_id: string;
+
   @Column({ type: 'int', default: 0 })
   likes_count: number;
 

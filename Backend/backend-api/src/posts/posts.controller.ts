@@ -8,14 +8,50 @@ import {
   Delete,
   Post,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import type { Express } from 'express';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) { }
+  constructor(
+    private readonly postsService: PostsService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) { }
+
+  @HttpPost('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+    }),
+  )
+  async uploadPostImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Vui lòng chọn ảnh');
+    }
+
+    if (!file.mimetype.startsWith('image/')) {
+      throw new BadRequestException('File phải là hình ảnh');
+    }
+
+    const result = await this.cloudinaryService.uploadImage(
+      file,
+      'clinic/posts',
+    );
+
+    return {
+      image_url: result.secure_url,
+      image_public_id: result.public_id,
+    };
+  }
 
   @HttpPost()
   create(@Body() createPostDto: CreatePostDto) {

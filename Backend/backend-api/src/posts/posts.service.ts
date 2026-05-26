@@ -5,6 +5,7 @@ import { Post } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class PostsService {
@@ -13,6 +14,7 @@ export class PostsService {
     private readonly postRepository: Repository<Post>,
     @InjectRepository(Fanpage)
     private readonly fanpageRepository: Repository<Fanpage>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(createPostDto: CreatePostDto): Promise<Post> {
@@ -90,8 +92,21 @@ export class PostsService {
 
   async update(id: number, updatePostDto: UpdatePostDto): Promise<Post> {
     const post = await this.findOne(id);
+    
+    const oldImagePublicId = post.image_public_id;
+
     const updated = Object.assign(post, updatePostDto);
-    return this.postRepository.save(updated);
+    const saved = await this.postRepository.save(updated);
+
+    if (
+      updatePostDto.image_public_id &&
+      oldImagePublicId &&
+      oldImagePublicId !== updatePostDto.image_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldImagePublicId);
+    }
+
+    return saved;
   }
 
   async sharePost(id: number) {
@@ -106,6 +121,11 @@ export class PostsService {
 
   async remove(id: number): Promise<void> {
     const post = await this.findOne(id);
+    
+    if (post.image_public_id) {
+      await this.cloudinaryService.deleteImage(post.image_public_id);
+    }
+
     await this.postRepository.remove(post);
   }
 }

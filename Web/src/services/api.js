@@ -93,3 +93,17 @@ export const changePassword = async (payload) => {
   });
   return handleResponse(response, "Đổi mật khẩu thất bại");
 };
+
+export const uploadUserImage = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(`${API_BASE_URL}/users/upload`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+    },
+    body: formData,
+    credentials: "include",
+  });
+  return handleResponse(response, "Tải ảnh thất bại");
+};
