@@ -8,6 +8,8 @@ import { Doctor } from '../doctors/doctor.entity';
 import { Hospital } from '../hospitals/entities/hospital.entity';
 import { Repository, MoreThanOrEqual, In, DataSource } from 'typeorm';
 import { PricingService } from '../pricing/pricing.service';
+import { FirebaseService } from '../firebase/firebase.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -21,6 +23,8 @@ export class AppointmentsService {
     @InjectRepository(Hospital)
     private hospitalsRepository: Repository<Hospital>,
     private pricingService: PricingService,
+    private firebaseService: FirebaseService,
+    private notificationsService: NotificationsService,
     private dataSource: DataSource,
   ) {}
 
@@ -119,6 +123,21 @@ export class AppointmentsService {
         currency_snapshot: pricing.currencySnapshot,
       });
 
+    const saved = await this.appointmentsRepository.save(appointment);
+
+    // Lưu thông báo in-app
+    try {
+      await this.notificationsService.create({
+        user_id: saved.user_id,
+        title: '🎉 Đặt lịch hẹn khám thành công!',
+        body: `Lịch khám của bạn với bác sĩ ${saved.doctor_name_snapshot || ''} tại ${saved.hospital_name_snapshot || ''} vào lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã được ghi nhận và đang chờ xác nhận.`,
+        type: 'appointment_pending',
+      });
+    } catch (err) {
+      console.error('🔥 Lỗi tạo thông báo in-app (đặt lịch):', err);
+    }
+
+    return saved;
       const savedAppointment = await queryRunner.manager.save(Appointment, appointment);
       
       await queryRunner.commitTransaction();
@@ -140,7 +159,10 @@ export class AppointmentsService {
   }
 
   findOne(id: number) {
-    return this.appointmentsRepository.findOneBy({ id });
+    return this.appointmentsRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
   }
 
   async update(
@@ -199,7 +221,68 @@ export class AppointmentsService {
       // Khi xác nhận / hoàn thành thì xóa lý do hủy trước đó (nếu có)
       appointment.cancel_reason = null;
     }
-    return this.appointmentsRepository.save(appointment);
+    const saved = await this.appointmentsRepository.save(appointment);
+
+    // Lưu thông báo in-app
+    try {
+      let title = 'Cập nhật lịch khám';
+      let body = `Lịch hẹn khám của bạn vào lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã chuyển sang trạng thái: ${status}`;
+      let type = 'system';
+
+      if (status === 'confirmed') {
+        title = '🎉 Lịch hẹn khám đã được xác nhận!';
+        body = `Lịch khám của bạn với bác sĩ ${saved.doctor_name_snapshot || ''} tại ${saved.hospital_name_snapshot || ''} lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã được xác nhận thành công.`;
+        type = 'appointment_confirmed';
+      } else if (status === 'rejected' || status === 'cancelled') {
+        title = '⚠️ Lịch hẹn khám đã bị hủy';
+        body = `Lịch khám của bạn lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã bị hủy.${reason ? ` Lý do: ${reason}` : ''}`;
+        type = 'appointment_cancelled';
+      } else if (status === 'completed') {
+        title = '✅ Buổi khám hoàn thành';
+        body = `Cảm ơn bạn đã sử dụng dịch vụ! Buổi khám lúc ${saved.appointment_time} ngày ${saved.appointment_date} với bác sĩ ${saved.doctor_name_snapshot || ''} đã hoàn thành tốt đẹp.`;
+        type = 'appointment_completed';
+      }
+
+      await this.notificationsService.create({
+        user_id: saved.user_id,
+        title,
+        body,
+        type,
+      });
+    } catch (err) {
+      console.error('🔥 Lỗi tạo thông báo in-app (cập nhật status):', err);
+    }
+
+    // Gửi thông báo qua FCM nếu có user và fcm_token
+    if (saved.user && saved.user.fcm_token) {
+      // Kiểm tra cấu hình cài đặt thông báo của user (nếu có)
+      const settings = saved.user.notification_settings;
+      const isPushEnabled = settings ? (settings.enabled !== false && settings.push_confirmation !== false) : true;
+
+      if (isPushEnabled) {
+        let title = 'Cập nhật trạng thái lịch hẹn';
+        let body = `Lịch hẹn khám của bạn vào lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã chuyển sang trạng thái: ${status}`;
+
+        if (status === 'confirmed') {
+          title = '🎉 Lịch hẹn khám đã được xác nhận!';
+          body = `Chúc mừng! Lịch khám của bạn với bác sĩ ${saved.doctor_name_snapshot || ''} tại ${saved.hospital_name_snapshot || ''} lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã được xác nhận thành công.`;
+        } else if (status === 'rejected' || status === 'cancelled') {
+          title = '⚠️ Lịch hẹn khám đã bị hủy';
+          body = `Lịch khám của bạn lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã bị hủy.${reason ? ` Lý do: ${reason}` : ''}`;
+        }
+
+        try {
+          await this.firebaseService.sendPushNotification(saved.user.fcm_token, title, body, {
+            appointmentId: String(saved.id),
+            status: saved.status,
+          });
+        } catch (err) {
+          console.error('🔥 Gửi Push Notification thất bại:', err);
+        }
+      }
+    }
+
+    return saved;
   }
 
   async getAvailableTimes(doctorId: number, date: string): Promise<string[]> {

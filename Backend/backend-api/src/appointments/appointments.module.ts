@@ -9,6 +9,8 @@ import { Hospital } from '../hospitals/entities/hospital.entity';
 import { SchedulesModule } from 'src/schedules/schedules.module';
 import { PaymentsModule } from 'src/payments/payments.module';
 import { PricingModule } from '../pricing/pricing.module';
+import { FirebaseService } from '../firebase/firebase.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -16,8 +18,9 @@ import { PricingModule } from '../pricing/pricing.module';
     forwardRef(() => SchedulesModule),
     forwardRef(() => PaymentsModule),
     PricingModule,
+    NotificationsModule,
   ],
   controllers: [AppointmentsController],
-  providers: [AppointmentsService],
+  providers: [AppointmentsService, FirebaseService],
 })
 export class AppointmentsModule {}

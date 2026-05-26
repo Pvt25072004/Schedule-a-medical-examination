@@ -18,6 +18,7 @@ import { FirebaseService } from './firebase/firebase.service';
 import { EmailController } from './email/email.controller';
 import { EmailModule } from './email/email.module';
 import { PricingModule } from './pricing/pricing.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { BannerModule } from './banner/banner.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { FanpagesModule } from './fanpages/fanpages.module';
@@ -64,6 +65,7 @@ import { NewsModule } from './news/news.module';
     AuthModule,
     EmailModule,
     PricingModule,
+    NotificationsModule,
     BannerModule,
     CloudinaryModule,
     FanpagesModule,
