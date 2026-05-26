@@ -4,6 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
@@ -41,6 +42,10 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
+    if (createUserDto.password) {
+      createUserDto.password_hash = await bcrypt.hash(createUserDto.password, 10);
+      delete createUserDto.password;
+    }
     const user = this.usersRepository.create(createUserDto);
     return await this.usersRepository.save(user);
   }
@@ -69,6 +74,11 @@ export class UsersService {
     const oldAvatarPublicId = user.avatar_public_id;
     const oldFrontPublicId = user.id_card_front_public_id;
     const oldBackPublicId = user.id_card_back_public_id;
+
+    if (dto.password) {
+      dto.password_hash = await bcrypt.hash(dto.password, 10);
+      delete dto.password;
+    }
 
     Object.assign(user, dto);
     const savedUser = await this.usersRepository.save(user);

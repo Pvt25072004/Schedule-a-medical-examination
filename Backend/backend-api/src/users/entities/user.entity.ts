@@ -1,4 +1,5 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Like } from 'src/likes/entities/like.entity';
 import { Comment } from 'src/comments/entities/comment.entity';
 import {
@@ -9,6 +10,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Unique,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
 @Entity()
 @Unique(['auth_provider', 'provider_id'])
@@ -101,4 +104,11 @@ export class User {
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments: Comment[];
+
+  @Column({ nullable: true, unique: true })
+  hospital_id: number;
+
+  @OneToOne(() => Hospital, { nullable: true })
+  @JoinColumn({ name: 'hospital_id' })
+  hospital: Hospital;
 }

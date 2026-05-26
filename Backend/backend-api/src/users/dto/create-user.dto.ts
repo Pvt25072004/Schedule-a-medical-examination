@@ -25,6 +25,10 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
+  password?: string;
+
+  @IsString()
+  @IsOptional()
   password_hash?: string;
 
   @IsString()
@@ -87,4 +91,7 @@ export class CreateUserDto {
 
   @IsOptional()
   is_welcome?: boolean;
+
+  @IsOptional()
+  hospital_id?: number;
 }
