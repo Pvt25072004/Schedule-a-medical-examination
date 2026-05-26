@@ -16,4 +16,8 @@ export class CreatePostDto {
   @IsString()
   @IsOptional()
   image_url?: string;
+
+  @IsString()
+  @IsOptional()
+  image_public_id?: string;
 }

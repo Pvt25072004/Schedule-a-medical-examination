@@ -5,8 +5,13 @@ import { FanpagesController } from './fanpages.controller';
 import { Fanpage } from './entities/fanpage.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Fanpage, Hospital])],
+  imports: [
+    TypeOrmModule.forFeature([Fanpage, Hospital]),
+    CloudinaryModule,
+  ],
   controllers: [FanpagesController],
   providers: [FanpagesService],
   exports: [FanpagesService],

@@ -127,41 +127,8 @@ const HomePage = ({ navigate }) => {
     <div className="min-h-screen bg-gray-50">
       {/* Header is managed globally in AppRoutes */}
 
-      {/* Banner Section */}
-      {/* <BannerPage /> */}
-      {/* Banner Section */}
-      {banners.length > 0 && (
-        <section className="flex flex-col items-center justify-center mb-4 mt-8">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {banners.map((banner) => (
-              <a
-                key={banner.id}
-                href={banner.redirect_url || "#"}
-                className="group overflow-hidden rounded-2xl bg-white shadow hover:shadow-lg"
-              >
-                <img
-                  src={banner.image_url}
-                  alt={banner.title}
-                  className="h-48 w-full object-cover transition group-hover:scale-105"
-                />
-
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {banner.title}
-                  </h3>
-
-                  {banner.description && (
-                    <p className="mt-1 text-sm text-gray-500">
-                      {banner.description}
-                    </p>
-                  )}
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
+      {/* Banner Section removed as requested */}
+      
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}

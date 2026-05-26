@@ -30,7 +30,13 @@ export class Fanpage {
   cover_image_url: string;
 
   @Column({ length: 255, nullable: true })
+  cover_public_id: string;
+
+  @Column({ length: 255, nullable: true })
   avatar_url: string;
+
+  @Column({ length: 255, nullable: true })
+  avatar_public_id: string;
 
   @Column({ type: 'int', default: 0 })
   follower_count: number;

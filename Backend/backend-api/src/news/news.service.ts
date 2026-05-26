@@ -2,11 +2,13 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import Parser from 'rss-parser';
+import * as he from 'he';
 import { Repository } from 'typeorm';
 import { News } from './entities/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 
 @Injectable()
 export class NewsService {
@@ -187,59 +189,77 @@ export class NewsService {
     await this.syncFromGoogleNews();
   }
 
-  async syncFromGoogleNews(query: string = 'y tế OR sức khỏe'): Promise<{ message: string, count: number }> {
-    this.logger.log(`Bắt đầu đồng bộ tin tức với từ khóa: ${query}`);
-    let newCount = 0;
-
+  async syncFromGoogleNews() {
     try {
-      // Dùng RSS của Google News Vietnam
-      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=vi&gl=VN&ceid=VN:vi`;
-      const feed = await this.parser.parseURL(url);
+      this.logger.log(`Bắt đầu đồng bộ tin tức Y tế từ các báo chính thống...`);
 
-      // Ảnh mặc định cho tin y tế (nếu RSS không có ảnh)
-      const defaultImageUrl = 'https://images.unsplash.com/photo-1576091160550-2173ff9e5c25?q=80&w=2070&auto=format&fit=crop';
+      // Sử dụng RSS trực tiếp từ các báo lớn chuyên mục Sức Khỏe để lấy được ảnh thật
+      const rssUrls = [
+        'https://tuoitre.vn/rss/suc-khoe.rss',
+        'https://vnexpress.net/rss/suc-khoe.rss',
+        'https://thanhnien.vn/rss/suc-khoe.rss',
+      ];
 
-      for (const item of feed.items) {
-        // Kiểm tra xem bài báo đã tồn tại chưa (dựa vào link nguồn hoặc title)
-        const exists = await this.newsRepository.findOne({
-          where: [
-            { source: item.link },
-            { title: item.title }
-          ]
-        });
+      let newCount = 0;
+      const defaultImageUrl = 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te';
 
-        if (!exists) {
-          // Bóc tách nội dung HTML (nếu có ảnh trong content, rss-parser lấy contentSnippet)
-          // Đôi khi item.content có chứa thẻ <img>
-          let imageUrl = defaultImageUrl;
-          if (item.content && item.content.includes('<img')) {
-            const imgMatch = item.content.match(/src="([^"]+)"/);
-            if (imgMatch && imgMatch[1]) {
-              imageUrl = imgMatch[1];
+      for (const url of rssUrls) {
+        try {
+          const feed = await this.parser.parseURL(url);
+          for (const item of feed.items) {
+            // Kiểm tra bài viết đã tồn tại chưa bằng link (source)
+            const exists = await this.newsRepository.findOne({
+              where: { source: item.link },
+            });
+
+            if (!exists) {
+              // Ưu tiên lấy ảnh từ enclosure (Tuổi Trẻ) hoặc từ content (VnExpress)
+              let imageUrl = defaultImageUrl;
+              if (item.enclosure && item.enclosure.url) {
+                imageUrl = item.enclosure.url;
+              } else if (item.content && item.content.includes('<img')) {
+                const imgMatch = item.content.match(/src="([^"]+)"/);
+                if (imgMatch && imgMatch[1]) {
+                  imageUrl = imgMatch[1];
+                }
+              }
+
+              // Decode HTML entities
+              const rawTitle = item.title || 'Tin y tế tổng hợp';
+              const decodedTitle = he.decode(rawTitle);
+              const safeTitle = decodedTitle.substring(0, 250);
+              const slug = await this.generateUniqueSlug(safeTitle);
+
+              let summary = item.contentSnippet ? item.contentSnippet.substring(0, 500) : null;
+              // Xóa các text rác từ RSS và decode entity
+              if (summary) {
+                summary = summary.replace(/<[^>]+>/g, '').trim();
+                summary = he.decode(summary);
+              }
+
+              const news = this.newsRepository.create({
+                title: safeTitle,
+                slug: slug.substring(0, 250),
+                summary: summary,
+                content: he.decode(item.content || item.contentSnippet || 'Nội dung đang được cập nhật...'),
+                source: item.link,
+                author: item.creator || feed.title || 'Báo điện tử',
+                image_url: imageUrl,
+                is_published: true,
+                published_at: item.pubDate ? new Date(item.pubDate) : new Date(),
+              });
+
+              await this.newsRepository.save(news);
+              newCount++;
             }
           }
-
-          const safeTitle = (item.title || 'Tin y tế tổng hợp').substring(0, 250);
-          const slug = await this.generateUniqueSlug(safeTitle);
-
-          const news = this.newsRepository.create({
-            title: safeTitle,
-            slug: slug.substring(0, 250),
-            summary: item.contentSnippet ? item.contentSnippet.substring(0, 500) : null,
-            content: item.content || item.contentSnippet || 'Nội dung đang được cập nhật...',
-            source: item.link,
-            author: item.creator || item.publisher || 'Google News',
-            image_url: imageUrl,
-            is_published: true,
-            published_at: item.pubDate ? new Date(item.pubDate) : new Date(),
-          });
-
-          await this.newsRepository.save(news);
-          newCount++;
+        } catch (feedError) {
+          this.logger.error(`Lỗi khi đọc RSS từ ${url}: ${feedError.message}`);
+          // Tiếp tục với báo khác
         }
       }
 
-      this.logger.log(`Đồng bộ thành công. Đã thêm ${newCount} bài báo mới.`);
+      this.logger.log(`Đồng bộ thành công. Đã thêm ${newCount} bài báo mới có kèm ảnh.`);
       return { message: 'Đồng bộ tin tức thành công', count: newCount };
 
     } catch (error) {
