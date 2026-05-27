@@ -26,6 +26,7 @@ import { PostsModule } from './posts/posts.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
 import { NewsModule } from './news/news.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { NewsModule } from './news/news.module';
     LikesModule,
     CommentsModule,
     NewsModule,
+    AiModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],

@@ -20,5 +20,6 @@ import { memoryStorage } from 'multer';
   ],
   controllers: [DoctorsController],
   providers: [DoctorsService],
+  exports: [DoctorsService],
 })
 export class DoctorsModule {}

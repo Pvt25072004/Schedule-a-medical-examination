@@ -12,7 +12,7 @@ const NewsPage = ({ navigate }) => {
   const [activeTab, setActiveTab] = useState('Tin y tế');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const tabs = ['Tin dịch vụ', 'Tin y tế', 'Y học thường thức'];
+  const tabs = ['Tin y tế', 'Tin dịch vụ', 'Y học thường thức'];
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -48,10 +48,10 @@ const NewsPage = ({ navigate }) => {
   // Tách 4 tin đầu làm phần nổi bật từ danh sách đã lọc
   const featuredNews = useMemo(() => filteredNews.length > 0 ? filteredNews[0] : null, [filteredNews]);
   const sideNews = useMemo(() => filteredNews.slice(1, 4), [filteredNews]);
-  
+
   // Phần còn lại cho vào Grid và phân trang
   const gridNews = useMemo(() => filteredNews.slice(4), [filteredNews]);
-  
+
   const totalPages = Math.ceil(gridNews.length / ITEMS_PER_PAGE) || 1;
   const currentGridData = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -89,7 +89,7 @@ const NewsPage = ({ navigate }) => {
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header & Tabs */}
         <div className="flex flex-col md:flex-row md:items-end gap-6 mb-10 border-b border-gray-200 pb-4">
           <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">
@@ -100,11 +100,10 @@ const NewsPage = ({ navigate }) => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`transition-colors ${
-                  activeTab === tab 
-                    ? 'text-blue-500 border-b-2 border-blue-500 pb-1 -mb-[18px]' 
+                className={`transition-colors ${activeTab === tab
+                    ? 'text-blue-500 border-b-2 border-blue-500 pb-1 -mb-[18px]'
                     : 'text-gray-400 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 {tab}
               </button>
@@ -115,20 +114,20 @@ const NewsPage = ({ navigate }) => {
         {/* Featured Section */}
         {news.length > 0 && (
           <div className="grid lg:grid-cols-12 gap-8 mb-16">
-            
+
             {/* Main Featured (Left) */}
             {featuredNews && (
               <div className="lg:col-span-8 cursor-pointer group" onClick={() => openNews(featuredNews.source)}>
                 <div className="relative rounded-2xl overflow-hidden shadow-lg h-[400px] lg:h-[500px]">
-                  <img 
-                    src={featuredNews.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'} 
+                  <img
+                    src={featuredNews.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'}
                     alt={featuredNews.title}
-                    onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  
+
                   {/* Content Overlay */}
                   <div className="absolute bottom-0 left-0 p-6 lg:p-8 w-full">
                     <span className="inline-block px-3 py-1 bg-blue-500 text-white text-sm font-semibold rounded-full mb-4">
@@ -154,16 +153,16 @@ const NewsPage = ({ navigate }) => {
             {/* Side Posts (Right) */}
             <div className="lg:col-span-4 flex flex-col gap-6">
               {sideNews.map((item) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="flex gap-4 cursor-pointer group bg-white p-3 rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   onClick={() => openNews(item.source)}
                 >
                   <div className="w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                    <img 
-                      src={item.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'} 
+                    <img
+                      src={item.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'}
                       alt={item.title}
-                      onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
+                      onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                   </div>
@@ -195,10 +194,10 @@ const NewsPage = ({ navigate }) => {
                 {currentGridData.map((item) => (
                   <Card key={item.id} hover className="flex flex-col h-full cursor-pointer group" onClick={() => openNews(item.source)}>
                     <div className="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-2xl">
-                      <img 
-                        src={item.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'} 
+                      <img
+                        src={item.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'}
                         alt={item.title}
-                        onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
+                        onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-blue-600 flex items-center gap-1.5 shadow-sm">
@@ -206,7 +205,7 @@ const NewsPage = ({ navigate }) => {
                         {activeTab}
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col flex-grow">
                       <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
                         {item.title}
@@ -214,7 +213,7 @@ const NewsPage = ({ navigate }) => {
                       <p className="text-gray-600 text-sm line-clamp-3 mb-4 flex-grow">
                         {item.summary || item.content?.substring(0, 150).replace(/<[^>]+>/g, '') + '...'}
                       </p>
-                      
+
                       <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
                         <div className="flex items-center text-sm text-gray-500 gap-1.5">
                           <Calendar className="w-4 h-4" />
@@ -232,29 +231,28 @@ const NewsPage = ({ navigate }) => {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-8">
-                  <button 
+                  <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  
+
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-colors ${
-                        currentPage === page 
-                          ? 'bg-blue-600 text-white shadow-md' 
+                      className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-colors ${currentPage === page
+                          ? 'bg-blue-600 text-white shadow-md'
                           : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
                   ))}
 
-                  <button 
+                  <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
