@@ -476,15 +476,17 @@ const FloatingWidgets = () => {
                 placeholder="Nhập tin nhắn..."
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
+                maxLength={300}
+                disabled={isTyping}
                 onKeyDown={e => {
-                  if (e.key === 'Enter') handleSend();
+                  if (e.key === 'Enter' && !isTyping) handleSend();
                 }}
-                className={`flex-1 px-3 border rounded-xl focus:outline-none focus:border-blue-500 ${isExpanded ? 'py-2.5 text-sm' : 'py-1.5 text-xs'}`}
+                className={`flex-1 px-3 border rounded-xl focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${isExpanded ? 'py-2.5 text-sm' : 'py-1.5 text-xs'}`}
               />
               <button
                 onClick={() => handleSend()}
-                disabled={!inputText.trim()}
-                className={`bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition disabled:opacity-40 ${isExpanded ? 'p-2.5' : 'p-2'}`}
+                disabled={!inputText.trim() || isTyping}
+                className={`bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed ${isExpanded ? 'p-2.5' : 'p-2'}`}
               >
                 <Send className={isExpanded ? 'w-4 h-4' : 'w-3.5 h-3.5'} />
               </button>
