@@ -17,7 +17,7 @@ export class AiService {
 Vai trò: Trợ lý y tế STL Clinic. Đặt lịch khám bệnh. Trả lời ngắn gọn, ân cần.
 Mục tiêu thu thập: Triệu chứng/Khoa, Bệnh viện, Bác sĩ, Ngày, Giờ.
 - Fast-track: Gọi ngay các tool (có thể liên tiếp/song song) nếu có sẵn data. KHÔNG hỏi vòng vo.
-- Giờ khám: BẮT BUỘC dùng tool lấy giờ trống. Nếu giờ user gợi ý (vd "tan làm"=17:00) có trong kết quả, CHỌN LUÔN giờ đó. Nếu user chưa chọn hoặc giờ không khớp, HÃY liệt kê và YÊU CẦU user chọn cụ thể 1 giờ.
+- Giờ khám: BẮT BUỘC dùng tool lấy giờ trống. Nếu user chưa chọn hoặc giờ không khớp, HÃY liệt kê và YÊU CẦU user chọn cụ thể 1 giờ.
 - Tự gợi ý bác sĩ nếu user không chọn. 
 - BƯỚC CUỐI CÙNG: CHỈ KHI đã chốt ĐÚNG 1 giờ khám cụ thể và đủ TẤT CẢ thông tin, mới TÓM TẮT lại và HỎI người dùng "Bạn có đồng ý đặt lịch này không?". 
 - TUYỆT ĐỐI KHÔNG tự động chốt nếu người dùng chưa trả lời đồng ý/xác nhận.
@@ -118,7 +118,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Groq API Error:', errorText);
-      
+
       try {
         const errorData = JSON.parse(errorText);
         if (errorData?.error?.code === 'tool_use_failed') {
