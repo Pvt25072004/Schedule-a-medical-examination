@@ -94,6 +94,24 @@ const BookingFlowPage = ({ navigate }) => {
   }, []);
 
   useEffect(() => {
+    if (!loadingData && location.state?.aiBookingData && doctors.length > 0 && hospitals.length > 0) {
+      const data = location.state.aiBookingData;
+      setFormData(prev => ({
+        ...prev,
+        city: data.hospitalName?.toLowerCase().includes("đà nẵng") ? "Đà Nẵng" : "TP. Hồ Chí Minh",
+        hospitalId: data.hospitalId,
+        specialty: data.specialty || "",
+        doctorId: data.doctorId,
+        date: data.date,
+        time: data.time,
+        type: data.symptoms || "Đăng ký khám qua trợ lý AI",
+      }));
+      setStep(8);
+      // Xóa state để tránh vòng lặp nếu reload trang
+      window.history.replaceState({}, document.title);
+      return;
+    }
+
     if (!loadingData && location.state?.doctorId && doctors.length > 0) {
       const doc = doctors.find((d) => d.id === location.state.doctorId);
       if (doc) {
@@ -107,7 +125,7 @@ const BookingFlowPage = ({ navigate }) => {
         setStep(5);
       }
     }
-  }, [loadingData, location.state, doctors]);
+  }, [loadingData, location.state, doctors, hospitals]);
 
   const doctorRatingsMap = useMemo(() => {
     const map = new Map();
@@ -224,9 +242,11 @@ const BookingFlowPage = ({ navigate }) => {
   };
 
   useEffect(() => {
-    if (formData.doctorId && formData.date && step === 5) {
+    if (formData.doctorId && formData.date && (step === 5 || step === 8)) {
       loadSlotsFromSchedules(formData.doctorId, formData.date);
-      setFormData(prev => ({...prev, time: ""})); // Reset time when date changes
+      if (step === 5) {
+        setFormData(prev => ({...prev, time: ""})); // Only reset time when manually selecting date
+      }
     }
   }, [formData.doctorId, formData.date, step]);
 

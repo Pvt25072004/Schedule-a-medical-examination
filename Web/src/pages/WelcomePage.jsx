@@ -413,7 +413,20 @@ const WelcomePage = ({ navigate }) => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} hover className="text-center group">
+              <Card 
+                key={index} 
+                hover 
+                className="text-center group cursor-pointer"
+                onClick={() => {
+                  if (feature.title === "Đặt lịch Online") {
+                    requireAuthAndNavigate(PAGES.BOOKING);
+                  } else if (feature.title === "Tư vấn Online" || feature.title === "Tư vấn trực tuyến") {
+                    requireAuthAndNavigate(PAGES.CHAT);
+                  } else if (feature.title === "Đội ngũ Bác sĩ") {
+                    navigate(PAGES.DOCTORS);
+                  }
+                }}
+              >
                 <div
                   className={`w-16 h-16 bg-${feature.color}-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}
                 >
