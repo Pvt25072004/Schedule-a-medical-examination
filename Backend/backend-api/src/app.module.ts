@@ -28,6 +28,7 @@ import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
 import { NewsModule } from './news/news.module';
 import { AiModule } from './ai/ai.module';
+import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-hospital-requests.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { AiModule } from './ai/ai.module';
     CommentsModule,
     NewsModule,
     AiModule,
+    DoctorHospitalRequestsModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],
