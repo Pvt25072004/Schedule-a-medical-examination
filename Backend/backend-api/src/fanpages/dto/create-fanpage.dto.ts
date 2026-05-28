@@ -16,4 +16,12 @@ export class CreateFanpageDto {
   @IsString()
   @IsOptional()
   avatar_url?: string;
+
+  @IsString()
+  @IsOptional()
+  cover_public_id?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar_public_id?: string;
 }

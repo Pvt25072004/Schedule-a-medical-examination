@@ -5,6 +5,7 @@ import { Fanpage } from './entities/fanpage.entity';
 import { CreateFanpageDto } from './dto/create-fanpage.dto';
 import { UpdateFanpageDto } from './dto/update-fanpage.dto';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class FanpagesService {
@@ -13,6 +14,7 @@ export class FanpagesService {
     private readonly fanpageRepository: Repository<Fanpage>,
     @InjectRepository(Hospital)
     private readonly hospitalRepository: Repository<Hospital>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(createFanpageDto: CreateFanpageDto): Promise<Fanpage> {
@@ -70,12 +72,43 @@ export class FanpagesService {
 
   async update(id: number, updateFanpageDto: UpdateFanpageDto): Promise<Fanpage> {
     const fanpage = await this.findOne(id);
+    
+    const oldAvatarPublicId = fanpage.avatar_public_id;
+    const oldCoverPublicId = fanpage.cover_public_id;
+
     const updated = Object.assign(fanpage, updateFanpageDto);
-    return this.fanpageRepository.save(updated);
+    const saved = await this.fanpageRepository.save(updated);
+
+    if (
+      updateFanpageDto.avatar_public_id &&
+      oldAvatarPublicId &&
+      oldAvatarPublicId !== updateFanpageDto.avatar_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldAvatarPublicId);
+    }
+
+    if (
+      updateFanpageDto.cover_public_id &&
+      oldCoverPublicId &&
+      oldCoverPublicId !== updateFanpageDto.cover_public_id
+    ) {
+      await this.cloudinaryService.deleteImage(oldCoverPublicId);
+    }
+
+    return saved;
   }
 
   async remove(id: number): Promise<void> {
     const fanpage = await this.findOne(id);
+    
+    if (fanpage.avatar_public_id) {
+      await this.cloudinaryService.deleteImage(fanpage.avatar_public_id);
+    }
+    
+    if (fanpage.cover_public_id) {
+      await this.cloudinaryService.deleteImage(fanpage.cover_public_id);
+    }
+
     await this.fanpageRepository.remove(fanpage);
   }
 }

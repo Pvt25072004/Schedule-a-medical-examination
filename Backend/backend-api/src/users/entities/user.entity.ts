@@ -90,6 +90,12 @@ export class User {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ length: 255, nullable: true })
+  fcm_token: string;
+
+  @Column({ type: 'simple-json', nullable: true })
+  notification_settings: any;
+
   @CreateDateColumn()
   created_at: Date;
 

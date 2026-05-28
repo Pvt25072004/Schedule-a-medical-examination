@@ -8,6 +8,8 @@ import {
   MapPin,
   Phone,
   Mail,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Button from "../components/common/Button";
 import Card from "../components/common/Card";
@@ -21,6 +23,7 @@ import {
 } from "../services/appointments.api";
 import { getDoctors } from "../services/admin.doctors.api";
 import { getCategories } from "../services/admin.categories.api";
+import { getActiveHospitalBanners } from "../services/admin.hospital.banner.api";
 import { getCategoryIcon } from "../utils/helpers";
 const DEFAULT_APPOINTMENT_FORM = Object.freeze({
   user_id: "",
@@ -44,6 +47,18 @@ const WelcomePage = ({ navigate }) => {
   const [alert, setAlert] = useState(null);
   const [doctorsList, setDoctorsList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
+  const [banners, setBanners] = useState([]);
+  const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
+  const [singleBannerIdx, setSingleBannerIdx] = useState(0);
+
+  // Auto-play for single banner
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const timer = setInterval(() => {
+      setSingleBannerIdx((prev) => (prev + 1) % banners.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
 
   const features = [
     {
@@ -115,15 +130,17 @@ const WelcomePage = ({ navigate }) => {
 
   useEffect(() => {
     fetchAppointments();
-    
+
     const loadData = async () => {
       try {
-        const [docs, cats] = await Promise.all([
+        const [docs, cats, bannerData] = await Promise.all([
           getDoctors(),
-          getCategories()
+          getCategories(),
+          getActiveHospitalBanners()
         ]);
         setDoctorsList(Array.isArray(docs) ? docs : []);
         setCategoriesList(Array.isArray(cats) ? cats : []);
+        setBanners(bannerData || []);
       } catch (err) {
         console.error("Error loading welcome data:", err);
       }
@@ -272,7 +289,7 @@ const WelcomePage = ({ navigate }) => {
 
       {/* Hero Section - MedPro Style */}
       <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div className="space-y-8">
@@ -414,6 +431,85 @@ const WelcomePage = ({ navigate }) => {
         </div>
       </section>
 
+      {/* Banner Carousel Section */}
+      {banners.length > 0 && (
+        <section className="py-12 bg-white overflow-hidden border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Chương trình nổi bật</h2>
+                <p className="text-gray-600">Những ưu đãi và sự kiện mới nhất từ STL Clinic</p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setCurrentBannerIdx(Math.max(0, currentBannerIdx - 1))}
+                  disabled={currentBannerIdx === 0}
+                  className="p-3 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors shadow-sm"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => setCurrentBannerIdx(Math.min(Math.max(0, banners.length - 3), currentBannerIdx + 1))}
+                  disabled={currentBannerIdx >= Math.max(0, banners.length - 3)}
+                  className="p-3 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors shadow-sm"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="overflow-hidden -mx-3 px-3 py-4">
+              <div 
+                className="flex transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${currentBannerIdx * (100 / 3)}%)` }}
+              >
+                {banners.map((banner) => (
+                  <div 
+                    key={banner.id} 
+                    className="w-full md:w-1/3 shrink-0 px-3 group cursor-pointer" 
+                    onClick={() => {
+                      if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
+                      else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+                      else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
+                    }}
+                  >
+                    <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 h-[220px]">
+                      <img 
+                        src={banner.image_url} 
+                        alt={banner.title} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-5">
+                        <span className="inline-block px-2 py-1 bg-blue-500/80 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider rounded w-max mb-2">
+                          Nổi bật
+                        </span>
+                        <h3 className="text-white font-bold text-lg mb-1 leading-tight group-hover:text-blue-200 transition-colors">{banner.title}</h3>
+                        {banner.description && <p className="text-gray-300 text-sm line-clamp-2 opacity-90">{banner.description}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dots for multi-item carousel */}
+            {banners.length > 3 && (
+              <div className="flex justify-center mt-6 gap-2">
+                {Array.from({ length: Math.max(1, banners.length - 2) }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBannerIdx(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      currentBannerIdx === idx ? "w-6 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Doctors Section */}
       <section id="doctors" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -481,6 +577,65 @@ const WelcomePage = ({ navigate }) => {
         </div>
       </section>
 
+      {/* Single Banner Auto-play Section */}
+      {banners.length > 0 && (
+        <section className="py-12 bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div 
+              className="relative rounded-3xl overflow-hidden shadow-xl h-[200px] md:h-[280px] group cursor-pointer"
+              onClick={() => {
+                const banner = banners[singleBannerIdx];
+                if (!banner) return;
+                if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
+                else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+                else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
+              }}
+            >
+              <div 
+                className="flex h-full w-full transition-transform duration-700 ease-in-out"
+                style={{ transform: `translateX(-${singleBannerIdx * 100}%)` }}
+              >
+                {banners.map((banner, idx) => (
+                  <div 
+                    key={banner.id}
+                    className="w-full h-full shrink-0 relative"
+                  >
+                    <img 
+                      src={banner.image_url} 
+                      alt={banner.title} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 md:p-12">
+                      <span className="inline-block px-3 py-1 bg-blue-500/90 text-white text-xs font-bold uppercase tracking-wider rounded-full w-max mb-3 shadow-lg">
+                        Quảng cáo nổi bật
+                      </span>
+                      <h3 className="text-white font-bold text-2xl md:text-4xl mb-2 drop-shadow-md">{banner.title}</h3>
+                      {banner.description && <p className="text-gray-200 text-sm md:text-lg max-w-3xl drop-shadow">{banner.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Dots for single banner */}
+              <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+                {banners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSingleBannerIdx(idx);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
+                      singleBannerIdx === idx ? "w-8 bg-blue-500" : "w-2 bg-white/60 hover:bg-white"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Specialties Section */}
       <section id="specialties" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -518,31 +673,31 @@ const WelcomePage = ({ navigate }) => {
       {/* CTA Section */}
       {!isAuthenticated && (
         <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-4">Sẵn sàng bắt đầu?</h2>
-          <p className="text-xl mb-8 text-blue-100">
-            Đặt lịch khám ngay hôm nay để nhận được sự chăm sóc tốt nhất
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => navigate(PAGES.REGISTER)}
-              className="bg-white text-blue-600 hover:bg-gray-50"
-            >
-              Đăng ký miễn phí
-            </Button>
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={() => navigate(PAGES.LOGIN)}
-              className="text-white border-2 border-white hover:bg-white/10"
-            >
-              Đăng nhập ngay
-            </Button>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-4xl font-bold mb-4">Sẵn sàng bắt đầu?</h2>
+            <p className="text-xl mb-8 text-blue-100">
+              Đặt lịch khám ngay hôm nay để nhận được sự chăm sóc tốt nhất
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => navigate(PAGES.REGISTER)}
+                className="bg-white text-blue-600 hover:bg-gray-50"
+              >
+                Đăng ký miễn phí
+              </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={() => navigate(PAGES.LOGIN)}
+                className="text-white border-2 border-white hover:bg-white/10"
+              >
+                Đăng nhập ngay
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* Footer */}
@@ -645,9 +800,22 @@ const WelcomePage = ({ navigate }) => {
             transform: translateY(-20px);
           }
         }
+        
+        @keyframes marquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
 
         .animate-float {
           animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-marquee {
+          animation: marquee 25s linear infinite;
         }
       `}</style>
     </div>

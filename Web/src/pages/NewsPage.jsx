@@ -30,12 +30,27 @@ const NewsPage = ({ navigate }) => {
     fetchNews();
   }, []);
 
-  // Tách 4 tin đầu làm phần nổi bật
-  const featuredNews = useMemo(() => news.slice(0, 1)[0], [news]);
-  const sideNews = useMemo(() => news.slice(1, 4), [news]);
+  // Pseudo-filtering logic since the backend doesn't categorize news yet
+  const filteredNews = useMemo(() => {
+    return news.filter(item => {
+      const text = (item.title + ' ' + (item.summary || '')).toLowerCase();
+      if (activeTab === 'Tin dịch vụ') {
+        return text.includes('bảo hiểm') || text.includes('khám') || text.includes('dịch vụ') || text.includes('bệnh viện') || text.includes('chi phí');
+      }
+      if (activeTab === 'Y học thường thức') {
+        return text.includes('nghiên cứu') || text.includes('phát hiện') || text.includes('khoa học') || text.includes('chữa') || text.includes('thuốc');
+      }
+      // Tin y tế: các bài còn lại hoặc từ khóa chung
+      return true; // Mặc định hiển thị tất cả nếu là Tin y tế
+    });
+  }, [news, activeTab]);
+
+  // Tách 4 tin đầu làm phần nổi bật từ danh sách đã lọc
+  const featuredNews = useMemo(() => filteredNews.length > 0 ? filteredNews[0] : null, [filteredNews]);
+  const sideNews = useMemo(() => filteredNews.slice(1, 4), [filteredNews]);
   
   // Phần còn lại cho vào Grid và phân trang
-  const gridNews = useMemo(() => news.slice(4), [news]);
+  const gridNews = useMemo(() => filteredNews.slice(4), [filteredNews]);
   
   const totalPages = Math.ceil(gridNews.length / ITEMS_PER_PAGE) || 1;
   const currentGridData = useMemo(() => {
@@ -72,7 +87,7 @@ const NewsPage = ({ navigate }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-20">
+    <div className="min-h-screen bg-gray-50 pt-8 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header & Tabs */}
@@ -106,8 +121,9 @@ const NewsPage = ({ navigate }) => {
               <div className="lg:col-span-8 cursor-pointer group" onClick={() => openNews(featuredNews.source)}>
                 <div className="relative rounded-2xl overflow-hidden shadow-lg h-[400px] lg:h-[500px]">
                   <img 
-                    src={featuredNews.image_url || 'https://images.unsplash.com/photo-1576091160550-2173ff9e5c25?w=1200&q=80'} 
+                    src={featuredNews.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'} 
                     alt={featuredNews.title}
+                    onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   {/* Gradient Overlay */}
@@ -145,8 +161,9 @@ const NewsPage = ({ navigate }) => {
                 >
                   <div className="w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
                     <img 
-                      src={item.image_url || 'https://images.unsplash.com/photo-1576091160550-2173ff9e5c25?w=400&q=80'} 
+                      src={item.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'} 
                       alt={item.title}
+                      onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                   </div>
@@ -179,8 +196,9 @@ const NewsPage = ({ navigate }) => {
                   <Card key={item.id} hover className="flex flex-col h-full cursor-pointer group" onClick={() => openNews(item.source)}>
                     <div className="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-2xl">
                       <img 
-                        src={item.image_url || 'https://images.unsplash.com/photo-1576091160550-2173ff9e5c25?w=600&q=80'} 
+                        src={item.image_url || 'https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te'} 
                         alt={item.title}
+                        onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/600x400/004d99/FFFFFF/png?text=Tin+Tuc+Y+Te"; }}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-blue-600 flex items-center gap-1.5 shadow-sm">

@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import PostCard from '../components/fanpage/PostCard';
 import FeaturedHospitals from '../components/fanpage/FeaturedHospitals';
 import { API_BASE_URL } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { getPublicNews } from '../services/news.api';
 
 const BannerCarousel = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [banners, setBanners] = useState([
-    "https://images.unsplash.com/photo-1538108149393-fbbd81895907?q=80&w=2000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?q=80&w=2000&auto=format&fit=crop"
-  ]);
+  const [banners, setBanners] = useState([]);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const fetchBanners = async () => {
@@ -20,7 +20,7 @@ const BannerCarousel = () => {
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) {
-            setBanners(data.map(b => b.image_url));
+            setBanners(data);
           }
         }
       } catch (err) {
@@ -39,30 +39,73 @@ const BannerCarousel = () => {
   }, [banners.length]);
 
   return (
-    <div className="relative w-full h-48 sm:h-64 md:h-80 rounded-2xl overflow-hidden mb-8 shadow-sm">
-      {banners.map((src, idx) => (
+    <div 
+      className="relative w-full h-40 sm:h-48 md:h-64 rounded-2xl overflow-hidden mb-8 shadow-sm group cursor-pointer"
+      onClick={() => {
+        const banner = banners[currentIdx];
+        if (!banner) return;
+        if (banner.doctor_id) {
+          if (!isAuthenticated) navigate('/login');
+          else navigate('/book-doctor', { state: { doctorId: banner.doctor_id }});
+        }
+        else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+        else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
+      }}
+    >
+      {banners.map((banner, idx) => (
         <img
-          key={idx}
-          src={src}
+          key={banner.id || idx}
+          src={banner.image_url}
           alt={`Banner ${idx + 1}`}
-          className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 ${
-            idx === currentIdx ? 'opacity-100' : 'opacity-0'
+          className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 group-hover:scale-105 ease-in-out ${
+            idx === currentIdx ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
         />
       ))}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-6">
-        <div className="text-white">
-          <h2 className="text-2xl font-bold mb-2">Cập nhật tin tức Y tế</h2>
-          <p className="text-white/90">Những thông tin mới nhất từ các bệnh viện hàng đầu</p>
-        </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6 z-20">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white drop-shadow-md">
+          {banners[currentIdx]?.title || "Cập nhật tin tức Y tế"}
+        </h2>
+        <p className="text-white/90 drop-shadow">
+          {banners[currentIdx]?.description || "Những thông tin mới nhất từ các bệnh viện hàng đầu"}
+        </p>
+      </div>
+
+      {/* Dots */}
+      <div className="absolute bottom-4 left-0 right-0 z-30 flex justify-center gap-2">
+        {banners.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentIdx(idx);
+            }}
+            className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
+              currentIdx === idx ? "w-8 bg-blue-500" : "w-2 bg-white/60 hover:bg-white"
+            }`}
+          />
+        ))}
       </div>
     </div>
   );
 };
 
+// Helper function to normalize string for intelligent search (removes diacritics, spaces, hashtags, lowercase)
+const normalizeString = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove Vietnamese accents
+    .replace(/[đĐ]/g, 'd')
+    .replace(/[^a-z0-9]/g, ''); // Remove spaces, punctuation, and hashtags
+};
+
 const FanpagePage = () => {
   const [posts, setPosts] = useState([]);
   const [hospitals, setHospitals] = useState([]);
+  const [newsList, setNewsList] = useState([]);
+  const [selectedPost, setSelectedPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -100,6 +143,15 @@ const FanpagePage = () => {
             fanpage: f,
           })).filter(h => h.id);
           setHospitals(hospitalsData);
+        }
+
+        // Fetch news for sidebar search
+        try {
+          const newsData = await getPublicNews();
+          const newsArray = Array.isArray(newsData) ? newsData : (newsData?.data || []);
+          setNewsList(newsArray);
+        } catch (err) {
+          console.error('Error fetching news:', err);
         }
       } catch (error) {
         console.error('Error fetching fanpage data:', error);
@@ -141,12 +193,40 @@ const FanpagePage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter logic
-  const searchResultsHospitals = hospitals.filter(h => h.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const searchResultsPosts = posts.filter(post => 
-    post.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.content?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Helper to extract all hashtags from posts
+  const allHashtags = useMemo(() => {
+    const tags = new Set();
+    posts.forEach(post => {
+      if (post.content) {
+        const words = post.content.split(/\s+/);
+        words.forEach(word => {
+          if (word.startsWith('#') && word.length > 1) {
+            tags.add(word);
+          }
+        });
+      }
+    });
+    return Array.from(tags);
+  }, [posts]);
+
+  // Filter logic with normalized comparison
+  const searchResultsHospitals = hospitals.filter(h => 
+    normalizeString(h.name).includes(normalizeString(searchQuery))
   );
+  const searchResultsPosts = posts.filter(post => 
+    normalizeString(post.title).includes(normalizeString(searchQuery)) ||
+    normalizeString(post.content).includes(normalizeString(searchQuery))
+  );
+  const searchResultsNews = newsList.filter(item => 
+    normalizeString(item.title).includes(normalizeString(searchQuery)) ||
+    normalizeString(item.summary).includes(normalizeString(searchQuery))
+  );
+  const searchResultsHashtags = useMemo(() => {
+    if (!searchQuery) return [];
+    return allHashtags.filter(tag => 
+      normalizeString(tag).includes(normalizeString(searchQuery))
+    );
+  }, [allHashtags, searchQuery]);
 
   // Main feed logic (filters only if a hashtag is clicked)
   const feedPosts = activeHashtag 
@@ -222,7 +302,7 @@ const FanpagePage = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-4 space-y-6 order-1 lg:order-2">
+          <div className="lg:col-span-4 space-y-6 order-1 lg:order-2 sticky top-[110px] self-start">
             {/* Search Bar in Sidebar with Dropdown Overlay */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 relative z-40" ref={searchRef}>
               <div className="relative w-full">
@@ -240,42 +320,98 @@ const FanpagePage = () => {
               {/* Dropdown Results Overlay */}
               {isSearchFocused && searchQuery.trim() !== '' && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden max-h-96 overflow-y-auto">
-                  <div className="p-2">
-                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2 pt-2">Bệnh viện / Fanpage</div>
-                    {searchResultsHospitals.length > 0 ? (
-                      searchResultsHospitals.map(h => (
-                        <div 
-                          key={h.id} 
-                          onClick={() => navigate(`/fanpage/${h.fanpage?.id}`)}
-                          className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                        >
-                          <img src={h.fanpage?.avatar_url || 'https://via.placeholder.com/32'} alt="" className="w-8 h-8 rounded-full object-cover" />
-                          <span className="text-sm font-medium text-gray-800">{h.name}</span>
+                  <div className="p-2 divide-y divide-gray-100">
+                    
+                    {/* Hashtags */}
+                    {searchResultsHashtags.length > 0 && (
+                      <div className="py-2">
+                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2 pt-1">Thẻ Hashtag</div>
+                        <div className="flex flex-wrap gap-2 px-2">
+                          {searchResultsHashtags.map(tag => (
+                            <span 
+                              key={tag} 
+                              onClick={() => {
+                                setActiveHashtag(tag);
+                                setIsSearchFocused(false);
+                                setSearchQuery('');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-full cursor-pointer transition-colors"
+                            >
+                              {tag}
+                            </span>
+                          ))}
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-sm text-gray-500 px-2 py-1">Không tìm thấy bệnh viện</div>
+                      </div>
                     )}
 
-                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2 px-2">Bài viết</div>
-                    {searchResultsPosts.length > 0 ? (
-                      searchResultsPosts.map(p => (
-                        <div 
-                          key={p.id} 
-                          className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer border-b border-gray-50 last:border-0"
-                          onClick={() => {
-                            // Can add logic to open post modal here, for now just log or scroll
-                            setIsSearchFocused(false);
-                            setSearchQuery('');
-                          }}
-                        >
-                          <div className="text-sm font-medium text-gray-800 truncate">{p.title || p.fanpage?.hospital?.name}</div>
-                          <div className="text-xs text-gray-500 truncate">{p.content}</div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-sm text-gray-500 px-2 py-1">Không tìm thấy bài viết</div>
-                    )}
+                    {/* Hospitals */}
+                    <div className="py-2">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Bệnh viện / Fanpage</div>
+                      {searchResultsHospitals.length > 0 ? (
+                        searchResultsHospitals.map(h => (
+                          <div 
+                            key={h.id} 
+                            onClick={() => navigate(`/fanpage/${h.fanpage?.id}`)}
+                            className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                          >
+                            <img src={h.fanpage?.avatar_url || 'https://via.placeholder.com/32'} alt="" className="w-8 h-8 rounded-full object-cover" />
+                            <span className="text-sm font-medium text-gray-800">{h.name}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500 px-2 py-1">Không tìm thấy bệnh viện</div>
+                      )}
+                    </div>
+
+                    {/* Posts */}
+                    <div className="py-2">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Bài viết</div>
+                      {searchResultsPosts.length > 0 ? (
+                        searchResultsPosts.map(p => (
+                          <div 
+                            key={p.id} 
+                            className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedPost(p);
+                              setIsSearchFocused(false);
+                              setSearchQuery('');
+                            }}
+                          >
+                            <div className="text-sm font-semibold text-gray-800 truncate">{p.title || p.fanpage?.hospital?.name}</div>
+                            <div className="text-xs text-gray-500 truncate mt-0.5">{p.content}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500 px-2 py-1">Không tìm thấy bài viết</div>
+                      )}
+                    </div>
+
+                    {/* News */}
+                    <div className="py-2">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Tin tức y khoa / Báo chí</div>
+                      {searchResultsNews.length > 0 ? (
+                        searchResultsNews.map(item => (
+                          <div 
+                            key={item.id} 
+                            className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                            onClick={() => {
+                              setIsSearchFocused(false);
+                              setSearchQuery('');
+                              if (item.source) {
+                                window.open(item.source, '_blank', 'noopener,noreferrer');
+                              }
+                            }}
+                          >
+                            <div className="text-sm font-semibold text-gray-800 truncate">{item.title}</div>
+                            <div className="text-xs text-gray-500 truncate mt-0.5">{item.summary}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500 px-2 py-1">Không tìm thấy tin tức</div>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -286,6 +422,21 @@ const FanpagePage = () => {
         </div>
 
       </div>
+
+      {/* Standalone post details modal */}
+      {selectedPost && (
+        <PostCard 
+          post={selectedPost} 
+          defaultOpenCommentModal={true} 
+          modalOnly={true} 
+          onClose={() => setSelectedPost(null)}
+          onHashtagClick={(tag) => {
+            setActiveHashtag(tag);
+            setSelectedPost(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
     </div>
   );
 };

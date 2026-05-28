@@ -13,11 +13,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { PAGES } from "../utils/constants";
-import { changePassword } from "../services/api";
+import { changePassword, uploadUserImage } from "../services/api";
 
 const SettingsPage = ({ navigate }) => {
   const { user, logout, updateProfile } = useAuth();
   const [activeSection, setActiveSection] = useState("account");
+  const [selectedFiles, setSelectedFiles] = useState({
+    avatarUrl: null,
+    idCardFrontUrl: null,
+    idCardBackUrl: null,
+  });
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -157,6 +162,8 @@ const SettingsPage = ({ navigate }) => {
   const handleImageFileChange = (event, field) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setSelectedFiles((prev) => ({ ...prev, [field]: file }));
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -394,6 +401,23 @@ const SettingsPage = ({ navigate }) => {
                 setSavingProfile(true);
                 setProfileMessage(null);
 
+                let finalAvatarUrl = profileForm.avatarUrl;
+                let finalIdCardFrontUrl = profileForm.idCardFrontUrl;
+                let finalIdCardBackUrl = profileForm.idCardBackUrl;
+
+                if (selectedFiles.avatarUrl) {
+                  const res = await uploadUserImage(selectedFiles.avatarUrl);
+                  if (res?.image_url) finalAvatarUrl = res.image_url;
+                }
+                if (selectedFiles.idCardFrontUrl) {
+                  const res = await uploadUserImage(selectedFiles.idCardFrontUrl);
+                  if (res?.image_url) finalIdCardFrontUrl = res.image_url;
+                }
+                if (selectedFiles.idCardBackUrl) {
+                  const res = await uploadUserImage(selectedFiles.idCardBackUrl);
+                  if (res?.image_url) finalIdCardBackUrl = res.image_url;
+                }
+
                 // Cập nhật qua AuthContext (tự gọi API + lưu localStorage)
                 await updateProfile({
                   fullName: profileForm.fullName,
@@ -403,12 +427,17 @@ const SettingsPage = ({ navigate }) => {
                   gender: profileForm.gender,
                   address: profileForm.address,
                   id_card_number: profileForm.idCardNumber,
-                  avatar_url: profileForm.avatarUrl,
-                  id_card_front_url: profileForm.idCardFrontUrl,
-                  id_card_back_url: profileForm.idCardBackUrl,
+                  avatar_url: finalAvatarUrl,
+                  id_card_front_url: finalIdCardFrontUrl,
+                  id_card_back_url: finalIdCardBackUrl,
                 });
 
                 setProfileMessage("Cập nhật thông tin thành công");
+                setSelectedFiles({
+                  avatarUrl: null,
+                  idCardFrontUrl: null,
+                  idCardBackUrl: null,
+                });
               } catch (e) {
                 setProfileMessage(e.message || "Cập nhật thất bại");
               } finally {

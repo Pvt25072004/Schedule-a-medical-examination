@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:http/http.dart' as http;
+import 'package:clinic_booking_system/service/auth_service.dart';
+import 'package:clinic_booking_system/utils/api_config.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
@@ -15,8 +17,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   final Color primaryColor = const Color(0xFF00BFA5); // Teal (Match main profile theme)
   final Color primaryDarkColor = const Color(0xFF00796B);
 
-  final _auth = FirebaseAuth.instance;
-  final _db = FirebaseDatabase.instance.ref();
   bool _isLoading = true;
 
   // --- Master Switch ---
@@ -51,34 +51,35 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   Future<void> _loadSettings() async {
-    final user = _auth.currentUser;
+    final user = AuthService.currentUser;
     if (user == null) {
       setState(() => _isLoading = false);
       return;
     }
 
     try {
-      final snapshot = await _db.child('users/${user.uid}/notification_settings').get();
-      if (snapshot.exists && snapshot.value != null) {
-        final data = Map<String, dynamic>.from(snapshot.value as Map);
+      final data = await AuthService().fetchUserData(user.uid);
+      final settings = data['notification_settings'];
+
+      if (settings != null && settings is Map) {
         setState(() {
-          _notificationsEnabled = data['enabled'] ?? true;
-          _pushAppointment = data['push_appointment'] ?? true;
-          _pushConfirmation = data['push_confirmation'] ?? true;
-          _pushChange = data['push_change'] ?? true;
-          _pushResult = data['push_result'] ?? true;
+          _notificationsEnabled = settings['enabled'] ?? true;
+          _pushAppointment = settings['push_appointment'] ?? true;
+          _pushConfirmation = settings['push_confirmation'] ?? true;
+          _pushChange = settings['push_change'] ?? true;
+          _pushResult = settings['push_result'] ?? true;
 
-          _emailNewsletter = data['email_newsletter'] ?? true;
-          _emailPromotions = data['email_promotions'] ?? false;
-          _emailArticles = data['email_articles'] ?? true;
-          _emailSystem = data['email_system'] ?? false;
+          _emailNewsletter = settings['email_newsletter'] ?? true;
+          _emailPromotions = settings['email_promotions'] ?? false;
+          _emailArticles = settings['email_articles'] ?? true;
+          _emailSystem = settings['email_system'] ?? false;
 
-          _smsReminder = data['sms_reminder'] ?? true;
-          _smsOTP = data['sms_otp'] ?? true;
-          _smsEmergency = data['sms_emergency'] ?? true;
+          _smsReminder = settings['sms_reminder'] ?? true;
+          _smsOTP = settings['sms_otp'] ?? true;
+          _smsEmergency = settings['sms_emergency'] ?? true;
 
-          _firstReminderTime = data['first_reminder_time'] ?? '24 giờ trước';
-          _secondReminderTime = data['second_reminder_time'] ?? '2 giờ trước';
+          _firstReminderTime = settings['first_reminder_time'] ?? '24 giờ trước';
+          _secondReminderTime = settings['second_reminder_time'] ?? '2 giờ trước';
           _isLoading = false;
         });
       } else {
@@ -91,43 +92,94 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   Future<void> _updateSetting(String key, dynamic value) async {
-    final user = _auth.currentUser;
+    final user = AuthService.currentUser;
     if (user == null) return;
 
+    // Lập cấu hình để lưu lên NestJS
+    final updatedSettings = {
+      'enabled': _notificationsEnabled,
+      'push_appointment': _pushAppointment,
+      'push_confirmation': _pushConfirmation,
+      'push_change': _pushChange,
+      'push_result': _pushResult,
+      'email_newsletter': _emailNewsletter,
+      'email_promotions': _emailPromotions,
+      'email_articles': _emailArticles,
+      'email_system': _emailSystem,
+      'sms_reminder': _smsReminder,
+      'sms_otp': _smsOTP,
+      'sms_emergency': _smsEmergency,
+      'first_reminder_time': _firstReminderTime,
+      'second_reminder_time': _secondReminderTime,
+    };
+
+    updatedSettings[key] = value;
+
     try {
-      await _db.child('users/${user.uid}/notification_settings').update({
-        key: value,
-      });
+      final url = Uri.parse('${ApiConfig.baseUrl}/users/${user.uid}');
+      await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AuthService.accessToken}',
+        },
+        body: jsonEncode({
+          'notification_settings': updatedSettings,
+        }),
+      );
     } catch (e) {
       debugPrint('🔥 Lỗi cập nhật cấu hình thông báo: $e');
     }
   }
 
   Future<void> _toggleMasterNotifications(bool enabled) async {
-    final user = _auth.currentUser;
+    final user = AuthService.currentUser;
     if (user == null) return;
 
     setState(() {
       _notificationsEnabled = enabled;
     });
 
-    try {
-      await _db.child('users/${user.uid}/notification_settings').update({
-        'enabled': enabled,
-      });
-
-      if (enabled) {
-        // Lấy FCM Token và cập nhật lại vào DB
-        final token = await FirebaseMessaging.instance.getToken();
-        if (token != null) {
-          await _db.child('users/${user.uid}/fcmToken').set(token);
-          debugPrint('✅ Khôi phục FCM Token: $token');
-        }
-      } else {
-        // Xóa FCM Token khỏi DB để chặn gửi notification từ backend
-        await _db.child('users/${user.uid}/fcmToken').set('');
-        debugPrint('🚫 Đã vô hiệu hóa FCM Token (Tắt toàn bộ thông báo)');
+    String? fcmToken = '';
+    if (enabled) {
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } catch (e) {
+        debugPrint('⚠️ Lỗi lấy FCM Token: $e');
       }
+    }
+
+    final updatedSettings = {
+      'enabled': enabled,
+      'push_appointment': _pushAppointment,
+      'push_confirmation': _pushConfirmation,
+      'push_change': _pushChange,
+      'push_result': _pushResult,
+      'email_newsletter': _emailNewsletter,
+      'email_promotions': _emailPromotions,
+      'email_articles': _emailArticles,
+      'email_system': _emailSystem,
+      'sms_reminder': _smsReminder,
+      'sms_otp': _smsOTP,
+      'sms_emergency': _smsEmergency,
+      'first_reminder_time': _firstReminderTime,
+      'second_reminder_time': _secondReminderTime,
+    };
+
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/users/${user.uid}');
+      await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AuthService.accessToken}',
+        },
+        body: jsonEncode({
+          'fcm_token': fcmToken ?? '',
+          'notification_settings': updatedSettings,
+        }),
+      );
+      debugPrint('🔔 Master Notification updated: enabled=$enabled, token=$fcmToken');
     } catch (e) {
       debugPrint('🔥 Lỗi bật/tắt master notification: $e');
     }

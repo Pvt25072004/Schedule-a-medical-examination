@@ -94,4 +94,8 @@ export class CreateUserDto {
 
   @IsOptional()
   hospital_id?: number;
+  fcm_token?: string;
+
+  @IsOptional()
+  notification_settings?: any;
 }

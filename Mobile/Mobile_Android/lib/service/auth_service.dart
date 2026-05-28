@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../utils/api_config.dart';
 
 // Lớp giả lập để thay thế Firebase User
@@ -98,6 +100,26 @@ class AuthService {
     _currentUser = user;
     _accessToken = token;
     _userStreamController.add(user);
+
+    // Tự động đồng bộ FCM Token lên NestJS Backend (MySQL)
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        final url = Uri.parse('${ApiConfig.baseUrl}/users/${user.uid}');
+        final resp = await http.patch(
+          url,
+          headers: _headers(auth: true),
+          body: jsonEncode({'fcm_token': fcmToken}),
+        );
+        if (resp.statusCode == 200 || resp.statusCode == 201) {
+          debugPrint('🔔 Đã đồng bộ FCM Token lên NestJS Backend MySQL cho tài khoản ${user.uid}: $fcmToken');
+        } else {
+          debugPrint('❌ Lỗi đồng bộ FCM Token lên NestJS: ${resp.body}');
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Lỗi đồng bộ FCM Token: $e');
+    }
   }
 
   /// ---------------- Helper: Headers cho Request ----------------
@@ -200,6 +222,19 @@ class AuthService {
   /// ---------------- Logout ----------------
   Future<void> signOut() async {
     try {
+      final user = _currentUser;
+      if (user != null) {
+        // Vô hiệu hóa FCM token của user trên NestJS Backend
+        try {
+          final url = Uri.parse('${ApiConfig.baseUrl}/users/${user.uid}');
+          await http.patch(
+            url,
+            headers: _headers(auth: true),
+            body: jsonEncode({'fcm_token': ''}),
+          );
+        } catch (_) {}
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('app_user');
       await prefs.remove('access_token');
@@ -342,6 +377,7 @@ class AuthService {
           'email': backendUser['email'] ?? '',
           'gender': backendUser['gender'] == 'male' ? 'Nam' : (backendUser['gender'] == 'female' ? 'Nữ' : 'Khác'),
           'medicalHistory': '', // Fallback
+          'notification_settings': backendUser['notification_settings'],
         };
 
         return frontendUserData;
