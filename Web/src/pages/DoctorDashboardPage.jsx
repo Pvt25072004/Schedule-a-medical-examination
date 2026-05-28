@@ -38,6 +38,7 @@ import {
 } from "../services/doctor.appointments.api";
 import { getPaymentsByDoctor } from "../services/doctor.payments.api";
 import { getReviewsByDoctor } from "../services/reviews.api";
+import { createDoctorHospitalRequest, getMyRequests } from "../services/doctor.hospital.requests.api";
 
 const DoctorDashboardPage = ({ navigate }) => {
   const { user } = useAuth();
@@ -73,6 +74,14 @@ const DoctorDashboardPage = ({ navigate }) => {
     max_patients: 10,
   });
   const [editingScheduleId, setEditingScheduleId] = useState(null);
+
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestForm, setRequestForm] = useState({ hospital_id: "", message: "" });
+  const [myRequests, setMyRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  const [unlinkHospitalId, setUnlinkHospitalId] = useState(null);
+  const [unlinkReason, setUnlinkReason] = useState("");
 
   const loadSchedules = async (doctorId) => {
     if (!doctorId) return;
@@ -164,6 +173,18 @@ const DoctorDashboardPage = ({ navigate }) => {
         console.error("Load doctor reviews error:", e);
       } finally {
         setLoadingReviews(false);
+      }
+    })();
+
+    (async () => {
+      try {
+        setLoadingRequests(true);
+        const reqs = await getMyRequests(doctorProfile.id);
+        setMyRequests(Array.isArray(reqs) ? reqs : []);
+      } catch (e) {
+        console.error("Load requests error:", e);
+      } finally {
+        setLoadingRequests(false);
       }
     })();
   }, [doctorProfile?.id]);
@@ -290,6 +311,51 @@ const DoctorDashboardPage = ({ navigate }) => {
       );
     } catch (e) {
       alert(e.message || "Không thể cập nhật trạng thái lịch hẹn");
+    }
+  };
+
+  const handleSendRequest = async (e) => {
+    e.preventDefault();
+    if (!requestForm.hospital_id) {
+      alert("Vui lòng chọn bệnh viện");
+      return;
+    }
+    try {
+      await createDoctorHospitalRequest({
+        doctor_id: doctorProfile.id,
+        hospital_id: Number(requestForm.hospital_id),
+        message: requestForm.message,
+        type: "join"
+      });
+      alert("Đã gửi yêu cầu thành công, vui lòng chờ Admin Bệnh viện duyệt.");
+      setShowRequestForm(false);
+      setRequestForm({ hospital_id: "", message: "" });
+      
+      const reqs = await getMyRequests(doctorProfile.id);
+      setMyRequests(Array.isArray(reqs) ? reqs : []);
+    } catch (err) {
+      alert(err.message || "Không thể gửi yêu cầu");
+    }
+  };
+
+  const handleSendUnlinkRequest = async (e) => {
+    e.preventDefault();
+    if (!unlinkHospitalId) return;
+    try {
+      await createDoctorHospitalRequest({
+        doctor_id: doctorProfile.id,
+        hospital_id: unlinkHospitalId,
+        message: unlinkReason,
+        type: "leave"
+      });
+      alert("Đã gửi yêu cầu hủy liên kết, vui lòng chờ Admin Bệnh viện duyệt.");
+      setUnlinkHospitalId(null);
+      setUnlinkReason("");
+      
+      const reqs = await getMyRequests(doctorProfile.id);
+      setMyRequests(Array.isArray(reqs) ? reqs : []);
+    } catch (err) {
+      alert(err.message || "Không thể gửi yêu cầu hủy liên kết");
     }
   };
 
@@ -962,10 +1028,45 @@ const DoctorDashboardPage = ({ navigate }) => {
                   Bác sĩ có thể làm việc tại nhiều cơ sở
                 </p>
               </div>
-              <Button size="sm" icon={Plus}>
-                Thêm liên kết
+              <Button size="sm" icon={Plus} onClick={() => setShowRequestForm(!showRequestForm)}>
+                {showRequestForm ? "Đóng" : "Thêm liên kết"}
               </Button>
             </div>
+
+            {showRequestForm && (
+              <div className="mb-6 border border-slate-200 rounded-lg p-4 bg-slate-50">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Gửi yêu cầu liên kết đến Bệnh viện</h3>
+                <form className="space-y-3" onSubmit={handleSendRequest}>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Chọn cơ sở y tế *</label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      value={requestForm.hospital_id}
+                      onChange={(e) => setRequestForm({ ...requestForm, hospital_id: e.target.value })}
+                      required
+                    >
+                      <option value="">-- Chọn bệnh viện --</option>
+                      {hospitals.filter(h => !affiliations.some(a => a.id === h.id)).map(h => (
+                        <option key={h.id} value={h.id}>{h.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Lời nhắn / Đơn xin phép</label>
+                    <textarea
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      rows={3}
+                      value={requestForm.message}
+                      onChange={(e) => setRequestForm({ ...requestForm, message: e.target.value })}
+                      placeholder="Gửi lời nhắn hoặc thông tin về chuyên môn để Bệnh viện duyệt..."
+                    />
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <Button type="submit" size="sm" variant="primary">Gửi yêu cầu</Button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             <div className="space-y-4">
               {affiliations.map((item) => (
@@ -987,12 +1088,63 @@ const DoctorDashboardPage = ({ navigate }) => {
                         </p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost">
-                      Quản lý
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Đang làm việc</span>
+                      <Button size="sm" variant="danger" onClick={() => setUnlinkHospitalId(item.id)}>Hủy liên kết</Button>
+                    </div>
+                  </div>
+                  {unlinkHospitalId === item.id && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <h4 className="text-sm font-semibold text-slate-800 mb-2">Yêu cầu hủy liên kết</h4>
+                      <form onSubmit={handleSendUnlinkRequest} className="space-y-3">
+                        <textarea
+                          className="w-full px-3 py-2 border rounded-lg text-sm"
+                          rows={2}
+                          value={unlinkReason}
+                          onChange={(e) => setUnlinkReason(e.target.value)}
+                          placeholder="Vui lòng nhập lý do hủy liên kết..."
+                          required
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" size="sm" variant="ghost" onClick={() => setUnlinkHospitalId(null)}>Đóng</Button>
+                          <Button type="submit" size="sm" variant="primary">Gửi yêu cầu</Button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </Card>
+              ))}
+
+              {myRequests.filter(req => req.status !== 'approved').map((req) => (
+                <Card key={`req-${req.id}`} padding="sm" shadow="none">
+                  <div className="flex items-center justify-between gap-4 opacity-75">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-slate-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {req.hospital?.name}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Loại: <span className="font-medium text-slate-700">{req.type === 'leave' ? 'Hủy liên kết' : 'Xin việc'}</span>
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Ngày gửi: {formatDateVN(req.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      {req.status === 'pending' && <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Đang chờ duyệt</span>}
+                      {req.status === 'rejected' && <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">Bị từ chối</span>}
+                    </div>
                   </div>
                 </Card>
               ))}
+
+              {affiliations.length === 0 && myRequests.filter(req => req.status !== 'approved').length === 0 && (
+                <p className="text-sm text-slate-500 text-center py-4">Chưa có liên kết bệnh viện nào.</p>
+              )}
             </div>
           </Card>
         </div>
