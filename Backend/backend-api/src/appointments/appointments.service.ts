@@ -144,6 +144,7 @@ export class AppointmentsService {
 
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      console.error('🔥 Lỗi tạo lịch khám:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -310,10 +311,12 @@ export class AppointmentsService {
 
     // 4. Generate all 30-min slots based on schedules
     const availableSlots = new Set<string>();
+    // Lấy giờ Việt Nam (UTC+7)
     const now = new Date();
-    const isToday = date === now.toISOString().slice(0, 10);
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const isToday = date === vnTime.toISOString().slice(0, 10);
+    const currentHour = vnTime.getUTCHours();
+    const currentMinute = vnTime.getUTCMinutes();
     const currentTotalMins = currentHour * 60 + currentMinute;
 
     for (const schedule of schedules) {

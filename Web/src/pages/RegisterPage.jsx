@@ -23,7 +23,7 @@ import {
 } from "../utils/helpers";
 import { sendRegistrationOtp } from "../services/api";
 import { useGoogleLogin } from "@react-oauth/google";
-import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
+// import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 
 const FACEBOOK_APP_ID = "963479733091448";
 
@@ -166,7 +166,9 @@ const RegisterPage = ({ navigate }) => {
         navigate(PAGES.LOGIN);
       }, 1500);
     } catch (error) {
-      setErrors({ general: error.message || "Đăng ký thất bại. Vui lòng thử lại." });
+      setErrors({
+        general: error.message || "Đăng ký thất bại. Vui lòng thử lại.",
+      });
       console.error("Register error:", error);
     } finally {
       setIsLoading(false);
@@ -182,14 +184,17 @@ const RegisterPage = ({ navigate }) => {
         navigate(PAGES.WELCOME);
       }, 1000);
     } catch (error) {
-      setErrors({ general: error?.message || `Đăng nhập ${provider} thất bại` });
+      setErrors({
+        general: error?.message || `Đăng nhập ${provider} thất bại`,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const googleLoginRef = useGoogleLogin({
-    onSuccess: credentialResponse => handleSocialLogin(credentialResponse.access_token, "google"),
+    onSuccess: (credentialResponse) =>
+      handleSocialLogin(credentialResponse.access_token, "google"),
   });
 
   return (
@@ -320,7 +325,9 @@ const RegisterPage = ({ navigate }) => {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
                     >
                       {showConfirmPassword ? (
@@ -364,7 +371,9 @@ const RegisterPage = ({ navigate }) => {
                       <option value="other">Khác</option>
                     </select>
                     {errors.gender && (
-                      <p className="text-red-600 text-sm mt-1">{errors.gender}</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {errors.gender}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -438,7 +447,9 @@ const RegisterPage = ({ navigate }) => {
                     <div className="w-full border-t border-gray-300"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">Hoặc tiếp tục với</span>
+                    <span className="px-2 bg-white text-gray-500">
+                      Hoặc tiếp tục với
+                    </span>
                   </div>
                 </div>
 
@@ -457,14 +468,16 @@ const RegisterPage = ({ navigate }) => {
                     />
                     Google
                   </Button>
-                  <FacebookLogin
+                  {/* <FacebookLogin
                     appId={FACEBOOK_APP_ID}
                     fields="name,email,picture"
                     callback={(response) => {
                       if (response?.accessToken) {
                         handleSocialLogin(response.accessToken, "facebook");
                       } else {
-                        setErrors({ general: "Đăng nhập Facebook bị hủy hoặc thất bại" });
+                        setErrors({
+                          general: "Đăng nhập Facebook bị hủy hoặc thất bại",
+                        });
                       }
                     }}
                     render={(renderProps) => (
@@ -482,7 +495,7 @@ const RegisterPage = ({ navigate }) => {
                         Facebook
                       </Button>
                     )}
-                  />
+                  /> */}
                 </div>
 
                 <p className="text-center text-gray-600 text-sm mt-4">
@@ -499,9 +512,12 @@ const RegisterPage = ({ navigate }) => {
             ) : (
               <form className="space-y-6" onSubmit={handleRegister}>
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Xác thực OTP</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    Xác thực OTP
+                  </h2>
                   <p className="text-gray-600 text-sm">
-                    Mã OTP gồm 6 chữ số đã được gửi đến email<br />
+                    Mã OTP gồm 6 chữ số đã được gửi đến email
+                    <br />
                     <span className="font-semibold">{formData.email}</span>
                   </p>
                 </div>
@@ -519,12 +535,16 @@ const RegisterPage = ({ navigate }) => {
                   <input
                     type="text"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
                     className="w-full text-center text-2xl tracking-widest px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="------"
                   />
                   {errors.otp && (
-                    <p className="text-red-600 text-sm mt-2 text-center">{errors.otp}</p>
+                    <p className="text-red-600 text-sm mt-2 text-center">
+                      {errors.otp}
+                    </p>
                   )}
                 </div>
 
@@ -542,7 +562,10 @@ const RegisterPage = ({ navigate }) => {
                 <div className="text-center">
                   {countdown > 0 ? (
                     <p className="text-sm text-gray-500">
-                      Gửi lại mã sau <span className="font-semibold text-blue-600">{countdown}s</span>
+                      Gửi lại mã sau{" "}
+                      <span className="font-semibold text-blue-600">
+                        {countdown}s
+                      </span>
                     </p>
                   ) : (
                     <button

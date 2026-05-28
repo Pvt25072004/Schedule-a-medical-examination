@@ -14,30 +14,17 @@ export class AiService {
   async processChat(messages: any[], bookingData: any): Promise<any> {
     try {
       const systemPrompt = `
-# ROLE
-Trợ lý y tế STL Clinic. Trò chuyện tiếng Việt ân cần. Trả về JSON cuối cùng theo đúng schema yêu cầu.
+Vai trò: Trợ lý y tế STL Clinic. Đặt lịch khám bệnh. Trả lời ngắn gọn, ân cần.
+Mục tiêu thu thập: Triệu chứng/Khoa, Bệnh viện, Bác sĩ, Ngày, Giờ.
+- Fast-track: Gọi ngay các tool (có thể liên tiếp/song song) nếu có sẵn data. KHÔNG hỏi vòng vo.
+- Giờ khám: BẮT BUỘC dùng tool lấy giờ trống. Nếu giờ user gợi ý (vd "tan làm"=17:00) có trong kết quả, CHỌN LUÔN giờ đó. Nếu user chưa chọn hoặc giờ không khớp, HÃY liệt kê và YÊU CẦU user chọn cụ thể 1 giờ.
+- Tự gợi ý bác sĩ nếu user không chọn. 
+- BƯỚC CUỐI CÙNG: CHỈ KHI đã chốt ĐÚNG 1 giờ khám cụ thể và đủ TẤT CẢ thông tin, mới TÓM TẮT lại và HỎI người dùng "Bạn có đồng ý đặt lịch này không?". 
+- TUYỆT ĐỐI KHÔNG tự động chốt nếu người dùng chưa trả lời đồng ý/xác nhận.
+- Reset data nếu user đổi ý. Dịch tiếng lóng sang y khoa. KHÔNG kê đơn thuốc.
 
-# WORKFLOW & TOOLS POLICY
-1. Thu thập thông tin: Hỏi triệu chứng và hỏi "Bạn ở thành phố nào?" (TUYỆT ĐỐI KHÔNG đoán vị trí).
-2. Chọn Bệnh viện: Từ triệu chứng map sang Chuyên khoa -> Gọi tool \`get_hospitals\` (truyền city). Gợi ý và yêu cầu user chọn 1 bệnh viện.
-3. Chọn Bác sĩ: Sau khi user chọn bệnh viện -> Gọi tool \`get_doctors\` (truyền hospitalId và specialty). Yêu cầu user chọn bác sĩ.
-4. Chọn Giờ khám: Sau khi có bác sĩ -> Gọi \`get_available_slots\`. Bắt buộc user phải chọn trong danh sách giờ mà tool trả về.
-5. Không bịa data. BẮT BUỘC dựa vào kết quả từ tool.
-# SYSTEM RULES
-- Overwrite: User đổi ý (đổi viện/đổi ngày) -> Xóa sạch data cũ không liên quan (\`doctorId\`, \`doctorName\`, \`time\` = null) -> Thu thập lại.
-- Chuẩn hóa: Tự dịch tiếng lóng/sai chính tả sang từ ngữ y khoa lịch sự (VD: "đau bụng vcl" -> "Đau bụng nhiều").
-- Guardrails: TUYỆT ĐỐI không kê đơn thuốc. Từ chối câu hỏi ngoài lề (code, toán, chat nhảm) -> Kéo về luồng đặt lịch.
-
-# REAL-TIME CONTEXT
-- Trạng thái: ${JSON.stringify(bookingData)}
-- Hôm nay: ${new Date().toISOString().slice(0, 10)}
-
-# OUTPUT SCHEMA (MANDATORY JSON)
-{
-  "reply": "Câu trả lời gửi bệnh nhân",
-  "bookingData": { "hospitalId": null/số, "hospitalName": "chuỗi", "specialty": "chuỗi", "doctorId": null/số, "doctorName": "chuỗi", "date": "YYYY-MM-DD", "time": "HH:mm", "symptoms": "chuỗi" },
-  "isComplete": false/true
-}
+Status: ${JSON.stringify(bookingData)}
+Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
 `;
 
       const apiMessages = [{ role: 'system', content: systemPrompt }, ...messages.slice(-6)];
@@ -170,7 +157,8 @@ Trợ lý y tế STL Clinic. Trò chuyện tiếng Việt ân cần. Trả về 
         try {
           if (functionName === 'get_hospitals') {
             const hospitals = await this.hospitalsService.findAll(args.city);
-            toolResult = hospitals.map(h => ({ id: h.id, name: h.name, city: h.city }));
+            // Giới hạn 5 kết quả để tiết kiệm token
+            toolResult = hospitals.slice(0, 5).map(h => ({ id: h.id, name: h.name, city: h.city }));
           } else if (functionName === 'get_doctors') {
             const allDoctors = await this.doctorsService.findAll(args.hospitalId);
             let filteredDoctors = allDoctors;
@@ -181,7 +169,8 @@ Trợ lý y tế STL Clinic. Trò chuyện tiếng Việt ân cần. Trả về 
                 (d.category && d.category.name.toLowerCase().includes(term))
               );
             }
-            toolResult = filteredDoctors.map(d => ({
+            // Giới hạn 5 bác sĩ để tiết kiệm token
+            toolResult = filteredDoctors.slice(0, 5).map(d => ({
               id: d.id,
               name: d.name,
               specialty: d.specialty || d.category?.name,
@@ -223,8 +212,15 @@ Trợ lý y tế STL Clinic. Trò chuyện tiếng Việt ân cần. Trả về 
       ...apiMessages,
       {
         role: 'system',
-        content: `IMPORTANT: You must return VALID JSON ONLY. Do not return plain text. Do not use markdown. Your response must be parseable by JSON.parse().
-${aiProposedReply ? `The AI assistant has formulated the following reply to the user: "${aiProposedReply}". You MUST use this exact text for the "reply" field in your JSON.` : ''}`
+        content: `IMPORTANT: Extract the conversation state into JSON ONLY. Do not output plain text.
+${aiProposedReply ? `The assistant's reply is: ${JSON.stringify(aiProposedReply)}. Put this exact text in the "reply" field.` : ''}
+
+REQUIRED JSON SCHEMA:
+{
+  "reply": "str (câu trả lời gửi cho user)",
+  "bookingData": { "hospitalId": int|null, "hospitalName": "str", "specialty": "str", "doctorId": int|null, "doctorName": "str", "date": "YYYY-MM-DD", "time": "HH:mm", "symptoms": "str" },
+  "isComplete": bool (CHỈ ĐƯỢC = true NẾU đã đủ tất cả data VÀ người dùng ĐÃ XÁC NHẬN ĐỒNG Ý đặt lịch ở tin nhắn cuối. Nếu chưa xác nhận, false)
+}`
       }
     ];
 

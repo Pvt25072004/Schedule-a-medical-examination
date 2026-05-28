@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronUp, MessageSquare, X, Send, Bot, User as UserIcon, Maximize2, Minimize2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_BASE_URL } from '../../utils/constants';
@@ -24,6 +24,7 @@ const extractJSON = (text) => {
 const FloatingWidgets = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -237,63 +238,19 @@ const FloatingWidgets = () => {
         if (parsed.isComplete) {
           setIsTyping(true);
           try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const body = {
-              doctor_id: parsed.bookingData.doctorId || doctors[0]?.id || 1,
-              hospital_id: parsed.bookingData.hospitalId || hospitals[0]?.id || 1,
-              appointment_date: parsed.bookingData.date || new Date().toISOString().slice(0, 10),
-              appointment_time: parsed.bookingData.time || '08:30',
-              symptoms: parsed.bookingData.symptoms || 'Đăng ký khám qua trợ lý AI'
-            };
-
-            const appointmentRes = await fetch(`${API_BASE_URL}/appointments`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-              },
-              body: JSON.stringify(body)
-            });
-
-            if (appointmentRes.ok) {
-              const result = await appointmentRes.json();
-              
-              // Create demo payment record
-              try {
-                await fetch(`${API_BASE_URL}/payments`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                  },
-                  body: JSON.stringify({
-                    appointment_id: result.id,
-                    amount: result.total_fee || 500000,
-                    base_fee: result.total_fee || 500000,
-                    payment_method: 'cash'
-                  })
-                });
-              } catch (paymentErr) {
-                console.warn('Lỗi tạo thanh toán demo:', paymentErr);
-              }
-
-              addBotMessage(
-                `🎉 **Đặt lịch thành công!**\n` +
-                `• Phiếu khám: **#STL-${result.id}**\n` +
-                `• Nơi khám: ${parsed.bookingData.hospitalName}\n` +
-                `• Trạng thái thanh toán: **Đã thanh toán (Demo Cash)** 💳\n\n` +
-                `**Chúc bạn khám bệnh suôn sẻ và sớm bình phục sức khỏe nhé! ❤️**`
-              );
-            } else {
-              const errorText = await appointmentRes.text();
-              throw new Error(errorText || 'Lỗi từ phía server đặt lịch');
-            }
-          } catch (err) {
-            console.error('Lỗi thực tế khi đặt lịch:', err);
             addBotMessage(
-              `⚠️ **Đặt lịch thất bại thực tế**: ${err.message || 'Lịch làm việc của bác sĩ vào giờ này không khả dụng'}.\n\n` +
-              `*Lưu ý:* Vui lòng chọn khung giờ trống nằm trong lịch làm việc thực tế của bác sĩ.`
+              `🎉 **Thông tin đặt lịch đã được xác nhận!**\n\n` +
+              `Hệ thống đang chuyển bạn đến trang Thanh toán để hoàn tất thủ tục nhé... 🚀`
             );
+            
+            setTimeout(() => {
+              setIsChatOpen(false);
+              navigate('/booking', { state: { aiBookingData: parsed.bookingData } });
+            }, 2500);
+
+          } catch (err) {
+            console.error('Lỗi khi chuyển hướng:', err);
+            addBotMessage(`⚠️ Đã xảy ra lỗi khi chuyển trang.`);
           }
           
           // Reset state
