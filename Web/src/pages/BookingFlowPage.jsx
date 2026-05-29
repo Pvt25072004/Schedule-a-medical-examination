@@ -79,8 +79,10 @@ const BookingFlowPage = ({ navigate }) => {
         const list = Array.isArray(docData) ? docData : [];
         const normalized = list.map((d) => ({
           ...d,
-          specialty: d.specialty || d.category?.name || "Đa khoa",
-          consultationFee: d.consultationFee || d.price || 500000,
+          name: d.name || d.user?.full_name || "Bác sĩ",
+          avatar_url: d.avatar_url || d.user?.avatar_url || null,
+          specialty: d.category?.name || "Đa khoa",
+          consultationFee: d.consultation_fee || d.consultationFee || d.price || 500000,
         }));
         setDoctors(normalized);
         setReviews(Array.isArray(revData) ? revData : []);
@@ -337,14 +339,53 @@ const BookingFlowPage = ({ navigate }) => {
 
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center animate-scale-in">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-green-600" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+          <div className="bg-gradient-to-br from-green-400 to-green-600 p-8 text-center text-white">
+            <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-md">
+              <CheckCircle className="w-14 h-14 text-white drop-shadow-md" />
+            </div>
+            <h2 className="text-3xl font-bold mb-2 drop-shadow-md">
+              Đặt lịch thành công!
+            </h2>
+            <p className="text-green-50 font-medium">
+              Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi
+            </p>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">Đặt lịch thành công!</h2>
-          <p className="text-gray-600 mb-6">Lịch hẹn đã được xác nhận. Vui lòng theo dõi ứng dụng để biết thêm chi tiết.</p>
-        </Card>
+
+          <div className="p-8">
+            <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
+              <div className="space-y-4 text-sm">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><User className="w-4 h-4 text-gray-400"/> Bác sĩ</span>
+                  <span className="font-bold text-gray-900">{selectedDoctor?.name}</span>
+                </div>
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400"/> Ngày khám</span>
+                  <span className="font-bold text-gray-900">{formatDate(formData.date)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400"/> Giờ khám</span>
+                  <span className="font-bold text-gray-900">{formData.time}</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-gray-500 text-center text-sm mb-8 leading-relaxed">
+              Chúng tôi sẽ gửi tin nhắn SMS và Email thông báo chi tiết lịch hẹn đến bạn. Vui lòng kiểm tra hộp thư!
+            </p>
+
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={() => navigate(PAGES.APPOINTMENTS)}
+              className="py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all"
+            >
+              Xem danh sách lịch hẹn
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -380,20 +421,30 @@ const BookingFlowPage = ({ navigate }) => {
             <div className="animate-fade-in">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Chọn Tỉnh / Thành phố</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {CITIES.map(city => (
+                {CITIES.map(city => {
+                  const isSelected = formData.city === city.label;
+                  return (
                   <button
                     key={city.value}
                     onClick={() => handleChange("city", city.label)}
-                    className={`p-4 rounded-xl border-2 transition-all text-center ${
-                      formData.city === city.label 
-                        ? 'border-blue-600 bg-blue-50 text-blue-700' 
-                        : 'border-gray-200 hover:border-blue-400 hover:bg-gray-50 text-gray-700'
+                    className={`relative p-5 rounded-2xl border-2 transition-all text-center flex flex-col items-center justify-center gap-3 overflow-hidden ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md transform scale-[1.02]' 
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 text-gray-700 hover:shadow-sm'
                     }`}
                   >
-                    <MapPin className={`w-6 h-6 mx-auto mb-2 ${formData.city === city.label ? 'text-blue-600' : 'text-gray-400'}`} />
-                    <span className="font-medium">{city.label}</span>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                      <MapPin className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-gray-500'}`} />
+                    </div>
+                    <span className="font-semibold text-lg">{city.label}</span>
+                    
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 text-blue-600">
+                        <CheckCircle className="w-5 h-5" />
+                      </div>
+                    )}
                   </button>
-                ))}
+                )})}
               </div>
               <div className="mt-6 flex justify-end">
                 <Button variant="primary" disabled={!formData.city} onClick={() => handleNext()}>Tiếp tục <ArrowRight className="w-4 h-4 ml-2"/></Button>
@@ -407,20 +458,33 @@ const BookingFlowPage = ({ navigate }) => {
               <h3 className="text-xl font-bold text-gray-900 mb-6">Chọn Cơ sở y tế tại {formData.city}</h3>
               {filteredHospitals.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {filteredHospitals.map(hospital => (
+                  {filteredHospitals.map(hospital => {
+                    const isSelected = String(formData.hospitalId) === String(hospital.id);
+                    return (
                     <button
                       key={hospital.id}
                       onClick={() => handleChange("hospitalId", hospital.id)}
-                      className={`p-4 rounded-xl border-2 transition-all text-left ${
-                        String(formData.hospitalId) === String(hospital.id)
-                          ? 'border-blue-600 bg-blue-50' 
-                          : 'border-gray-200 hover:border-blue-400'
+                      className={`relative p-5 rounded-2xl border-2 transition-all text-left flex items-start gap-4 ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-50 shadow-md transform scale-[1.01]' 
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 hover:shadow-sm'
                       }`}
                     >
-                      <h4 className={`font-bold ${String(formData.hospitalId) === String(hospital.id) ? 'text-blue-700' : 'text-gray-900'}`}>{hospital.name}</h4>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{hospital.address}</p>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 transition-colors ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                        <Building className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-gray-500'}`} />
+                      </div>
+                      <div className="flex-1 pr-6">
+                        <h4 className={`font-bold text-lg mb-1 ${isSelected ? 'text-blue-800' : 'text-gray-900'}`}>{hospital.name}</h4>
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{hospital.address}</p>
+                      </div>
+                      
+                      {isSelected && (
+                        <div className="absolute top-4 right-4 text-blue-600">
+                          <CheckCircle className="w-5 h-5" />
+                        </div>
+                      )}
                     </button>
-                  ))}
+                  )})}
                 </div>
               ) : (
                 <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-xl">Không có cơ sở y tế nào tại khu vực này.</div>
@@ -438,21 +502,31 @@ const BookingFlowPage = ({ navigate }) => {
               <h3 className="text-xl font-bold text-gray-900 mb-2">Chọn Chuyên khoa</h3>
               <p className="text-gray-500 mb-6">Tại {selectedHospital?.name}</p>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {categories.map(cat => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {categories.map(cat => {
+                  const isSelected = formData.specialty === cat.name;
+                  return (
                   <button
                     key={cat.id}
                     onClick={() => handleChange("specialty", cat.name)}
-                    className={`p-4 rounded-xl border-2 transition-all text-center ${
-                      formData.specialty === cat.name 
-                        ? 'border-blue-600 bg-blue-50 text-blue-700' 
-                        : 'border-gray-200 hover:border-blue-400'
+                    className={`relative p-5 rounded-2xl border-2 transition-all text-center flex flex-col items-center justify-center gap-3 ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md transform scale-[1.02]' 
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 hover:shadow-sm text-gray-700'
                     }`}
                   >
-                    <div className="text-3xl mb-2">{cat.icon || getCategoryIcon(cat.name)}</div>
-                    <span className="font-medium text-sm sm:text-base">{cat.name}</span>
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl transition-colors ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                      {cat.icon || getCategoryIcon(cat.name)}
+                    </div>
+                    <span className="font-semibold text-sm sm:text-base leading-tight">{cat.name}</span>
+                    
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 text-blue-600">
+                        <CheckCircle className="w-5 h-5" />
+                      </div>
+                    )}
                   </button>
-                ))}
+                )})}
               </div>
               <div className="mt-8 flex justify-between">
                 <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="w-4 h-4 mr-2"/> Quay lại</Button>
@@ -559,27 +633,40 @@ const BookingFlowPage = ({ navigate }) => {
               <p className="text-gray-500 mb-6">Ngày {formatDate(formData.date)}</p>
 
               {loadingSlots ? (
-                <div className="py-8 text-center text-gray-500">Đang tải lịch trống...</div>
+                <div className="py-12 text-center text-gray-500 flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                  Đang tải lịch trống...
+                </div>
               ) : availableSlots.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
                   {availableSlots.map(time => {
+                    const isSelected = formData.time === time;
                     return (
                       <button
                         key={time}
                         onClick={() => handleChange("time", time)}
-                        className={`py-3 px-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                          formData.time === time
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'border-gray-200 text-gray-700 hover:border-blue-400'
+                        className={`relative py-3 px-2 rounded-xl border-2 transition-all font-semibold text-sm flex flex-col items-center justify-center gap-1 ${
+                          isSelected
+                            ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200 transform scale-105 z-10"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
                         }`}
                       >
-                        {time}
+                        <span className="text-base">{time}</span>
+                        {isSelected && (
+                          <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                            <CheckCircle className="w-3 h-3 text-blue-600" />
+                          </div>
+                        )}
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-xl">Không có ca khám nào khả dụng trong ngày này.</div>
+                <div className="col-span-full py-12 px-4 bg-gray-50 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+                   <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                   <h3 className="text-lg font-bold text-gray-700 mb-1">Chưa có lịch khám</h3>
+                   <p className="text-gray-500">Bác sĩ chưa có lịch làm việc trong ngày này. Vui lòng chọn một ngày khác.</p>
+                </div>
               )}
               {errors.time && <p className="text-red-500 text-sm mt-2">{errors.time}</p>}
 
@@ -628,53 +715,71 @@ const BookingFlowPage = ({ navigate }) => {
             <div className="animate-fade-in">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Xác nhận thông tin</h3>
               
-              <div className="bg-blue-50 rounded-xl p-6 border border-blue-100 space-y-4">
-                <div className="flex justify-between items-start pb-4 border-b border-blue-200">
-                  <div>
-                    <p className="text-sm text-gray-500">Bác sĩ</p>
-                    <p className="font-bold text-gray-900 text-lg">{selectedDoctor?.name}</p>
-                    <p className="text-blue-600 text-sm">{selectedDoctor?.specialty}</p>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative mb-8">
+                {/* Decorative receipt edge */}
+                <div className="absolute top-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSI4Ij48cGF0aCBkPSJNMCAwTDEwIDhsMTAtOFYwaC0yMHoiIGZpbGw9IiNmM2Y0ZjYiLz48L3N2Zz4=')] bg-repeat-x"></div>
+                
+                <div className="p-6 sm:p-8 pt-10">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-8 pb-8 border-b border-dashed border-gray-200 text-center sm:text-left">
+                    <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-4xl shadow-inner flex-shrink-0">
+                       {selectedDoctor?.avatar_url ? (
+                        <img src={selectedDoctor.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        selectedDoctor?.avatar || "👨‍⚕️"
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium mb-1">Bác sĩ phụ trách</p>
+                      <h4 className="text-xl font-bold text-gray-900">{selectedDoctor?.name}</h4>
+                      <p className="text-blue-600 font-medium">{selectedDoctor?.specialty}</p>
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm overflow-hidden border">
-                    {selectedDoctor?.avatar_url ? (
-                      <img
-                        src={selectedDoctor.avatar_url}
-                        alt={selectedDoctor.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      selectedDoctor?.avatar || "👨‍⚕️"
-                    )}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 py-2 border-b border-blue-200">
-                  <div>
-                    <p className="text-sm text-gray-500">Ngày khám</p>
-                    <p className="font-medium text-gray-900">{formatDate(formData.date)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Giờ khám</p>
-                    <p className="font-medium text-gray-900">{formData.time}</p>
-                  </div>
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 pb-8 border-b border-dashed border-gray-200">
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <Calendar className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium mb-1">Ngày khám</p>
+                        <p className="text-lg font-bold text-gray-900">{formatDate(formData.date)}</p>
+                      </div>
+                    </div>
 
-                <div className="py-2 border-b border-blue-200">
-                  <p className="text-sm text-gray-500">Cơ sở y tế</p>
-                  <p className="font-medium text-gray-900">{selectedHospital?.name}</p>
-                  <p className="text-sm text-gray-600 mt-1">{selectedHospital?.address}</p>
-                </div>
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium mb-1">Giờ khám</p>
+                        <p className="text-lg font-bold text-gray-900">{formData.time}</p>
+                      </div>
+                    </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <p className="text-gray-600 font-medium">Tổng chi phí dự kiến</p>
-                  <p className="text-xl font-bold text-blue-600">{formatCurrency(selectedDoctor?.consultationFee || 500000)}</p>
+                    <div className="flex gap-4 md:col-span-2">
+                      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium mb-1">Địa điểm khám</p>
+                        <p className="text-lg font-bold text-gray-900">{selectedHospital?.name}</p>
+                        <p className="text-gray-600 mt-1">{selectedHospital?.address}</p>
+                        {selectedHospital?.city && <p className="text-blue-600 font-medium text-sm mt-0.5">{selectedHospital.city}</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                     <span className="text-gray-500 font-medium">Tổng chi phí dự kiến</span>
+                     <span className="text-2xl font-bold text-blue-600">{formatCurrency(selectedDoctor?.consultationFee || 500000)}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="mt-8 flex justify-between">
                 <Button variant="outline" onClick={() => setStep(7)} disabled={isSubmitting}><ArrowLeft className="w-4 h-4 mr-2"/> Quay lại</Button>
-                <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "Đang xử lý..." : "Xác nhận Đặt lịch"}
+                <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting} size="lg" className="px-8 shadow-md">
+                  {isSubmitting ? "Đang xử lý..." : "Xác nhận Đặt lịch"} <CheckCircle className="w-5 h-5 ml-2" />
                 </Button>
               </div>
             </div>

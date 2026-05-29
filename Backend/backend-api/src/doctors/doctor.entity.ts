@@ -29,9 +29,6 @@ export class Doctor {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ length: 100, nullable: true })
-  specialty: string;
-
   @Column({ length: 255, nullable: true })
   degree: string;
 
@@ -91,9 +88,6 @@ export class Doctor {
 
   @OneToMany(() => Appointment, (appointment) => appointment.doctor)
   appointments: Appointment[];
-
-  @OneToMany(() => Schedule, (schedule) => schedule.doctor)
-  schedules: Schedule[];
 
   @ManyToMany(() => Hospital, (hospital) => hospital.doctors)
   @JoinTable({

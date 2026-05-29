@@ -140,7 +140,6 @@ export class DoctorsService {
 
     const doctorData: Partial<Doctor> = {
       user: user,
-      specialty: dto.specialty,
       description: dto.description ?? '',
       degree: dto.degree,
       experience_years: dto.experience_years,
@@ -206,7 +205,6 @@ export class DoctorsService {
     // Tạo Doctor với trạng thái pending
     const doctorData: Partial<Doctor> = {
       user: user,
-      specialty: dto.specialty,
       degree: dto.degree,
       experience_years: dto.experience_years,
       license_number: dto.license_number,
@@ -308,9 +306,6 @@ export class DoctorsService {
       await this.usersService.update(doctor.user.id, userUpdates);
     }
 
-    if (dto.specialty !== undefined) {
-      doctor.specialty = dto.specialty;
-    }
     if (dto.degree !== undefined) doctor.degree = dto.degree;
     if (dto.experience_years !== undefined) doctor.experience_years = dto.experience_years;
     if (dto.license_number !== undefined) doctor.license_number = dto.license_number;

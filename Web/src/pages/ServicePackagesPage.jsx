@@ -100,24 +100,24 @@ const ServicePackagesPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white pt-16 pb-24">
+      <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white pt-10 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">
             Gói Khám Sức Khoẻ Toàn Diện
           </h1>
-          <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
+          <p className="text-lg text-blue-100 max-w-3xl mx-auto mb-6">
             Chủ động bảo vệ sức khoẻ với các gói khám được thiết kế bởi chuyên gia. 
             Phù hợp với mọi độ tuổi và nhu cầu.
           </p>
           
           <div className="max-w-2xl mx-auto relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-6 w-6 text-gray-400" />
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"
               placeholder="Tìm kiếm gói khám (VD: Tầm soát ung thư, tổng quát...)"
-              className="block w-full pl-12 pr-4 py-4 rounded-full text-gray-900 text-lg shadow-xl focus:ring-4 focus:ring-blue-300 focus:outline-none transition-shadow"
+              className="block w-full pl-11 pr-4 py-3 rounded-full text-gray-900 shadow-xl focus:ring-4 focus:ring-blue-300 focus:outline-none transition-shadow"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
