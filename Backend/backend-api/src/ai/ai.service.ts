@@ -172,7 +172,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             // Giới hạn 5 bác sĩ để tiết kiệm token
             toolResult = filteredDoctors.slice(0, 5).map(d => ({
               id: d.id,
-              name: d.name,
+              name: d.user?.full_name || 'Bác sĩ',
               specialty: d.specialty || d.category?.name,
               hospitals: (d.hospitals || []).map(h => ({ id: h.id, name: h.name }))
             }));
