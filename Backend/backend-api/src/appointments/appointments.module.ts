@@ -22,5 +22,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService, FirebaseService],
+  exports: [AppointmentsService],
 })
 export class AppointmentsModule {}

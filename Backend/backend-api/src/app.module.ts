@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -27,9 +28,15 @@ import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
 import { NewsModule } from './news/news.module';
 import { HospitalRegistrationsModule } from './hospital-registrations/hospital-registrations.module';
+import { AiModule } from './ai/ai.module';
+import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-hospital-requests.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 10,
+    }]),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -75,6 +82,8 @@ import { HospitalRegistrationsModule } from './hospital-registrations/hospital-r
     CommentsModule,
     NewsModule,
     HospitalRegistrationsModule,
+    AiModule,
+    DoctorHospitalRequestsModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],

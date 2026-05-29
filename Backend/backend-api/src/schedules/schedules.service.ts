@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
@@ -10,9 +10,29 @@ export class SchedulesService {
   constructor(
     @InjectRepository(Schedule)
     private readonly schedulesRepository: Repository<Schedule>,
-  ) {}
+  ) { }
 
-  create(dto: CreateScheduleDto): Promise<Schedule> {
+  async create(dto: CreateScheduleDto): Promise<Schedule> {
+    // Kiểm tra xung đột lịch: bác sĩ không được có 2 lịch trùng giờ trong cùng 1 ngày
+    // dù ở bệnh viện khác nhau (bác sĩ không thể phân thân!)
+    const workDate = String(dto.work_date).slice(0, 10);
+    const conflicting = await this.schedulesRepository
+      .createQueryBuilder('s')
+      .where('s.doctor_id = :doctorId', { doctorId: dto.doctor_id })
+      .andWhere('DATE(s.work_date) = :workDate', { workDate })
+      .andWhere('s.start_time < :endTime', { endTime: dto.end_time })
+      .andWhere('s.end_time > :startTime', { startTime: dto.start_time })
+      .getOne();
+
+    if (conflicting) {
+      throw new BadRequestException(
+        `Bác sĩ đã có lịch làm việc trùng giờ vào ngày ${workDate} ` +
+        `(${conflicting.start_time} – ${conflicting.end_time}) ` +
+        `tại bệnh viện #${conflicting.hospital_id}. ` +
+        `Vui lòng chọn khung giờ khác hoặc ngày khác!`,
+      );
+    }
+
     const schedule = this.schedulesRepository.create(dto);
     return this.schedulesRepository.save(schedule);
   }

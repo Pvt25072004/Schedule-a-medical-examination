@@ -10,6 +10,7 @@ import { Repository, MoreThanOrEqual, In, DataSource } from 'typeorm';
 import { PricingService } from '../pricing/pricing.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Notification } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class AppointmentsService {
@@ -123,28 +124,27 @@ export class AppointmentsService {
         currency_snapshot: pricing.currencySnapshot,
       });
 
-    const saved = await this.appointmentsRepository.save(appointment);
-
-    // Lưu thông báo in-app
-    try {
-      await this.notificationsService.create({
-        user_id: saved.user_id,
-        title: '🎉 Đặt lịch hẹn khám thành công!',
-        body: `Lịch khám của bạn với bác sĩ ${saved.doctor_name_snapshot || ''} tại ${saved.hospital_name_snapshot || ''} vào lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã được ghi nhận và đang chờ xác nhận.`,
-        type: 'appointment_pending',
-      });
-    } catch (err) {
-      console.error('🔥 Lỗi tạo thông báo in-app (đặt lịch):', err);
-    }
-
-    return saved;
       const savedAppointment = await queryRunner.manager.save(Appointment, appointment);
-      
+
+      // Lưu thông báo in-app
+      try {
+        const notification = queryRunner.manager.create(Notification, {
+          user_id: savedAppointment.user_id,
+          title: '🎉 Đặt lịch hẹn khám thành công!',
+          body: `Lịch khám của bạn với bác sĩ ${savedAppointment.doctor_name_snapshot || ''} tại ${savedAppointment.hospital_name_snapshot || ''} vào lúc ${savedAppointment.appointment_time} ngày ${savedAppointment.appointment_date} đã được ghi nhận và đang chờ xác nhận.`,
+          type: 'appointment_pending',
+        });
+        await queryRunner.manager.save(Notification, notification);
+      } catch (err) {
+        console.error('🔥 Lỗi tạo thông báo in-app (đặt lịch):', err);
+      }
+
       await queryRunner.commitTransaction();
       return savedAppointment;
 
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      console.error('🔥 Lỗi tạo lịch khám:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -311,10 +311,12 @@ export class AppointmentsService {
 
     // 4. Generate all 30-min slots based on schedules
     const availableSlots = new Set<string>();
+    // Lấy giờ Việt Nam (UTC+7)
     const now = new Date();
-    const isToday = date === now.toISOString().slice(0, 10);
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const isToday = date === vnTime.toISOString().slice(0, 10);
+    const currentHour = vnTime.getUTCHours();
+    const currentMinute = vnTime.getUTCMinutes();
     const currentTotalMins = currentHour * 60 + currentMinute;
 
     for (const schedule of schedules) {

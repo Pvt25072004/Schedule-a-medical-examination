@@ -220,6 +220,18 @@ const DoctorDashboardPage = ({ navigate }) => {
         setLoadingReviews(false);
       }
     })();
+
+    (async () => {
+      try {
+        setLoadingRequests(true);
+        const reqs = await getMyRequests(doctorProfile.id);
+        setMyRequests(Array.isArray(reqs) ? reqs : []);
+      } catch (e) {
+        console.error("Load requests error:", e);
+      } finally {
+        setLoadingRequests(false);
+      }
+    })();
   }, [doctorProfile?.id]);
 
   const handleQuickCreateSchedule = async () => {
@@ -383,6 +395,51 @@ const DoctorDashboardPage = ({ navigate }) => {
       );
     } catch (e) {
       alert(e.message || "Không thể cập nhật trạng thái lịch hẹn");
+    }
+  };
+
+  const handleSendRequest = async (e) => {
+    e.preventDefault();
+    if (!requestForm.hospital_id) {
+      alert("Vui lòng chọn bệnh viện");
+      return;
+    }
+    try {
+      await createDoctorHospitalRequest({
+        doctor_id: doctorProfile.id,
+        hospital_id: Number(requestForm.hospital_id),
+        message: requestForm.message,
+        type: "join"
+      });
+      alert("Đã gửi yêu cầu thành công, vui lòng chờ Admin Bệnh viện duyệt.");
+      setShowRequestForm(false);
+      setRequestForm({ hospital_id: "", message: "" });
+      
+      const reqs = await getMyRequests(doctorProfile.id);
+      setMyRequests(Array.isArray(reqs) ? reqs : []);
+    } catch (err) {
+      alert(err.message || "Không thể gửi yêu cầu");
+    }
+  };
+
+  const handleSendUnlinkRequest = async (e) => {
+    e.preventDefault();
+    if (!unlinkHospitalId) return;
+    try {
+      await createDoctorHospitalRequest({
+        doctor_id: doctorProfile.id,
+        hospital_id: unlinkHospitalId,
+        message: unlinkReason,
+        type: "leave"
+      });
+      alert("Đã gửi yêu cầu hủy liên kết, vui lòng chờ Admin Bệnh viện duyệt.");
+      setUnlinkHospitalId(null);
+      setUnlinkReason("");
+      
+      const reqs = await getMyRequests(doctorProfile.id);
+      setMyRequests(Array.isArray(reqs) ? reqs : []);
+    } catch (err) {
+      alert(err.message || "Không thể gửi yêu cầu hủy liên kết");
     }
   };
 
@@ -1167,6 +1224,10 @@ const DoctorDashboardPage = ({ navigate }) => {
                   </div>
                 </Card>
               ))}
+
+              {affiliations.length === 0 && myRequests.filter(req => req.status !== 'approved').length === 0 && (
+                <p className="text-sm text-slate-500 text-center py-4">Chưa có liên kết bệnh viện nào.</p>
+              )}
             </div>
 
             <div className="space-y-4">
