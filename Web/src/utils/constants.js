@@ -6,6 +6,7 @@ export const PAGES = {
   REGISTER: "/register",
   BOOKING: "/booking",
   BOOK_DOCTOR: "/book-doctor",
+  BOOK_PACKAGE: "/book-package/:id",
   APPOINTMENTS: "/appointments",
   CHAT: "/chat",
   SETTINGS: "/settings",

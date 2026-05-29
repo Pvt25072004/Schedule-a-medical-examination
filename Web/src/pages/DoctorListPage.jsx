@@ -8,7 +8,7 @@ import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
 import { getAllReviews } from "../services/reviews.api";
 import { getHospitals } from "../services/admin.hospitals.api";
 import { getCategories } from "../services/admin.categories.api";
-import { formatCurrency, removeDiacritics } from "../utils/helpers";
+import { formatCurrency, normalizeForSearch } from "../utils/helpers";
 
 const DoctorListPage = () => {
   const navigate = useNavigate();
@@ -102,10 +102,10 @@ const DoctorListPage = () => {
 
     // Search filter
     if (searchQuery) {
-      const q = removeDiacritics(searchQuery);
+      const q = normalizeForSearch(searchQuery);
       result = result.filter(d => 
-        removeDiacritics(d.name || "").includes(q) || 
-        removeDiacritics(d.specialty || "").includes(q)
+        normalizeForSearch(d.name || "").includes(q) || 
+        normalizeForSearch(d.specialty || "").includes(q)
       );
     }
 

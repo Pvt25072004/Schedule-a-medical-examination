@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicNews } from '../services/news.api';
+import { normalizeForSearch } from '../utils/helpers';
 
 const BannerCarousel = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -90,16 +91,7 @@ const BannerCarousel = () => {
   );
 };
 
-// Helper function to normalize string for intelligent search (removes diacritics, spaces, hashtags, lowercase)
-const normalizeString = (str) => {
-  if (!str) return '';
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove Vietnamese accents
-    .replace(/[đĐ]/g, 'd')
-    .replace(/[^a-z0-9]/g, ''); // Remove spaces, punctuation, and hashtags
-};
+
 
 const FanpagePage = () => {
   const [posts, setPosts] = useState([]);
@@ -211,20 +203,20 @@ const FanpagePage = () => {
 
   // Filter logic with normalized comparison
   const searchResultsHospitals = hospitals.filter(h => 
-    normalizeString(h.name).includes(normalizeString(searchQuery))
+    normalizeForSearch(h.name).includes(normalizeForSearch(searchQuery))
   );
   const searchResultsPosts = posts.filter(post => 
-    normalizeString(post.title).includes(normalizeString(searchQuery)) ||
-    normalizeString(post.content).includes(normalizeString(searchQuery))
+    normalizeForSearch(post.title).includes(normalizeForSearch(searchQuery)) ||
+    normalizeForSearch(post.content).includes(normalizeForSearch(searchQuery))
   );
   const searchResultsNews = newsList.filter(item => 
-    normalizeString(item.title).includes(normalizeString(searchQuery)) ||
-    normalizeString(item.summary).includes(normalizeString(searchQuery))
+    normalizeForSearch(item.title).includes(normalizeForSearch(searchQuery)) ||
+    normalizeForSearch(item.summary).includes(normalizeForSearch(searchQuery))
   );
   const searchResultsHashtags = useMemo(() => {
     if (!searchQuery) return [];
     return allHashtags.filter(tag => 
-      normalizeString(tag).includes(normalizeString(searchQuery))
+      normalizeForSearch(tag).includes(normalizeForSearch(searchQuery))
     );
   }, [allHashtags, searchQuery]);
 
