@@ -66,6 +66,46 @@ const NewsPage = ({ navigate }) => {
     }
   };
 
+  const renderPaginationButtons = () => {
+    let pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        pages = [1, 2, 3, 4, '...', totalPages];
+      } else if (currentPage >= totalPages - 2) {
+        pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+      } else {
+        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+      }
+    }
+
+    return pages.map((page, index) => {
+      if (page === '...') {
+        return (
+          <span key={`dots-${index}`} className="w-10 h-10 flex items-center justify-center text-gray-500 font-bold">
+            ...
+          </span>
+        );
+      }
+      return (
+        <button
+          key={page}
+          onClick={() => handlePageChange(page)}
+          className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-colors ${
+            currentPage === page
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          {page}
+        </button>
+      );
+    });
+  };
+
   const openNews = (url) => {
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -239,18 +279,7 @@ const NewsPage = ({ navigate }) => {
                     <ChevronLeft className="w-5 h-5" />
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-colors ${currentPage === page
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {renderPaginationButtons()}
 
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}

@@ -20,6 +20,7 @@ export const PAGES = {
   NEWS: "/news",
   APPLY_DOCTOR: "/apply-doctor",
   HOSPITAL_REGISTRATION: "/hospital-registration",
+  SERVICE_PACKAGES: "/service-packages",
 };
 
 // Appointment Status

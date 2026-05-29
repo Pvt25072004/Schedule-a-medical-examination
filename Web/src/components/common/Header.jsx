@@ -105,16 +105,22 @@ const Header = () => {
                         Đặt lịch theo khu vực
                       </button>
                       <button
-                        onClick={() => navigate(PAGES.BOOKING)}
+                        onClick={() => navigate(PAGES.DOCTORS)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
                       >
                         Đặt lịch theo bác sĩ
                       </button>
                       <button
                         onClick={() => navigate(PAGES.BOOKING)}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
                       >
                         Đặt lịch khám tại nhà
+                      </button>
+                      <button
+                        onClick={() => navigate(PAGES.SERVICE_PACKAGES)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Gói dịch vụ
                       </button>
                     </div>
                   </div>

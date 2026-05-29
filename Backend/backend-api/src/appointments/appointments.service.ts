@@ -11,6 +11,7 @@ import { PricingService } from '../pricing/pricing.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Notification } from '../notifications/entities/notification.entity';
+import { ServicePackage } from '../service-packages/entities/service-package.entity';
 
 @Injectable()
 export class AppointmentsService {
@@ -75,18 +76,38 @@ export class AppointmentsService {
         throw new BadRequestException('Ca làm việc này của bác sĩ hiện đã tạm ngưng hoặc không khả dụng. Vui lòng chọn ca khác!');
       }
 
-      // KIỂM TRA MỚI: Check trùng giờ cụ thể
-      const exactTimeConflict = await queryRunner.manager.count(Appointment, {
-        where: {
-          doctor_id: createAppointmentDto.doctor_id,
-          appointment_date: appointmentDateStr as any,
-          appointment_time: appointmentTime,
-          status: In(['pending', 'confirmed']),
-        },
-      });
+      // -- NEW: Xử lý Service Package & duration --
+      let durationMinutes = 30; // default
+      if (createAppointmentDto.service_package_id) {
+        const servicePackage = await queryRunner.manager.findOneBy(ServicePackage, { id: createAppointmentDto.service_package_id });
+        if (!servicePackage) {
+          throw new BadRequestException('Gói khám không tồn tại!');
+        }
+        if (!servicePackage.is_active) {
+          throw new BadRequestException('Gói khám này hiện đang tạm ngưng!');
+        }
+        durationMinutes = servicePackage.duration_minutes || 30;
+      }
 
-      if (exactTimeConflict > 0) {
-        throw new BadRequestException(`Giờ ${appointmentTime} này đã có người đặt thành công. Vui lòng chọn khung giờ khác!`);
+      const [h, m] = appointmentTime.split(':').map(Number);
+      const totalStartMins = h * 60 + m;
+      const totalEndMins = totalStartMins + durationMinutes;
+      const endH = Math.floor(totalEndMins / 60);
+      const endM = totalEndMins % 60;
+      const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+      // KIỂM TRA MỚI: Check trùng giờ cụ thể dựa vào overlap
+      const overlapConflict = await queryRunner.manager
+        .createQueryBuilder(Appointment, 'appt')
+        .where('appt.doctor_id = :doctorId', { doctorId: createAppointmentDto.doctor_id })
+        .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
+        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
+        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
+        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: appointmentTime })
+        .getCount();
+
+      if (overlapConflict > 0) {
+        throw new BadRequestException(`Khung giờ từ ${appointmentTime} đến ${endTime} bị trùng với lịch khám khác của bác sĩ. Vui lòng chọn khung giờ khác!`);
       }
 
       // Kiểm tra sức chứa của cả ca
@@ -116,6 +137,7 @@ export class AppointmentsService {
 
       const appointment = queryRunner.manager.create(Appointment, {
         ...createAppointmentDto,
+        end_time: endTime,
         doctor_fee_snapshot: pricing.doctorFeeSnapshot,
         hospital_fee_snapshot: pricing.hospitalFeeSnapshot,
         total_fee: pricing.totalFee,
@@ -137,6 +159,11 @@ export class AppointmentsService {
         await queryRunner.manager.save(Notification, notification);
       } catch (err) {
         console.error('🔥 Lỗi tạo thông báo in-app (đặt lịch):', err);
+      }
+
+      // -- NEW: Increment booking_count of ServicePackage --
+      if (createAppointmentDto.service_package_id) {
+        await queryRunner.manager.increment(ServicePackage, { id: createAppointmentDto.service_package_id }, 'booking_count', 1);
       }
 
       await queryRunner.commitTransaction();
@@ -304,10 +331,28 @@ export class AppointmentsService {
       },
     });
 
-    // 3. Collect booked times
-    const bookedTimes = new Set(
-      appointments.map((a) => a.appointment_time.slice(0, 5)), // "HH:mm"
-    );
+    // 3. Collect booked times (hỗ trợ block theo duration)
+    const bookedSlots = new Set<string>();
+    for (const appt of appointments) {
+      const startStr = appt.appointment_time.slice(0, 5); // "HH:mm"
+      const endStr = appt.end_time ? appt.end_time.slice(0, 5) : null;
+
+      let [sH, sM] = startStr.split(':').map(Number);
+      const startTotal = sH * 60 + sM;
+
+      let endTotal = startTotal + 30; // default
+      if (endStr) {
+        let [eH, eM] = endStr.split(':').map(Number);
+        endTotal = eH * 60 + eM;
+      }
+
+      for (let t = startTotal; t < endTotal; t += 30) {
+        const h = Math.floor(t / 60);
+        const m = t % 60;
+        const slotStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        bookedSlots.add(slotStr);
+      }
+    }
 
     // 4. Generate all 30-min slots based on schedules
     const availableSlots = new Set<string>();
@@ -344,7 +389,7 @@ export class AppointmentsService {
           }
         }
 
-        if (!isPast && !bookedTimes.has(timeStr)) {
+        if (!isPast && !bookedSlots.has(timeStr)) {
           availableSlots.add(timeStr);
         }
 

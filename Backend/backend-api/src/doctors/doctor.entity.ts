@@ -3,6 +3,7 @@ import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Schedule } from 'src/schedules/entities/schedule.entity';
 import { Category } from 'src/categories/entities/category.entity';
 import { User } from 'src/users/entities/user.entity';
+import { ServicePackage } from 'src/service-packages/entities/service-package.entity';
 import {
   Entity,
   Column,
@@ -108,4 +109,7 @@ export class Doctor {
 
   @OneToMany(() => Banner, (banner) => banner.doctor)
   banners?: Banner[] | null;
+
+  @ManyToMany(() => ServicePackage, (servicePackage) => servicePackage.doctors)
+  service_packages?: ServicePackage[];
 }

@@ -47,6 +47,15 @@ export class CreateAppointmentDto {
   @IsOptional()
   schedule_id?: number;
 
+  // --- SERVICE PACKAGE ID ---
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'ID của gói khám (tùy chọn)',
+  })
+  @IsInt()
+  @IsOptional()
+  service_package_id?: number;
+
   // --- DATE ---
   @ApiProperty({
     example: '2025-11-20',

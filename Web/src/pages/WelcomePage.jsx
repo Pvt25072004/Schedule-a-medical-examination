@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
   Calendar,
   MessageCircle,
@@ -24,6 +24,7 @@ import {
 import { getDoctors } from "../services/admin.doctors.api";
 import { getCategories } from "../services/admin.categories.api";
 import { getActiveHospitalBanners } from "../services/admin.hospital.banner.api";
+import { getPopularServicePackages } from "../services/service-packages.api";
 import { getCategoryIcon } from "../utils/helpers";
 const DEFAULT_APPOINTMENT_FORM = Object.freeze({
   user_id: "",
@@ -48,6 +49,8 @@ const WelcomePage = ({ navigate }) => {
   const [doctorsList, setDoctorsList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [banners, setBanners] = useState([]);
+  const [popularPackages, setPopularPackages] = useState([]);
+  const packagesScrollRef = useRef(null);
   const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
   const [singleBannerIdx, setSingleBannerIdx] = useState(0);
 
@@ -133,14 +136,16 @@ const WelcomePage = ({ navigate }) => {
 
     const loadData = async () => {
       try {
-        const [docs, cats, bannerData] = await Promise.all([
+        const [docs, cats, bannerData, packagesData] = await Promise.all([
           getDoctors(),
           getCategories(),
-          getActiveHospitalBanners()
+          getActiveHospitalBanners(),
+          getPopularServicePackages()
         ]);
         setDoctorsList(Array.isArray(docs) ? docs : []);
         setCategoriesList(Array.isArray(cats) ? cats : []);
         setBanners(bannerData || []);
+        setPopularPackages(Array.isArray(packagesData) ? packagesData : []);
       } catch (err) {
         console.error("Error loading welcome data:", err);
       }
@@ -173,6 +178,13 @@ const WelcomePage = ({ navigate }) => {
       return value;
     }
     return value?.split(":").slice(0, 2).join(":") ?? "";
+  };
+
+  const scrollPackages = (direction) => {
+    if (packagesScrollRef.current) {
+      const scrollAmount = direction === "left" ? -800 : 800;
+      packagesScrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
   };
 
   const displayDate = (value) => {
@@ -590,6 +602,103 @@ const WelcomePage = ({ navigate }) => {
         </div>
       </section>
 
+      {/* Popular Packages Section */}
+      {popularPackages.length > 0 && (
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Các gói dịch vụ nổi bật
+              </h2>
+              <p className="text-xl text-gray-600">
+                Các gói khám sức khỏe được nhiều bệnh nhân lựa chọn nhất
+              </p>
+            </div>
+
+            <div className="relative group/slider">
+              {popularPackages.length > 3 && (
+                <button 
+                  onClick={() => scrollPackages('left')}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 z-20 w-12 h-12 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all focus:outline-none"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              )}
+              
+              <div 
+                ref={packagesScrollRef}
+                className="flex overflow-x-auto gap-6 pb-8 pt-4 px-2 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {popularPackages.map((pkg) => (
+                  <div key={pkg.id} className="min-w-[320px] max-w-[360px] shrink-0 snap-start flex">
+                    <Card hover className="flex flex-col w-full h-full border-2 border-transparent hover:border-blue-100 transition-colors bg-white">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
+                          <Shield className="w-8 h-8" />
+                        </div>
+                        <div className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                          🔥 {pkg.booking_count} lượt đặt
+                        </div>
+                      </div>
+                      
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+                        {pkg.name}
+                      </h3>
+                      
+                      <p className="text-gray-600 mb-4 flex-1 line-clamp-3">
+                        {pkg.description || "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu."}
+                      </p>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4 text-blue-500" />
+                          <span>{pkg.duration_minutes || 30} phút</span>
+                        </div>
+                        {pkg.fixed_price && (
+                          <div className="flex items-center gap-1 font-semibold text-blue-700">
+                            Giá: {Number(pkg.fixed_price).toLocaleString("vi-VN")}đ
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button
+                        variant="primary"
+                        fullWidth
+                        className="mt-auto shadow-md hover:shadow-lg"
+                        onClick={() => requireAuthAndNavigate(PAGES.BOOKING, { state: { packageId: pkg.id } })}
+                      >
+                        Đặt gói này
+                      </Button>
+                    </Card>
+                  </div>
+                ))}
+              </div>
+
+              {popularPackages.length > 3 && (
+                <button 
+                  onClick={() => scrollPackages('right')}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 z-20 w-12 h-12 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all focus:outline-none"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              )}
+            </div>
+            
+            <div className="text-center mt-12">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => navigate(PAGES.SERVICE_PACKAGES)}
+                className="font-semibold"
+              >
+                Xem tất cả dịch vụ
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Single Banner Auto-play Section */}
       {banners.length > 0 && (
         <section className="py-12 bg-white border-t border-gray-100">
@@ -680,8 +789,6 @@ const WelcomePage = ({ navigate }) => {
           </div>
         </div>
       </section>
-
-
 
       {/* CTA Section */}
       {!isAuthenticated && (

@@ -3,6 +3,7 @@ import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Payment } from 'src/payments/entities/payment.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Review } from 'src/reviews/entities/review.entity';
+import { ServicePackage } from 'src/service-packages/entities/service-package.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -48,6 +49,10 @@ export class Appointment {
   @ApiProperty({ example: '09:30', description: 'Giờ khám (HH:mm)' })
   @Column({ type: 'time' })
   appointment_time: string;
+
+  @ApiPropertyOptional({ example: '10:00', description: 'Giờ kết thúc khám (tính toán từ duration_minutes)' })
+  @Column({ type: 'time', nullable: true })
+  end_time: string | null;
 
   @ApiProperty({
     example: 'online',
@@ -159,4 +164,12 @@ export class Appointment {
 
   @OneToOne(() => Review, (review) => review.appointment)
   review?: Review | null;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID của Gói khám (nếu có)' })
+  @Column({ type: 'int', nullable: true })
+  service_package_id: number | null;
+
+  @ManyToOne(() => ServicePackage, (servicePackage) => servicePackage.appointments)
+  @JoinColumn({ name: 'service_package_id' })
+  service_package?: ServicePackage | null;
 }

@@ -1,6 +1,7 @@
 import { Appointment } from 'src/appointments/entities/appointment.entity';
 import { Doctor } from 'src/doctors/doctor.entity';
 import { Category } from 'src/categories/entities/category.entity';
+import { ServicePackage } from 'src/service-packages/entities/service-package.entity';
 import {
   Column,
   CreateDateColumn,
@@ -78,5 +79,8 @@ export class Hospital {
 
   @OneToOne(() => Fanpage, (fanpage) => fanpage.hospital)
   fanpage?: Fanpage;
+
+  @ManyToMany(() => ServicePackage, (servicePackage) => servicePackage.hospitals)
+  service_packages?: ServicePackage[];
 
 }

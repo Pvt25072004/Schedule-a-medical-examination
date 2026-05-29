@@ -161,6 +161,7 @@ export class NewsService {
         published_at: 'DESC',
         created_at: 'DESC',
       },
+      take: 60, // Giới hạn lấy 60 bài báo mới nhất để tránh quá tải
     });
   }
 
@@ -259,8 +260,20 @@ export class NewsService {
         }
       }
 
-      this.logger.log(`Đồng bộ thành công. Đã thêm ${newCount} bài báo mới có kèm ảnh.`);
-      return { message: 'Đồng bộ tin tức thành công', count: newCount };
+      // Tự động dọn dẹp các bài báo cũ hơn 30 ngày để tránh phình database
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const deleteResult = await this.newsRepository
+        .createQueryBuilder()
+        .delete()
+        .from(News)
+        .where('published_at < :date', { date: thirtyDaysAgo })
+        .execute();
+
+      const deletedCount = deleteResult.affected || 0;
+      this.logger.log(`Đồng bộ thành công. Đã thêm ${newCount} bài báo mới. Đã dọn dẹp ${deletedCount} bài cũ.`);
+      return { message: 'Đồng bộ và dọn dẹp tin tức thành công', count: newCount, deleted: deletedCount };
 
     } catch (error) {
       this.logger.error(`Lỗi khi đồng bộ Google News: ${error.message}`, error.stack);

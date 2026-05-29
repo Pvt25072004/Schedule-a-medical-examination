@@ -29,6 +29,7 @@ import FanpageDetailPage from "./pages/FanpageDetailPage";
 import NewsPage from "./pages/NewsPage";
 import ApplyDoctorPage from "./pages/ApplyDoctorPage";
 import HospitalRegistrationPage from "./pages/HospitalRegistrationPage";
+import ServicePackagesPage from "./pages/ServicePackagesPage";
 import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
 import FloatingWidgets from "./components/common/FloatingWidgets";
@@ -132,6 +133,16 @@ const AppRoutes = () => {
         <Route
           path={PAGES.DOCTORS}
           element={<DoctorListPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.SERVICE_PACKAGES}
+          element={
+            isAuthenticated ? (
+              <ServicePackagesPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
         />
         <Route
           path={PAGES.FANPAGE}

@@ -30,6 +30,7 @@ import { NewsModule } from './news/news.module';
 import { HospitalRegistrationsModule } from './hospital-registrations/hospital-registrations.module';
 import { AiModule } from './ai/ai.module';
 import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-hospital-requests.module';
+import { ServicePackagesModule } from './service-packages/service-packages.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-
     HospitalRegistrationsModule,
     AiModule,
     DoctorHospitalRequestsModule,
+    ServicePackagesModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, FirebaseService],
