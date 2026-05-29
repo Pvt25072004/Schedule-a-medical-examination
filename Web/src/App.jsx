@@ -28,6 +28,7 @@ import FanpagePage from "./pages/FanpagePage";
 import FanpageDetailPage from "./pages/FanpageDetailPage";
 import NewsPage from "./pages/NewsPage";
 import ApplyDoctorPage from "./pages/ApplyDoctorPage";
+import HospitalRegistrationPage from "./pages/HospitalRegistrationPage";
 import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
 import FloatingWidgets from "./components/common/FloatingWidgets";
@@ -147,6 +148,10 @@ const AppRoutes = () => {
         <Route
           path={PAGES.APPLY_DOCTOR}
           element={<ApplyDoctorPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.HOSPITAL_REGISTRATION}
+          element={<HospitalRegistrationPage navigate={navigateTo} />}
         />
         <Route
           path={PAGES.APPOINTMENTS}

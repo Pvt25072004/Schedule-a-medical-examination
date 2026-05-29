@@ -132,4 +132,31 @@ export class EmailService {
       console.error('Gửi email thông báo hủy liên kết thất bại:', error);
     }
   }
+
+  async sendRejectionEmail(email: string, name: string, reason: string) {
+    const payload = {
+      service_id: this.serviceId,
+      template_id: this.doctorTemplateId,
+      user_id: this.publicKey,
+      template_params: {
+        to_email: email,
+        otp: `Đơn đăng ký của bạn đã bị từ chối. Lý do: ${reason}`, // Dùng tạm trường otp để thông báo
+        name: name,
+      },
+    };
+
+    try {
+      const url = 'https://api.emailjs.com/api/v1.0/email/send';
+      await firstValueFrom(
+        this.httpService.post(url, payload, {
+          headers: {
+            'Content-Type': 'application/json',
+            origin: 'http://localhost',
+          },
+        }),
+      );
+    } catch (error) {
+      console.error('Gửi email từ chối thất bại:', error);
+    }
+  }
 }

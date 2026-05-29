@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { PAGES } from "../../utils/constants";
 import { useAuth } from "../../contexts/AuthContext";
 import Button from "./Button";
+import { ChevronDown } from "lucide-react";
 
 import logo from "../../assets/LOGOmain.jpg";
 
@@ -16,12 +17,13 @@ const Header = () => {
     PAGES.LOGIN,
     PAGES.REGISTER,
     PAGES.ADMIN_DASHBOARD,
-    PAGES.DOCTOR_DASHBOARD,
   ];
 
   if (hideOnRoutes.includes(location.pathname)) {
     return null;
   }
+
+  const isPatient = isAuthenticated && user?.role === "patient";
 
   const handleScrollTo = (id) => {
     if (location.pathname !== PAGES.WELCOME) {
@@ -88,72 +90,82 @@ const Header = () => {
               Liên hệ
             </button>
 
-            <div className="relative group">
-              <button className="text-gray-700 hover:text-blue-600 font-medium transition flex items-center gap-1">
-                Dịch vụ
-              </button>
-              <div className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <div className="py-2">
-                  <button
-                    onClick={() => {
-                      if (!isAuthenticated) navigate(PAGES.LOGIN);
-                      else navigate(PAGES.BOOKING);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
-                  >
-                    Đặt lịch theo khu vực
+            {isPatient && (
+              <>
+                <div className="relative group">
+                  <button className="text-gray-700 hover:text-blue-600 font-medium transition flex items-center gap-1">
+                    Dịch vụ <ChevronDown className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => {
-                      if (!isAuthenticated) navigate(PAGES.LOGIN);
-                      else navigate(PAGES.BOOKING);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
-                  >
-                    Đặt lịch theo bác sĩ
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!isAuthenticated) navigate(PAGES.LOGIN);
-                      else navigate(PAGES.BOOKING);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Đặt lịch khám tại nhà
-                  </button>
+                  <div className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-gray-100 overflow-hidden">
+                    <div className="py-2">
+                      <button
+                        onClick={() => navigate(PAGES.BOOKING)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
+                      >
+                        Đặt lịch theo khu vực
+                      </button>
+                      <button
+                        onClick={() => navigate(PAGES.BOOKING)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
+                      >
+                        Đặt lịch theo bác sĩ
+                      </button>
+                      <button
+                        onClick={() => navigate(PAGES.BOOKING)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Đặt lịch khám tại nhà
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="relative group">
-              <button className="text-gray-700 hover:text-blue-600 font-medium transition flex items-center gap-1">
-                Tin tức
-              </button>
-              <div className="absolute top-full left-0 mt-4 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <div className="py-2">
-                  <button
-                    onClick={() => navigate(PAGES.NEWS)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
-                  >
-                    Tin tức y khoa
+                <div className="relative group">
+                  <button className="text-gray-700 hover:text-blue-600 font-medium transition flex items-center gap-1">
+                    Tin tức <ChevronDown className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => navigate(PAGES.FANPAGE)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Bảng tin Fanpage
-                  </button>
+                  <div className="absolute top-full left-0 mt-4 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-gray-100 overflow-hidden">
+                    <div className="py-2">
+                      <button
+                        onClick={() => navigate(PAGES.NEWS)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
+                      >
+                        Tin tức y khoa
+                      </button>
+                      <button
+                        onClick={() => navigate(PAGES.FANPAGE)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Bảng tin Fanpage
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
             
             {!isAuthenticated && (
-              <button
-                onClick={() => navigate(PAGES.APPLY_DOCTOR)}
-                className="text-amber-600 hover:text-amber-700 font-semibold transition"
-              >
-                Ứng tuyển bác sĩ
-              </button>
+              <div className="relative group ml-4">
+                <button className="text-amber-600 hover:text-amber-700 font-semibold transition flex items-center gap-1 border border-amber-200 px-4 py-2 rounded-full hover:bg-amber-50">
+                  Hợp tác <ChevronDown className="w-4 h-4" />
+                </button>
+                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-gray-100 overflow-hidden">
+                  <div className="py-2">
+                    <button
+                      onClick={() => navigate(PAGES.APPLY_DOCTOR)}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 border-b border-gray-50 transition"
+                    >
+                      Dành cho <b>Bác sĩ</b>
+                    </button>
+                    <button
+                      onClick={() => navigate(PAGES.HOSPITAL_REGISTRATION)}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition"
+                    >
+                      Dành cho <b>Cơ sở y tế</b>
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </nav>
 
