@@ -92,10 +92,10 @@ export class User {
   is_active: boolean;
 
   // Dành riêng cho admin_hospital (để biết họ quản lý viện nào)
-  @Column({ nullable: true })
+  @Column({ nullable: true, unique: true })
   hospital_id: number;
 
-  @ManyToOne(() => Hospital, { nullable: true })
+  @OneToOne(() => Hospital, { nullable: true })
   @JoinColumn({ name: 'hospital_id' })
   hospital: Hospital;
 
