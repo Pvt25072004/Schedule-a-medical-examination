@@ -47,7 +47,7 @@ const FloatingWidgets = () => {
       }
     ];
   });
-  
+
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
@@ -175,7 +175,7 @@ const FloatingWidgets = () => {
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
-    
+
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
@@ -242,7 +242,7 @@ const FloatingWidgets = () => {
               `🎉 **Thông tin đặt lịch đã được xác nhận!**\n\n` +
               `Hệ thống đang chuyển bạn đến trang Thanh toán để hoàn tất thủ tục nhé... 🚀`
             );
-            
+
             setTimeout(() => {
               setIsChatOpen(false);
               navigate('/booking', { state: { aiBookingData: parsed.bookingData } });
@@ -252,7 +252,7 @@ const FloatingWidgets = () => {
             console.error('Lỗi khi chuyển hướng:', err);
             addBotMessage(`⚠️ Đã xảy ra lỗi khi chuyển trang.`);
           }
-          
+
           // Reset state
           setBookingData({
             hospitalId: null,
@@ -270,11 +270,11 @@ const FloatingWidgets = () => {
       }
     } catch (e) {
       console.error(e);
-      
+
       // Local Smart Fallback in case of API limits or Credit issues
       const lowercase = textToSend.toLowerCase();
       let fallbackReply = "";
-      
+
       if (lowercase.includes("đà nẵng") || lowercase.includes("da nang")) {
         setBookingData(prev => ({ ...prev, symptoms: "Chóng mặt, buồn nôn" }));
         fallbackReply = "Chào bạn! Tôi rất tiếc khi biết bạn đang bị chóng mặt và buồn nôn 🩺. Ở Đà Nẵng, hệ thống liên kết với **Bệnh viện Hoàn Mỹ Đà Nẵng** và **Bệnh viện Đa khoa Gia Đình**. Bạn muốn đăng ký khám tại cơ sở nào?";
@@ -300,7 +300,7 @@ const FloatingWidgets = () => {
       } else {
         fallbackReply = "Tôi đã ghi nhận thông tin. Bạn có thể cho tôi biết bạn muốn đặt lịch khám tại Bệnh viện Hoàn Mỹ Đà Nẵng hay Bệnh viện Đa khoa Gia Đình không?";
       }
-      
+
       addBotMessage(fallbackReply);
     } finally {
       setIsTyping(false);
@@ -326,13 +326,12 @@ const FloatingWidgets = () => {
       <div className="fixed bottom-0 left-6 z-50 flex flex-col items-start">
         {/* Chatbot Panel (Slide up) */}
         <div
-          className={`bg-white rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 ease-in-out origin-bottom flex flex-col ${
-            isChatOpen
-              ? isExpanded
-                ? 'w-[520px] max-h-[80vh] h-[80vh] opacity-100 mb-4'
-                : 'w-80 sm:w-96 max-h-[500px] h-[500px] opacity-100 mb-4'
-              : 'w-80 sm:w-96 max-h-0 h-0 opacity-0 pointer-events-none'
-          }`}
+          className={`bg-white rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 ease-in-out origin-bottom flex flex-col ${isChatOpen
+            ? isExpanded
+              ? 'w-[520px] max-h-[80vh] h-[80vh] opacity-100 mb-4'
+              : 'w-80 sm:w-96 max-h-[500px] h-[500px] opacity-100 mb-4'
+            : 'w-80 sm:w-96 max-h-0 h-0 opacity-0 pointer-events-none'
+            }`}
         >
           {/* Header */}
           <div className="bg-blue-600 p-4 flex items-center justify-between text-white rounded-t-2xl shrink-0">
@@ -377,15 +376,14 @@ const FloatingWidgets = () => {
                     {msg.sender === 'user' ? <UserIcon className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
                   </div>
                   <div>
-                    <div className={`inline-block p-3 rounded-2xl max-w-[85%] ${
-                    msg.sender === 'user' 
-                      ? 'bg-blue-600 text-white rounded-br-none shadow-sm' 
+                    <div className={`inline-block p-3 rounded-2xl max-w-[85%] ${msg.sender === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-none shadow-sm'
                       : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                  }`}>
-                    <div className={`prose prose-sm max-w-none break-words ${msg.sender === 'user' ? 'text-white prose-p:text-white prose-strong:text-white prose-a:text-white' : ''}`}>
-                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      }`}>
+                      <div className={`prose prose-sm max-w-none break-words ${msg.sender === 'user' ? 'text-white prose-p:text-white prose-strong:text-white prose-a:text-white' : ''}`}>
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
                     </div>
-                  </div>
                   </div>
                 </div>
               </div>
