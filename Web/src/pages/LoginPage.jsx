@@ -15,7 +15,7 @@ import Card from "../components/common/Card";
 import { PAGES, USER_ROLES } from "../utils/constants";
 import { validateEmail } from "../utils/helpers";
 import { useGoogleLogin } from "@react-oauth/google";
-// import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
+import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 
 const FACEBOOK_APP_ID = "963479733091448";
 
@@ -328,7 +328,6 @@ const LoginPage = ({ navigate }) => {
               </div>
             </div>
 
-            {/* Social Login */}
             <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
@@ -342,6 +341,34 @@ const LoginPage = ({ navigate }) => {
                 />
                 Google
               </Button>
+              <FacebookLogin
+                appId={FACEBOOK_APP_ID}
+                fields="name,email,picture"
+                callback={(response) => {
+                  if (response?.accessToken) {
+                    handleSocialLogin(response.accessToken, "facebook");
+                  } else {
+                    setErrors({
+                      general: "Đăng nhập Facebook bị hủy hoặc thất bại",
+                    });
+                  }
+                }}
+                render={(renderProps) => (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    onClick={renderProps.onClick}
+                  >
+                    <img
+                      src="https://www.facebook.com/favicon.ico"
+                      alt="Facebook"
+                      className="w-5 h-5"
+                    />
+                    Facebook
+                  </Button>
+                )}
+              />
             </div>
 
             {/* Register Link */}

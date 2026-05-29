@@ -14,7 +14,7 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   async findAll(): Promise<User[]> {
     return await this.usersRepository.find();
@@ -112,7 +112,7 @@ export class UsersService {
 
   async remove(id: number): Promise<void> {
     const user = (await this.findOne(id)) as User;
-    
+
     if (user.avatar_public_id) {
       await this.cloudinaryService.deleteImage(user.avatar_public_id);
     }

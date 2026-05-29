@@ -23,7 +23,7 @@ import {
 } from "../utils/helpers";
 import { sendRegistrationOtp } from "../services/api";
 import { useGoogleLogin } from "@react-oauth/google";
-// import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
+import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 
 const FACEBOOK_APP_ID = "963479733091448";
 
@@ -468,7 +468,7 @@ const RegisterPage = ({ navigate }) => {
                     />
                     Google
                   </Button>
-                  {/* <FacebookLogin
+                  <FacebookLogin
                     appId={FACEBOOK_APP_ID}
                     fields="name,email,picture"
                     callback={(response) => {
@@ -495,7 +495,7 @@ const RegisterPage = ({ navigate }) => {
                         Facebook
                       </Button>
                     )}
-                  /> */}
+                  />
                 </div>
 
                 <p className="text-center text-gray-600 text-sm mt-4">
