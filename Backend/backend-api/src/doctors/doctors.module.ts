@@ -3,20 +3,23 @@ import { DoctorsController } from './doctors.controller';
 import { DoctorsService } from './doctors.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Doctor } from './doctor.entity';
+import { DoctorApplication } from './doctor-application.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { UsersModule } from 'src/users/users.module';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { EmailModule } from 'src/email/email.module';
 
 @Module({
   imports: [
     MulterModule.register({
       storage: memoryStorage(),
     }),
-    TypeOrmModule.forFeature([Doctor, Hospital]),
+    TypeOrmModule.forFeature([Doctor, Hospital, DoctorApplication]),
     UsersModule,
     CloudinaryModule,
+    EmailModule,
   ],
   controllers: [DoctorsController],
   providers: [DoctorsService],

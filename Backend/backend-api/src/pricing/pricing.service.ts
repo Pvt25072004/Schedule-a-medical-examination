@@ -18,7 +18,7 @@ export class PricingService {
       doctorFeeSnapshot: doctorFee,
       hospitalFeeSnapshot: hospitalFee,
       totalFee: totalFee,
-      doctorNameSnapshot: doctor.name,
+      doctorNameSnapshot: doctor.user?.full_name || 'N/A',
       hospitalNameSnapshot: hospital.name,
       currencySnapshot: 'VND',
     };

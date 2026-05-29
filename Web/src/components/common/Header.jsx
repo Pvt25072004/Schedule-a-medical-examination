@@ -146,6 +146,15 @@ const Header = () => {
                 </div>
               </div>
             </div>
+            
+            {!isAuthenticated && (
+              <button
+                onClick={() => navigate(PAGES.APPLY_DOCTOR)}
+                className="text-amber-600 hover:text-amber-700 font-semibold transition"
+              >
+                Ứng tuyển bác sĩ
+              </button>
+            )}
           </nav>
 
           {/* Auth Buttons / User Menu */}

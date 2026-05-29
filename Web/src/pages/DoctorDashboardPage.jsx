@@ -11,10 +11,11 @@ import {
   DollarSign,
   Star,
   ArrowLeft,
-  Plus,
   Edit3,
   Share2,
   Camera,
+  LogOut,
+  Plus,
 } from "lucide-react";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -30,17 +31,19 @@ import {
   getMyDoctorProfile,
   updateMyDoctorProfile,
   uploadDoctorAvatar,
+  createDoctorApplication,
+  getMyDoctorApplications,
 } from "../services/doctor.profile.api";
 import { getHospitals } from "../services/admin.hospitals.api";
+import { getCategories } from "../services/admin.categories.api";
 import {
   getAppointmentsByDoctor,
   updateAppointmentStatus,
 } from "../services/doctor.appointments.api";
 import { getPaymentsByDoctor } from "../services/doctor.payments.api";
 import { getReviewsByDoctor } from "../services/reviews.api";
-
 const DoctorDashboardPage = ({ navigate }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [doctorProfile, setDoctorProfile] = useState(null);
@@ -56,6 +59,8 @@ const DoctorDashboardPage = ({ navigate }) => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [hospitals, setHospitals] = useState([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const profileRef = useRef(null);
   const [doctorAppointments, setDoctorAppointments] = useState([]);
@@ -73,6 +78,23 @@ const DoctorDashboardPage = ({ navigate }) => {
     max_patients: 10,
   });
   const [editingScheduleId, setEditingScheduleId] = useState(null);
+
+  const [applications, setApplications] = useState([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinForm, setJoinForm] = useState({
+    hospital_id: "",
+    cover_letter: "",
+  });
+  const [submittingJoin, setSubmittingJoin] = useState(false);
+
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({
+    hospital_id: "",
+    hospital_name: "",
+    cover_letter: "",
+  });
+  const [submittingLeave, setSubmittingLeave] = useState(false);
 
   const loadSchedules = async (doctorId) => {
     if (!doctorId) return;
@@ -94,8 +116,14 @@ const DoctorDashboardPage = ({ navigate }) => {
       if (profileData) {
         setDoctorProfile(profileData);
         setProfileForm({
-          name: profileData.name || "",
+          name:
+            profileData.user?.full_name ||
+            profileData.name ||
+            user?.fullName ||
+            user?.full_name ||
+            "",
           specialty: profileData.specialty || "",
+          category_id: profileData.category?.id || "",
           description: profileData.description || "",
           avatar_url: profileData.avatar_url || "",
           avatar_public_id: profileData.avatar_public_id || "",
@@ -122,9 +150,35 @@ const DoctorDashboardPage = ({ navigate }) => {
     }
   };
 
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const data = await getCategories();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Load categories error:", e);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const loadApplications = async () => {
+    try {
+      setLoadingApplications(true);
+      const data = await getMyDoctorApplications();
+      setApplications(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Load applications error:", e);
+    } finally {
+      setLoadingApplications(false);
+    }
+  };
+
   useEffect(() => {
     void loadProfile();
     void loadHospitals();
+    void loadCategories();
+    void loadApplications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -205,17 +259,56 @@ const DoctorDashboardPage = ({ navigate }) => {
   };
 
   const handleDeleteSchedule = async (entry) => {
-    const ok = window.confirm(
-      `Bạn có chắc muốn xóa ca làm việc ngày ${entry.work_date} tại bệnh viện ${
-        entry.hospital?.name || entry.hospital_id
-      }?`
-    );
-    if (!ok) return;
+    if (!window.confirm("Bạn có chắc muốn xóa ca làm việc này?")) return;
     try {
       await deleteSchedule(entry.id);
       setSchedules((prev) => prev.filter((s) => s.id !== entry.id));
     } catch (e) {
       alert(e.message || "Không thể xóa ca làm việc");
+    }
+  };
+
+  const handleSubmitJoinForm = async (e) => {
+    e.preventDefault();
+    if (!joinForm.hospital_id) {
+      alert("Vui lòng chọn bệnh viện");
+      return;
+    }
+    try {
+      setSubmittingJoin(true);
+      await createDoctorApplication({
+        hospital_id: Number(joinForm.hospital_id),
+        cover_letter: joinForm.cover_letter,
+        type: "join",
+      });
+      alert("Đã gửi yêu cầu liên kết. Vui lòng chờ bệnh viện duyệt.");
+      setShowJoinModal(false);
+      setJoinForm({ hospital_id: "", cover_letter: "" });
+      void loadApplications();
+    } catch (e) {
+      alert(e.message || "Lỗi khi gửi yêu cầu");
+    } finally {
+      setSubmittingJoin(false);
+    }
+  };
+
+  const handleSubmitLeaveForm = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmittingLeave(true);
+      await createDoctorApplication({
+        hospital_id: Number(leaveForm.hospital_id),
+        cover_letter: leaveForm.cover_letter,
+        type: "leave",
+      });
+      alert("Đã gửi yêu cầu xin nghỉ. Vui lòng chờ bệnh viện duyệt.");
+      setShowLeaveModal(false);
+      setLeaveForm({ hospital_id: "", hospital_name: "", cover_letter: "" });
+      void loadApplications();
+    } catch (e) {
+      alert(e.message || "Lỗi khi gửi yêu cầu");
+    } finally {
+      setSubmittingLeave(false);
     }
   };
 
@@ -230,7 +323,7 @@ const DoctorDashboardPage = ({ navigate }) => {
             since: "",
           }))
         : [],
-    [doctorProfile?.hospitals]
+    [doctorProfile?.hospitals],
   );
 
   const formatDateVN = (d) => {
@@ -244,10 +337,10 @@ const DoctorDashboardPage = ({ navigate }) => {
     try {
       const updated = await updateAppointmentStatus(
         appointment.id,
-        "confirmed"
+        "confirmed",
       );
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
+        prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
     } catch (e) {
       alert(e.message || "Không thể xác nhận lịch hẹn");
@@ -265,10 +358,10 @@ const DoctorDashboardPage = ({ navigate }) => {
       const updated = await updateAppointmentStatus(
         appointment.id,
         "rejected",
-        reason.trim()
+        reason.trim(),
       );
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
+        prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
     } catch (e) {
       alert(e.message || "Không thể từ chối lịch hẹn");
@@ -277,16 +370,16 @@ const DoctorDashboardPage = ({ navigate }) => {
 
   const handleCompleteAppointment = async (appointment) => {
     const ok = window.confirm(
-      `Xác nhận đã khám xong cho lịch hẹn #${appointment.id}?`
+      `Xác nhận đã khám xong cho lịch hẹn #${appointment.id}?`,
     );
     if (!ok) return;
     try {
       const updated = await updateAppointmentStatus(
         appointment.id,
-        "completed"
+        "completed",
       );
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
+        prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
     } catch (e) {
       alert(e.message || "Không thể cập nhật trạng thái lịch hẹn");
@@ -302,8 +395,13 @@ const DoctorDashboardPage = ({ navigate }) => {
               Doctor workspace
             </p>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              Xin chào,
-              {doctorProfile?.name || user?.fullName || "Bác sĩ"} 👋
+              Xin chào,{" "}
+              {doctorProfile?.user?.full_name ||
+                doctorProfile?.name ||
+                user?.fullName ||
+                user?.full_name ||
+                "Bác sĩ"}{" "}
+              👋
             </h1>
             <p className="text-slate-500 max-w-2xl">
               Theo dõi lịch làm việc, quản lý lịch hẹn, xem đánh giá và doanh
@@ -313,10 +411,13 @@ const DoctorDashboardPage = ({ navigate }) => {
           <div className="flex flex-wrap gap-3">
             <Button
               variant="ghost"
-              icon={ArrowLeft}
-              onClick={() => navigate(PAGES.HOME)}
+              icon={LogOut}
+              onClick={() => {
+                logout();
+                navigate(PAGES.WELCOME);
+              }}
             >
-              Về trang bệnh nhân
+              Đăng xuất
             </Button>
             <Button
               variant="primary"
@@ -337,229 +438,279 @@ const DoctorDashboardPage = ({ navigate }) => {
       <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
         {/* Doctor Profile */}
         {showProfile && (
-          <Card ref={profileRef}>
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-4">
-              <div className="flex items-center gap-4">
-                <div className="relative group w-16 h-16 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center text-xl font-semibold text-slate-700 shadow-sm border-2 border-white">
-                  {profileForm.avatar_url ? (
-                    <img
-                      src={profileForm.avatar_url}
-                      alt="Avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    (doctorProfile?.name || user?.fullName || "BS")
-                      .split(" ")
-                      .map((p) => p[0])
-                      .join("")
-                  )}
+          <div ref={profileRef}>
+            <Card>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative group w-16 h-16 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center text-xl font-semibold text-slate-700 shadow-sm border-2 border-white">
+                    {profileForm.avatar_url ? (
+                      <img
+                        src={profileForm.avatar_url}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      (
+                        doctorProfile?.user?.full_name ||
+                        doctorProfile?.name ||
+                        user?.fullName ||
+                        user?.full_name ||
+                        "BS"
+                      )
+                        .split(" ")
+                        .map((p) => p[0])
+                        .join("")
+                    )}
 
-                  {uploadingAvatar && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
 
-                  <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-                    <Camera className="w-5 h-5 text-white" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        try {
-                          setUploadingAvatar(true);
-                          const result = await uploadDoctorAvatar(file);
-                          setProfileForm((prev) => ({
-                            ...prev,
-                            avatar_url: result.image_url,
-                            avatar_public_id: result.image_public_id,
-                          }));
-                        } catch (err) {
-                          alert(err.message || "Lỗi tải ảnh lên");
-                        } finally {
-                          setUploadingAvatar(false);
-                        }
-                      }}
-                    />
+                    <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                      <Camera className="w-5 h-5 text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          try {
+                            setUploadingAvatar(true);
+                            const result = await uploadDoctorAvatar(file);
+                            setProfileForm((prev) => ({
+                              ...prev,
+                              avatar_url: result.image_url,
+                              avatar_public_id: result.image_public_id,
+                            }));
+                          } catch (err) {
+                            alert(err.message || "Lỗi tải ảnh lên");
+                          } finally {
+                            setUploadingAvatar(false);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-slate-900">
+                      Hồ sơ bác sĩ
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Cập nhật thông tin hiển thị cho bệnh nhân và admin.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <form
+                className="grid gap-4 md:grid-cols-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    const updated = await updateMyDoctorProfile(profileForm);
+                    setDoctorProfile(updated);
+                    setProfileForm((prev) => ({ ...prev, password: "", old_password: "" }));
+                    alert("Cập nhật hồ sơ thành công");
+                  } catch (err) {
+                    alert(err.message || "Không thể cập nhật hồ sơ");
+                  }
+                }}
+              >
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Họ tên bác sĩ
                   </label>
+                  <input
+                    type="text"
+                    value={profileForm.name}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    required
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-900">
-                    Hồ sơ bác sĩ
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Cập nhật thông tin hiển thị cho bệnh nhân và admin.
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Email đăng nhập
+                  </label>
+                  <input
+                    type="email"
+                    value={doctorProfile?.email || user?.email || ""}
+                    disabled
+                    className="w-full px-3 py-2 border rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Thay đổi email ở mục Cài đặt tài khoản.
                   </p>
                 </div>
-              </div>
-            </div>
-
-            <form
-              className="grid gap-4 md:grid-cols-2"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                try {
-                  const updated = await updateMyDoctorProfile(profileForm);
-                  setDoctorProfile(updated);
-                  alert("Cập nhật hồ sơ thành công");
-                } catch (err) {
-                  alert(err.message || "Không thể cập nhật hồ sơ");
-                }
-              }}
-            >
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Họ tên bác sĩ
-                </label>
-                <input
-                  type="text"
-                  value={profileForm.name}
-                  onChange={(e) =>
-                    setProfileForm((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  required
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Email đăng nhập
-                </label>
-                <input
-                  type="email"
-                  value={doctorProfile?.email || user?.email || ""}
-                  disabled
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-slate-400">
-                  Thay đổi email ở mục Cài đặt tài khoản.
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Số điện thoại
-                </label>
-                <input
-                  type="tel"
-                  value={user?.phone || ""}
-                  disabled
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-slate-400">
-                  Cập nhật số điện thoại trong Cài đặt tài khoản.
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Mật khẩu
-                </label>
-                <input
-                  type="password"
-                  value="********"
-                  disabled
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-slate-400">
-                  Đổi mật khẩu tại trang Cài đặt &gt; Bảo mật.
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Chuyên khoa
-                </label>
-                <input
-                  type="text"
-                  value={profileForm.specialty}
-                  onChange={(e) =>
-                    setProfileForm((prev) => ({
-                      ...prev,
-                      specialty: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Mô tả ngắn
-                </label>
-                <textarea
-                  value={profileForm.description}
-                  onChange={(e) =>
-                    setProfileForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Bệnh viện đang làm việc
-                </label>
-                {loadingHospitals && (
-                  <p className="text-xs text-slate-500">
-                    Đang tải danh sách bệnh viện...
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="tel"
+                    value={user?.phone || ""}
+                    disabled
+                    className="w-full px-3 py-2 border rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Cập nhật số điện thoại trong Cài đặt tài khoản.
                   </p>
-                )}
-                {!loadingHospitals && (
-                  <div className="flex flex-wrap gap-2">
-                    {hospitals.map((h) => {
-                      const checked = profileForm.hospitalIds?.includes(h.id);
-                      return (
-                        <label
-                          key={h.id}
-                          className="inline-flex items-center gap-1 px-2 py-1 border rounded-full text-xs cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300"
-                            checked={!!checked}
-                            onChange={(e) => {
-                              setProfileForm((prev) => {
-                                const current = prev.hospitalIds || [];
-                                if (e.target.checked) {
-                                  return {
-                                    ...prev,
-                                    hospitalIds: [...current, h.id],
-                                  };
-                                }
-                                return {
-                                  ...prev,
-                                  hospitalIds: current.filter(
-                                    (id) => id !== h.id
-                                  ),
-                                };
-                              });
-                            }}
-                          />
-                          <span>{h.name}</span>
-                        </label>
-                      );
-                    })}
-                    {!hospitals.length && (
-                      <span className="text-xs text-slate-400">
-                        Chưa có dữ liệu bệnh viện
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="md:col-span-2 flex justify-end">
-                <Button type="submit" size="sm" variant="primary">
-                  {loadingProfile ? "Đang lưu..." : "Lưu hồ sơ"}
-                </Button>
-              </div>
-            </form>
-          </Card>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Mật khẩu cũ
+                  </label>
+                  <input
+                    type="password"
+                    value={profileForm.old_password || ""}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        old_password: e.target.value,
+                      }))
+                    }
+                    placeholder="Nhập mật khẩu hiện tại"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Yêu cầu nếu bạn muốn đổi mật khẩu mới.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Mật khẩu mới
+                  </label>
+                  <input
+                    type="password"
+                    value={profileForm.password || ""}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
+                    placeholder="Bỏ trống nếu không muốn đổi"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Nhập mật khẩu mới để thay đổi mật khẩu hiện tại.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Danh mục chuyên khoa
+                  </label>
+                  {loadingCategories ? (
+                    <p className="text-xs text-slate-500">Đang tải danh mục...</p>
+                  ) : (
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      value={profileForm.category_id || ""}
+                      onChange={(e) =>
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          category_id: e.target.value ? Number(e.target.value) : "",
+                        }))
+                      }
+                    >
+                      <option value="">-- Chọn chuyên khoa --</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Chức danh / Chuyên khoa cụ thể
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.specialty}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        specialty: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Mô tả ngắn
+                  </label>
+                  <textarea
+                    value={profileForm.description}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Bệnh viện đang làm việc
+                  </label>
+                  <p className="text-xs text-slate-500 mb-2">
+                    (Để thêm bệnh viện mới, vui lòng dùng chức năng "Thêm liên
+                    kết" bên dưới)
+                  </p>
+                  {loadingHospitals && (
+                    <p className="text-xs text-slate-500">
+                      Đang tải danh sách bệnh viện...
+                    </p>
+                  )}
+                  {!loadingHospitals && (
+                    <div className="flex flex-wrap gap-2">
+                      {hospitals.map((h) => {
+                        const checked = profileForm.hospitalIds?.includes(h.id);
+                        return (
+                          <label
+                            key={h.id}
+                            className="inline-flex items-center gap-1 px-2 py-1 border rounded-full text-xs cursor-default opacity-80"
+                          >
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 bg-slate-100 cursor-default"
+                              checked={!!checked}
+                              readOnly
+                              disabled
+                            />
+                            <span>{h.name}</span>
+                          </label>
+                        );
+                      })}
+                      {!hospitals.length && (
+                        <span className="text-xs text-slate-400">
+                          Chưa có dữ liệu bệnh viện
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="md:col-span-2 flex justify-end">
+                  <Button type="submit" size="sm" variant="primary">
+                    {loadingProfile ? "Đang lưu..." : "Lưu hồ sơ"}
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
         )}
 
         {/* KPI */}
@@ -962,12 +1113,24 @@ const DoctorDashboardPage = ({ navigate }) => {
                   Bác sĩ có thể làm việc tại nhiều cơ sở
                 </p>
               </div>
-              <Button size="sm" icon={Plus}>
+              <Button
+                size="sm"
+                icon={Plus}
+                onClick={() => setShowJoinModal(true)}
+              >
                 Thêm liên kết
               </Button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 mb-6">
+              <h3 className="font-semibold text-slate-700">
+                Các bệnh viện đang liên kết
+              </h3>
+              {affiliations.length === 0 && (
+                <p className="text-sm text-slate-500 italic">
+                  Chưa có liên kết nào
+                </p>
+              )}
               {affiliations.map((item) => (
                 <Card key={item.id} padding="sm" shadow="none">
                   <div className="flex items-center justify-between gap-4">
@@ -987,11 +1150,74 @@ const DoctorDashboardPage = ({ navigate }) => {
                         </p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost">
-                      Quản lý
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => {
+                        setLeaveForm({
+                          hospital_id: item.id,
+                          hospital_name: item.hospital,
+                          cover_letter: "",
+                        });
+                        setShowLeaveModal(true);
+                      }}
+                    >
+                      Hủy liên kết
                     </Button>
                   </div>
                 </Card>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700">Yêu cầu đã gửi</h3>
+              {applications.length === 0 && (
+                <p className="text-sm text-slate-500 italic">
+                  Chưa có yêu cầu nào
+                </p>
+              )}
+              {applications.map((app) => (
+                <div
+                  key={app.id}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-slate-50"
+                >
+                  <div>
+                    <p className="font-medium text-slate-800">
+                      {app.hospital?.name}
+                      {app.type === "leave" && (
+                        <span className="ml-2 text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                          Xin nghỉ
+                        </span>
+                      )}
+                      {app.type === "join" && (
+                        <span className="ml-2 text-xs font-semibold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          Xin việc
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Gửi lúc:{" "}
+                      {new Date(app.created_at).toLocaleDateString("vi-VN")}
+                    </p>
+                  </div>
+                  <div>
+                    {app.status === "pending" && (
+                      <span className="text-xs font-semibold text-amber-600 bg-amber-100 px-2 py-1 rounded-full">
+                        Đang chờ duyệt
+                      </span>
+                    )}
+                    {app.status === "approved" && (
+                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full">
+                        Đã đồng ý
+                      </span>
+                    )}
+                    {app.status === "rejected" && (
+                      <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
+                        Đã từ chối
+                      </span>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
           </Card>
@@ -1144,6 +1370,125 @@ const DoctorDashboardPage = ({ navigate }) => {
           </div>
         </Card>
       </div>
+
+      {showJoinModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">
+              Gửi yêu cầu liên kết
+            </h3>
+            <form onSubmit={handleSubmitJoinForm}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Chọn bệnh viện
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    value={joinForm.hospital_id}
+                    onChange={(e) =>
+                      setJoinForm({ ...joinForm, hospital_id: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="">-- Chọn bệnh viện --</option>
+                    {hospitals.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Thư ứng tuyển (Không bắt buộc)
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Viết đôi lời giới thiệu về kinh nghiệm của bạn..."
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    value={joinForm.cover_letter}
+                    onChange={(e) =>
+                      setJoinForm({ ...joinForm, cover_letter: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowJoinModal(false)}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={submittingJoin}
+                >
+                  {submittingJoin ? "Đang gửi..." : "Gửi yêu cầu"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">
+              Xin nghỉ việc / Hủy liên kết
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Bạn đang yêu cầu hủy liên kết với bệnh viện{" "}
+              <span className="font-semibold text-slate-900">
+                {leaveForm.hospital_name}
+              </span>
+              .
+            </p>
+            <form onSubmit={handleSubmitLeaveForm}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Lý do nghỉ việc
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Vui lòng cho biết lý do xin nghỉ..."
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    value={leaveForm.cover_letter}
+                    onChange={(e) =>
+                      setLeaveForm({
+                        ...leaveForm,
+                        cover_letter: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowLeaveModal(false)}
+                >
+                  Đóng
+                </Button>
+                <Button
+                  type="submit"
+                  variant="danger"
+                  disabled={submittingLeave}
+                >
+                  {submittingLeave ? "Đang gửi..." : "Gửi yêu cầu xin nghỉ"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

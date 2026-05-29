@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ChevronUp, MessageSquare, X } from 'lucide-react';
 import Button from './Button';
+import { PAGES } from '../../utils/constants';
 
 const FloatingWidgets = () => {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const location = useLocation();
+
+  const hideChatRoutes = [PAGES.DOCTOR_DASHBOARD, PAGES.ADMIN_DASHBOARD, PAGES.BANNER_MANAGEMENT];
+  const shouldHideChat = hideChatRoutes.some(route => location.pathname.startsWith(route));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,7 +44,8 @@ const FloatingWidgets = () => {
       </div>
 
       {/* Chatbot Trigger & Panel - Bottom Left */}
-      <div className="fixed bottom-0 left-6 z-50 flex flex-col items-start">
+      {!shouldHideChat && (
+        <div className="fixed bottom-0 left-6 z-50 flex flex-col items-start">
 
         {/* Chatbot Panel (Slide up) */}
         <div
@@ -74,7 +81,8 @@ const FloatingWidgets = () => {
           <MessageSquare className="w-4 h-4" />
           <span className="text-sm">Tư vấn trực tuyến</span>
         </div>
-      </div>
+        </div>
+      )}
     </>
   );
 };

@@ -47,6 +47,16 @@ export const register = async (userData) => {
   return handleResponse(response, "Đăng ký thất bại");
 };
 
+export const registerGuestDoctor = async (data) => {
+  const response = await fetch(`${API_BASE_URL}/doctors/register-guest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  return handleResponse(response, "Gửi đơn ứng tuyển thất bại");
+};
+
 export const sendRegistrationOtp = async (email) => {
   const response = await fetch(`${API_BASE_URL}/auth/send-registration-otp`, {
     method: "POST",

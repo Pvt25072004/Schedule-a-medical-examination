@@ -530,7 +530,7 @@ const WelcomePage = ({ navigate }) => {
                     {doctor.avatar_url ? (
                       <img
                         src={doctor.avatar_url}
-                        alt={doctor.name}
+                        alt={doctor.user?.full_name || doctor.name}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -539,7 +539,7 @@ const WelcomePage = ({ navigate }) => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">
-                      {doctor.name}
+                      {doctor.user?.full_name || doctor.name}
                     </h3>
                     <p className="text-blue-600 font-medium text-sm mb-2">
                       {doctor.specialty || doctor.category?.name || "Đa khoa"}

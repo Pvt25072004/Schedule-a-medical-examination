@@ -18,6 +18,7 @@ export const PAGES = {
   FANPAGE: "/fanpage",
   FANPAGE_DETAIL: "/fanpage/:id",
   NEWS: "/news",
+  APPLY_DOCTOR: "/apply-doctor",
 };
 
 // Appointment Status
