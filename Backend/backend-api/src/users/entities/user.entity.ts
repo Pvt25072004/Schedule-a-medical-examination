@@ -2,6 +2,7 @@ import { Appointment } from 'src/appointments/entities/appointment.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Like } from 'src/likes/entities/like.entity';
 import { Comment } from 'src/comments/entities/comment.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import {
   Column,
   Entity,
@@ -10,6 +11,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Unique,
+  ManyToOne,
   OneToOne,
   JoinColumn,
 } from 'typeorm';
@@ -89,6 +91,14 @@ export class User {
 
   @Column({ default: true })
   is_active: boolean;
+
+  // Dành riêng cho admin_hospital (để biết họ quản lý viện nào)
+  @Column({ nullable: true })
+  hospital_id: number;
+
+  @ManyToOne(() => Hospital, { nullable: true })
+  @JoinColumn({ name: 'hospital_id' })
+  hospital: Hospital;
 
   @Column({ length: 255, nullable: true })
   fcm_token: string;

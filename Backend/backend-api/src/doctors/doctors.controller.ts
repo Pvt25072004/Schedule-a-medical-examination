@@ -16,6 +16,9 @@ import {
 import { DoctorsService } from './doctors.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorProfileDto } from './dto/update-doctor-profile.dto';
+import { CreateDoctorApplicationDto } from './dto/create-doctor-application.dto';
+import { RegisterGuestDoctorDto } from './dto/register-guest.dto';
+import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -75,8 +78,8 @@ export class DoctorsController {
       throw new BadRequestException('Vui lòng chọn ảnh');
     }
 
-    if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('File phải là hình ảnh');
+    if (!file.mimetype.startsWith('image/') && file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('File phải là hình ảnh hoặc PDF');
     }
 
     const result = await this.cloudinaryService.uploadImage(
@@ -96,6 +99,11 @@ export class DoctorsController {
     return this.doctorsService.createDoctor(dto);
   }
 
+  @Post('register-guest')
+  registerGuest(@Body() dto: RegisterGuestDoctorDto) {
+    return this.doctorsService.registerGuestDoctor(dto);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Patch(':id/toggle-active')
   toggleActive(@Param('id') id: string) {
@@ -113,8 +121,54 @@ export class DoctorsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post(':id/unlink')
+  unlinkDoctor(@Param('id') id: string, @Req() req: any, @Body() body: { reason: string }) {
+    const user = req.user as { hospital_id?: number } | undefined;
+    if (!user?.hospital_id) {
+      throw new BadRequestException('Chỉ admin bệnh viện mới có quyền hủy liên kết');
+    }
+    return this.doctorsService.unlinkDoctor(+id, user.hospital_id, body.reason);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.doctorsService.remove(+id);
   }
+
+  // --- Doctor Applications APIs ---
+
+  @UseGuards(JwtAuthGuard)
+  @Post('applications')
+  createApplication(@Req() req: any, @Body() dto: CreateDoctorApplicationDto) {
+    const user = req.user as { email?: string } | undefined;
+    if (!user?.email) {
+      throw new BadRequestException('Không tìm thấy thông tin xác thực');
+    }
+    return this.doctorsService.createApplication(user.email, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/applications')
+  getMyApplications(@Req() req: any) {
+    const user = req.user as { email?: string } | undefined;
+    if (!user?.email) {
+      throw new BadRequestException('Không tìm thấy thông tin xác thực');
+    }
+    return this.doctorsService.getDoctorApplications(user.email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('hospitals/:hospitalId/applications')
+  getHospitalApplications(@Param('hospitalId') hospitalId: string) {
+    // Lý tưởng nhất là check quyền của Admin Hospital ở đây
+    return this.doctorsService.getHospitalApplications(+hospitalId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('applications/:id/status')
+  updateApplicationStatus(@Param('id') id: string, @Body() dto: UpdateApplicationStatusDto) {
+    return this.doctorsService.updateApplicationStatus(+id, dto);
+  }
 }
+

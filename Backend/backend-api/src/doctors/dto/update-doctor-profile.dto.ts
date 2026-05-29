@@ -38,6 +38,36 @@ export class UpdateDoctorProfileDto {
   @IsArray()
   @IsInt({ each: true })
   hospitalIds?: number[];
+
+  @IsOptional()
+  @IsString()
+  degree?: string;
+
+  @IsOptional()
+  @IsInt()
+  experience_years?: number;
+
+  @IsOptional()
+  @IsString()
+  license_number?: string;
+
+  @IsOptional()
+  @IsString()
+  license_file?: string;
+
+  @IsOptional()
+  @IsString()
+  certificate_file?: string;
+
+  @IsOptional()
+  @IsString()
+  cv_file?: string;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @IsOptional()
+  @IsString()
+  old_password?: string;
 }
-
-

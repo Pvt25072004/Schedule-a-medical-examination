@@ -44,8 +44,8 @@ export class UsersController {
       throw new BadRequestException('Vui lòng chọn ảnh');
     }
 
-    if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('File phải là hình ảnh');
+    if (!file.mimetype.startsWith('image/') && file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('File phải là hình ảnh hoặc PDF');
     }
 
     const result = await this.cloudinaryService.uploadImage(

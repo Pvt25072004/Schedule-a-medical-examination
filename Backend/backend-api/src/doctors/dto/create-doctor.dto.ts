@@ -44,4 +44,32 @@ export class CreateDoctorDto {
   @IsInt()
   @IsOptional()
   category_id?: number;
+
+  @IsString()
+  @IsOptional()
+  degree?: string;
+
+  @IsInt()
+  @IsOptional()
+  experience_years?: number;
+
+  @IsString()
+  @IsOptional()
+  license_number?: string;
+
+  @IsString()
+  @IsOptional()
+  license_file?: string;
+
+  @IsString()
+  @IsOptional()
+  certificate_file?: string;
+
+  @IsString()
+  @IsOptional()
+  cv_file?: string;
+
+  @IsInt()
+  @IsNotEmpty()
+  hospital_id: number;
 }

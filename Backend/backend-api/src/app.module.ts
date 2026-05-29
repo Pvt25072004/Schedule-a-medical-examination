@@ -27,6 +27,7 @@ import { PostsModule } from './posts/posts.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
 import { NewsModule } from './news/news.module';
+import { HospitalRegistrationsModule } from './hospital-registrations/hospital-registrations.module';
 import { AiModule } from './ai/ai.module';
 import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-hospital-requests.module';
 
@@ -80,6 +81,7 @@ import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-
     LikesModule,
     CommentsModule,
     NewsModule,
+    HospitalRegistrationsModule,
     AiModule,
     DoctorHospitalRequestsModule,
   ],

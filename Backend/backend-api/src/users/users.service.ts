@@ -123,6 +123,55 @@ export class UsersService {
       await this.cloudinaryService.deleteImage(user.id_card_back_public_id);
     }
 
+    // Là Admin tối cao, chúng ta có quyền force delete toàn bộ dữ liệu liên quan.
+    // Tạm thời vô hiệu hóa kiểm tra khóa ngoại để xóa, HOẶC xóa theo đúng thứ tự.
+    // Cách an toàn nhất là xóa theo cây (Từ lá đến rễ)
+
+    // Lấy tất cả appointment_id liên quan đến user (dù là bác sĩ hay bệnh nhân)
+    let appointmentIds: number[] = [];
+
+    const doctorRows = await this.usersRepository.manager.query('SELECT id FROM doctors WHERE user_id = ?', [id]);
+    const doctorId = doctorRows.length > 0 ? doctorRows[0].id : null;
+
+    if (doctorId) {
+      const appts = await this.usersRepository.manager.query('SELECT id FROM appointments WHERE doctor_id = ?', [doctorId]);
+      appointmentIds.push(...appts.map((a: any) => a.id));
+    }
+
+    const patientAppts = await this.usersRepository.manager.query('SELECT id FROM appointments WHERE user_id = ?', [id]);
+    appointmentIds.push(...patientAppts.map((a: any) => a.id));
+
+    // Xóa trùng lặp (nếu có)
+    appointmentIds = [...new Set(appointmentIds)];
+
+    // 1. Xóa Payments và Reviews của các Appointment này
+    if (appointmentIds.length > 0) {
+      const idsString = appointmentIds.join(',');
+      await this.usersRepository.manager.query(`DELETE FROM payments WHERE appointment_id IN (${idsString})`);
+      await this.usersRepository.manager.query(`DELETE FROM reviews WHERE appointment_id IN (${idsString})`);
+    }
+
+    // 2. Xóa Appointments
+    if (appointmentIds.length > 0) {
+      const idsString = appointmentIds.join(',');
+      await this.usersRepository.manager.query(`DELETE FROM appointments WHERE id IN (${idsString})`);
+    }
+
+    // 3. Nếu là Bác sĩ, xóa các dữ liệu liên kết khác
+    if (doctorId) {
+      await this.usersRepository.manager.query('DELETE FROM reviews WHERE doctor_id = ?', [doctorId]);
+      await this.usersRepository.manager.query('DELETE FROM schedules WHERE doctor_id = ?', [doctorId]);
+      await this.usersRepository.manager.query('DELETE FROM doctor_applications WHERE doctor_id = ?', [doctorId]);
+      await this.usersRepository.manager.query('DELETE FROM banners WHERE doctor_id = ?', [doctorId]);
+      await this.usersRepository.manager.query('DELETE FROM doctors WHERE id = ?', [doctorId]);
+    }
+
+    // 4. Xóa dữ liệu user liên kết
+    await this.usersRepository.manager.query('DELETE FROM reviews WHERE user_id = ?', [id]);
+    await this.usersRepository.manager.query('DELETE FROM likes WHERE user_id = ?', [id]);
+    await this.usersRepository.manager.query('DELETE FROM comments WHERE user_id = ?', [id]);
+
+    // Cuối cùng xóa User
     await this.usersRepository.remove(user);
   }
 }

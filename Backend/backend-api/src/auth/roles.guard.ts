@@ -25,11 +25,13 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user as { role?: Role } | undefined;
 
-    if (!user?.role) {
+    const role = (user?.role || (user as any)?.userRole || (user as any)?.user_role || (user as any)?.roles?.[0])?.toLowerCase();
+
+    if (!role) {
       throw new ForbiddenException('Thiếu thông tin phân quyền');
     }
 
-    if (!requiredRoles.includes(user.role)) {
+    if (!requiredRoles.some(r => r.toLowerCase() === role)) {
       throw new ForbiddenException('Bạn không có quyền truy cập tài nguyên này');
     }
 
