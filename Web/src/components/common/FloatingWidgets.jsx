@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronUp, MessageSquare, X, Send, Bot, User as UserIcon, Maximize2, Minimize2, Trash2 } from 'lucide-react';
+import Button from './Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { API_BASE_URL } from '../../utils/constants';
+import { API_BASE_URL, PAGES } from '../../utils/constants';
 
 // Helper function to extract JSON object from a string
 const extractJSON = (text) => {
@@ -28,6 +29,9 @@ const FloatingWidgets = () => {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const hideChatRoutes = [PAGES.DOCTOR_DASHBOARD, PAGES.ADMIN_DASHBOARD, PAGES.BANNER_MANAGEMENT];
+  const shouldHideChat = hideChatRoutes.some(route => location.pathname.startsWith(route));
 
   const [messages, setMessages] = useState(() => {
     const saved = localStorage.getItem('ai_chat_messages');
@@ -323,7 +327,9 @@ const FloatingWidgets = () => {
       </div>
 
       {/* Chatbot Trigger & Panel - Bottom Left */}
-      <div className="fixed bottom-0 left-6 z-50 flex flex-col items-start">
+      {!shouldHideChat && (
+        <div className="fixed bottom-0 left-6 z-50 flex flex-col items-start">
+
         {/* Chatbot Panel (Slide up) */}
         <div
           className={`bg-white rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 ease-in-out origin-bottom flex flex-col ${isChatOpen
@@ -457,7 +463,8 @@ const FloatingWidgets = () => {
           <MessageSquare className="w-4 h-4" />
           <span className="text-sm">Tư vấn trực tuyến</span>
         </div>
-      </div>
+        </div>
+      )}
     </>
   );
 };

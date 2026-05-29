@@ -111,7 +111,7 @@ const HomePage = ({ navigate }) => {
       try {
         const cats = await getCategories();
 
-        console.log("Categories API:", cats);
+        // console.log("Categories API:", cats);
 
         setCategoriesList(Array.isArray(cats) ? cats : cats?.data || []);
       } catch (err) {
@@ -128,7 +128,7 @@ const HomePage = ({ navigate }) => {
       {/* Header is managed globally in AppRoutes */}
 
       {/* Banner Section removed as requested */}
-      
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}

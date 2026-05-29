@@ -63,3 +63,29 @@ export const uploadDoctorAvatar = async (file) => {
   });
   return handleResponse(response, "Không thể tải lên ảnh đại diện");
 };
+
+// --- API Đơn Ứng Tuyển ---
+
+export const createDoctorApplication = async (payload) => {
+  const response = await fetch(`${DOCTORS_ENDPOINT}/applications`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+    credentials: "include",
+  });
+  return handleResponse(response, "Không thể gửi yêu cầu liên kết");
+};
+
+export const getMyDoctorApplications = async () => {
+  const response = await fetch(`${DOCTORS_ENDPOINT}/me/applications`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+    credentials: "include",
+  });
+  return handleResponse(response, "Không thể tải danh sách đơn đã gửi");
+};
+

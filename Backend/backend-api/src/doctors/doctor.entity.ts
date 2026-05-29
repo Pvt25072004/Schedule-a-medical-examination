@@ -2,6 +2,7 @@ import { Appointment } from 'src/appointments/entities/appointment.entity';
 import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Schedule } from 'src/schedules/entities/schedule.entity';
 import { Category } from 'src/categories/entities/category.entity';
+import { User } from 'src/users/entities/user.entity';
 import {
   Entity,
   Column,
@@ -12,6 +13,7 @@ import {
   ManyToMany,
   JoinTable,
   ManyToOne,
+  OneToOne,
   JoinColumn,
 } from 'typeorm';
 import { Banner } from 'src/banner/entities/banner.entity';
@@ -21,29 +23,43 @@ export class Doctor {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 255 })
-  name: string;
+  // Liên kết 1-1 với User (Xác thực và thông tin cá nhân)
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
-  @Column({ length: 100 })
+  @Column({ length: 100, nullable: true })
   specialty: string;
 
-  @Column({ default: true })
-  is_active: boolean;
+  @Column({ length: 255, nullable: true })
+  degree: string;
 
-  @Column({ length: 255, unique: true })
-  email: string;
+  @Column({ type: 'int', default: 0 })
+  experience_years: number;
 
-  @Column({ length: 20, unique: true })
-  phone: string;
+  @Column({ length: 100, nullable: true })
+  license_number: string;
 
-  @Column({ length: 255 })
-  password_hash: string;
+  // File uploads (URLs)
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  license_file: string;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  avatar_url: string;
+  certificate_file: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  avatar_public_id: string;
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  cv_file: string;
+
+  // Trạng thái của hồ sơ bác sĩ
+  @Column({
+    type: 'enum',
+    enum: ['pending_verification', 'active', 'rejected', 'suspended'],
+    default: 'pending_verification',
+  })
+  verification_status: string;
+
+  @Column({ type: 'text', nullable: true })
+  rejection_reason: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
