@@ -24,7 +24,7 @@ export class Doctor {
   id: number;
 
   // Liên kết 1-1 với User (Xác thực và thông tin cá nhân)
-  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @OneToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
 
