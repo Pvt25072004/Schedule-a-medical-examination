@@ -89,6 +89,9 @@ export class Doctor {
   @OneToMany(() => Appointment, (appointment) => appointment.doctor)
   appointments: Appointment[];
 
+  @OneToMany(() => Schedule, (schedule) => schedule.doctor)
+  schedules: Schedule[];
+
   @ManyToMany(() => Hospital, (hospital) => hospital.doctors)
   @JoinTable({
     name: 'doctor_hospital',

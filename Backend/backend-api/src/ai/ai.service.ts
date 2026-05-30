@@ -165,7 +165,6 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             if (args.specialty) {
               const term = args.specialty.toLowerCase();
               filteredDoctors = allDoctors.filter(d =>
-                (d.specialty && d.specialty.toLowerCase().includes(term)) ||
                 (d.category && d.category.name.toLowerCase().includes(term))
               );
             }
@@ -173,7 +172,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             toolResult = filteredDoctors.slice(0, 5).map(d => ({
               id: d.id,
               name: d.user?.full_name || 'Bác sĩ',
-              specialty: d.specialty || d.category?.name,
+              specialty: d.category?.name,
               hospitals: (d.hospitals || []).map(h => ({ id: h.id, name: h.name }))
             }));
           } else if (functionName === 'get_available_slots') {
