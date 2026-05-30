@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { DoctorsService } from '../doctors/doctors.service';
 import { HospitalsService } from '../hospitals/hospitals.service';
 import { AppointmentsService } from '../appointments/appointments.service';
+import { ServicePackagesService } from '../service-packages/service-packages.service';
 
 @Injectable()
 export class AiService {
@@ -9,13 +10,14 @@ export class AiService {
     private readonly doctorsService: DoctorsService,
     private readonly hospitalsService: HospitalsService,
     private readonly appointmentsService: AppointmentsService,
+    private readonly servicePackagesService: ServicePackagesService,
   ) { }
 
   async processChat(messages: any[], bookingData: any): Promise<any> {
     try {
       const systemPrompt = `
-Vai trò: Trợ lý y tế STL Clinic. Đặt lịch khám bệnh. Trả lời ngắn gọn, ân cần.
-Mục tiêu thu thập: Triệu chứng/Khoa, Bệnh viện, Bác sĩ, Ngày, Giờ.
+Vai trò: Trợ lý y tế STL Clinic. Đặt lịch khám bệnh. Không tự đoán bịa dữ liệu.
+Mục tiêu thu thập: Triệu chứng/Khoa hoặc Gói khám, Khu vực xong rồi mới tới Bệnh viện, Bác sĩ, Ngày, Giờ.
 - Fast-track: Gọi ngay các tool (có thể liên tiếp/song song) nếu có sẵn data. KHÔNG hỏi vòng vo.
 - Giờ khám: BẮT BUỘC dùng tool lấy giờ trống. Nếu user chưa chọn hoặc giờ không khớp, HÃY liệt kê và YÊU CẦU user chọn cụ thể 1 giờ.
 - Tự gợi ý bác sĩ nếu user không chọn. 
@@ -60,6 +62,19 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
         {
           type: "function",
           function: {
+            name: "get_service_packages",
+            description: "Lấy danh sách các gói dịch vụ khám (ví dụ: tầm soát ung thư, khám tổng quát...). Dùng khi người dùng muốn tìm hoặc đặt gói khám.",
+            parameters: {
+              type: "object",
+              properties: {
+                keyword: { type: ["string", "null"], description: "Từ khóa tìm kiếm gói khám (ví dụ: tầm soát ung thư)" }
+              }
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
             name: "get_available_slots",
             description: "Lấy danh sách các khung giờ trống của một bác sĩ vào một ngày cụ thể.",
             parameters: {
@@ -82,7 +97,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
   }
 
   private async callGroqWithTools(apiMessages: any[], tools?: any[], depth: number = 0, retryCount: number = 0): Promise<any> {
-    if (depth > 3) {
+    if (depth > 7) {
       throw new Error("Quá nhiều lần gọi tool liên tiếp.");
     }
 
@@ -109,52 +124,108 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
     });
 
     if (response.status === 429) {
-      if (retryCount >= 2) throw new InternalServerErrorException('Groq Rate Limit Exceeded');
-      console.warn("Groq API Rate Limit (429) in tool phase. Retrying in 3s...");
-      await new Promise(r => setTimeout(r, 3000));
+      if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded');
+      console.warn("Groq API Rate Limit (429) in tool phase. Retrying in 5s...");
+      await new Promise(r => setTimeout(r, 5000));
       return await this.callGroqWithTools(apiMessages, tools, depth, retryCount + 1);
     }
+
+    let responseMessage: any = null;
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Groq API Error:', errorText);
 
+      let recovered = false;
       try {
         const errorData = JSON.parse(errorText);
         if (errorData?.error?.code === 'tool_use_failed') {
-          console.warn('Groq API Tool Use Failed. Retrying with syntax hint...');
-          const retryMessages = [
-            ...apiMessages,
-            { role: 'user', content: 'Lưu ý hệ thống: Lời gọi hàm vừa rồi bị lỗi cú pháp (thiếu dấu > hoặc ngoặc). Bạn chú ý sinh tool call chuẩn JSON, hoặc nếu dùng thẻ XML thì BẮT BUỘC phải đúng định dạng: <function=tên_hàm>{"tham_số":"giá_trị"}</function>. Vui lòng gọi lại.' }
-          ];
-          return await this.callGroqWithTools(retryMessages, tools, depth + 1, retryCount);
+          const failedGen = errorData.error.failed_generation;
+          if (failedGen) {
+            // Cố gắng cứu vãn lỗi cú pháp của Groq/Llama cực kỳ dị dạng
+            const nameMatch = failedGen.match(/function=([a-zA-Z0-9_]+)/);
+            const jsonStart = failedGen.indexOf('{');
+            const jsonEnd = failedGen.lastIndexOf('}');
+
+            if (nameMatch && jsonStart !== -1 && jsonEnd !== -1 && jsonEnd >= jsonStart) {
+              const funcName = nameMatch[1];
+              const funcArgs = failedGen.substring(jsonStart, jsonEnd + 1);
+              
+              responseMessage = {
+                role: 'assistant',
+                content: '',
+                tool_calls: [{
+                  id: 'call_' + Math.random().toString(36).substring(7),
+                  type: 'function',
+                  function: {
+                    name: funcName,
+                    arguments: funcArgs
+                  }
+                }]
+              };
+              recovered = true;
+              console.log('Successfully recovered from Groq 400 tool_use_failed via smart extract:', funcName, funcArgs);
+            }
+          }
+          
+          if (!recovered) {
+            console.warn('Groq API Tool Use Failed. Retrying with syntax hint...');
+            const retryMessages = [
+              ...apiMessages,
+              { role: 'user', content: 'Lưu ý hệ thống: Lời gọi hàm vừa rồi bị lỗi cú pháp JSON. Vui lòng gọi lại hàm bằng định dạng JSON chuẩn.' }
+            ];
+            return await this.callGroqWithTools(retryMessages, tools, depth + 1, retryCount);
+          }
         }
       } catch (e) {
-        // Bỏ qua lỗi parse
+        // Bỏ qua lỗi parse error json
       }
 
-      throw new InternalServerErrorException('Failed to call AI API');
+      if (!recovered) {
+        throw new InternalServerErrorException('Failed to call AI API');
+      }
+    } else {
+      const groqData = await response.json();
+      responseMessage = groqData.choices[0]?.message;
     }
 
-    const groqData = await response.json();
-    const responseMessage = groqData.choices[0]?.message;
+    // Fallback: Xử lý trường hợp AI sinh ra raw tool call text (bị leak ra content)
+    let toolCalls = responseMessage.tool_calls || [];
+    if (responseMessage.content) {
+      const functionMatch = responseMessage.content.match(/<function=(\w+)>([\s\S]*?)<\/function>/);
+      if (functionMatch && (!toolCalls || toolCalls.length === 0)) {
+        toolCalls = [{
+          id: 'call_' + Math.random().toString(36).substring(7),
+          type: 'function',
+          function: {
+            name: functionMatch[1],
+            arguments: functionMatch[2]
+          }
+        }];
+      }
+      // Dọn dẹp content để không in ra chuỗi function rác cho người dùng
+      responseMessage.content = responseMessage.content.replace(/<function=\w+>[\s\S]*?<\/function>/g, '').trim();
+    }
 
     // Kiểm tra xem AI có yêu cầu gọi Tool không
-    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+    if (toolCalls && toolCalls.length > 0) {
       const assistantMsg = {
         role: "assistant",
-        tool_calls: responseMessage.tool_calls,
+        tool_calls: toolCalls,
         content: responseMessage.content || ""
       };
       apiMessages.push(assistantMsg);
 
       // Thực thi song song hoặc tuần tự các tool gán kết quả
-      for (const toolCall of responseMessage.tool_calls) {
+      for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
-        const args = JSON.parse(toolCall.function.arguments || '{}');
 
         let toolResult: any = null;
         try {
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          console.log(`\n[AI TOOL CALL] Function: ${functionName}`);
+          console.log(`[AI TOOL CALL] Args:`, args);
+
           if (functionName === 'get_hospitals') {
             const hospitals = await this.hospitalsService.findAll(args.city);
             // Giới hạn 5 kết quả để tiết kiệm token
@@ -165,7 +236,6 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             if (args.specialty) {
               const term = args.specialty.toLowerCase();
               filteredDoctors = allDoctors.filter(d =>
-                (d.specialty && d.specialty.toLowerCase().includes(term)) ||
                 (d.category && d.category.name.toLowerCase().includes(term))
               );
             }
@@ -173,11 +243,30 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             toolResult = filteredDoctors.slice(0, 5).map(d => ({
               id: d.id,
               name: d.user?.full_name || 'Bác sĩ',
-              specialty: d.specialty || d.category?.name,
+              specialty: d.category?.name,
               hospitals: (d.hospitals || []).map(h => ({ id: h.id, name: h.name }))
             }));
+          } else if (functionName === 'get_service_packages') {
+            const allPackages = await this.servicePackagesService.findAll();
+            let filtered = allPackages.filter(p => p.is_active);
+            if (args.keyword) {
+              const term = args.keyword.toLowerCase();
+              filtered = filtered.filter(p => p.name.toLowerCase().includes(term) || (p.description && p.description.toLowerCase().includes(term)));
+            }
+            toolResult = filtered.slice(0, 5).map(p => ({
+              id: p.id,
+              name: p.name,
+              price: p.fixed_price,
+              hospitals: (p.hospitals || []).map(h => ({ id: h.id, name: h.name }))
+            }));
           } else if (functionName === 'get_available_slots') {
-            const slots = await this.appointmentsService.getAvailableTimes(args.doctorId, args.date);
+            let parsedDate = args.date;
+            // Chống lỗi AI trả về DD-MM-YYYY hoặc DD/MM/YYYY
+            if (parsedDate && parsedDate.match(/^\d{2}[-\/]\d{2}[-\/]\d{4}$/)) {
+              const parts = parsedDate.split(/[-\/]/);
+              parsedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            const slots = await this.appointmentsService.getAvailableTimes(args.doctorId, parsedDate);
             toolResult = slots;
           } else {
             toolResult = { error: 'Unknown tool' };
@@ -218,7 +307,7 @@ ${aiProposedReply ? `The assistant's reply is: ${JSON.stringify(aiProposedReply)
 REQUIRED JSON SCHEMA:
 {
   "reply": "str (câu trả lời gửi cho user)",
-  "bookingData": { "hospitalId": int|null, "hospitalName": "str", "specialty": "str", "doctorId": int|null, "doctorName": "str", "date": "YYYY-MM-DD", "time": "HH:mm", "symptoms": "str" },
+  "bookingData": { "hospitalId": int|null, "hospitalName": "str", "specialty": "str", "doctorId": int|null, "doctorName": "str", "packageId": int|null, "packageName": "str", "date": "YYYY-MM-DD", "time": "HH:mm", "symptoms": "str" },
   "isComplete": bool (CHỈ ĐƯỢC = true NẾU đã đủ tất cả data VÀ người dùng ĐÃ XÁC NHẬN ĐỒNG Ý đặt lịch ở tin nhắn cuối. Nếu chưa xác nhận, false)
 }`
       }
@@ -240,9 +329,9 @@ REQUIRED JSON SCHEMA:
     });
 
     if (response.status === 429) {
-      if (retryCount >= 2) throw new InternalServerErrorException('Groq Rate Limit Exceeded');
-      console.warn("Groq API Rate Limit (429) in finalize phase. Retrying in 3s...");
-      await new Promise(r => setTimeout(r, 3000));
+      if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded');
+      console.warn("Groq API Rate Limit (429) in finalize phase. Retrying in 5s...");
+      await new Promise(r => setTimeout(r, 5000));
       return await this.finalizeJson(apiMessages, aiProposedReply, retryCount + 1); // Retry without pushing duplicate system prompt
     }
 

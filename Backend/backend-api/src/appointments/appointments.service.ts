@@ -91,10 +91,20 @@ export class AppointmentsService {
 
       const [h, m] = appointmentTime.split(':').map(Number);
       const totalStartMins = h * 60 + m;
-      const totalEndMins = totalStartMins + durationMinutes;
+      let totalEndMins = totalStartMins + durationMinutes;
+
+      // Xử lý Vắt Ca (Nghỉ trưa từ 11:30 đến 13:30)
+      const morningEndMins = 11 * 60 + 30; // 11:30
+      const lunchDuration = 120; // 2 hours
+
+      if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
+        totalEndMins += lunchDuration;
+      }
+
       const endH = Math.floor(totalEndMins / 60);
       const endM = totalEndMins % 60;
       const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
 
       // KIỂM TRA MỚI: Check trùng giờ cụ thể dựa vào overlap
       const overlapConflict = await queryRunner.manager
@@ -402,5 +412,139 @@ export class AppointmentsService {
     }
 
     return Array.from(availableSlots).sort();
+  }
+  async getAvailableTimesForPackage(packageId: number, date: string): Promise<string[]> {
+    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
+      where: { id: packageId }, 
+      relations: ['doctors'] 
+    });
+
+    if (!servicePackage || !servicePackage.doctors || servicePackage.doctors.length === 0) {
+      return [];
+    }
+
+    const durationMinutes = servicePackage.duration_minutes || 30;
+    const allAvailableSlots = new Set<string>();
+
+    for (const doctor of servicePackage.doctors) {
+      const times = await this.getAvailableTimes(doctor.id, date);
+      
+      // Filter times that can accommodate the duration
+      for (const time of times) {
+        let isValid = true;
+        
+        // We must check if the time slot + duration doesn't overlap with another booked appointment
+        // We can do a quick check by verifying all 30-min sub-slots are in the 'times' array,
+        // EXCEPT if there's a lunch break jump.
+        
+        // Let's do the rigorous check via DB count (same as create)
+        const [h, m] = time.split(':').map(Number);
+        const totalStartMins = h * 60 + m;
+        let totalEndMins = totalStartMins + durationMinutes;
+
+        const morningEndMins = 11 * 60 + 30; // 11:30
+        const lunchDuration = 120; // 2 hours
+
+        if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
+          totalEndMins += lunchDuration;
+        }
+
+        const endH = Math.floor(totalEndMins / 60);
+        const endM = totalEndMins % 60;
+        const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+        const overlapConflict = await this.dataSource.manager
+          .createQueryBuilder(Appointment, 'appt')
+          .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
+          .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
+          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
+          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
+          .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
+          .getCount();
+
+        // Also check if end time exceeds hospital schedule (assume max 17:00 = 17*60 = 1020)
+        // If end time is past 17:00, it's invalid.
+        if (totalEndMins > 17 * 60) {
+           isValid = false;
+        }
+
+        if (overlapConflict > 0) {
+          isValid = false;
+        }
+
+        if (isValid) {
+          allAvailableSlots.add(time);
+        }
+      }
+    }
+
+    return Array.from(allAvailableSlots).sort();
+  }
+
+  async getAvailableDoctorsForPackage(packageId: number, date: string, time: string): Promise<Doctor[]> {
+    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
+      where: { id: packageId }, 
+      relations: ['doctors', 'doctors.user'] 
+    });
+
+    if (!servicePackage || !servicePackage.doctors || servicePackage.doctors.length === 0) {
+      return [];
+    }
+
+    const durationMinutes = servicePackage.duration_minutes || 30;
+    const availableDoctors: Doctor[] = [];
+
+    const [h, m] = time.split(':').map(Number);
+    const totalStartMins = h * 60 + m;
+    let totalEndMins = totalStartMins + durationMinutes;
+
+    const morningEndMins = 11 * 60 + 30; // 11:30
+    const lunchDuration = 120; // 2 hours
+
+    if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
+      totalEndMins += lunchDuration;
+    }
+
+    const endH = Math.floor(totalEndMins / 60);
+    const endM = totalEndMins % 60;
+    const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+    if (totalEndMins > 17 * 60) {
+      return []; // Exceeds hospital hours
+    }
+
+    for (const doctor of servicePackage.doctors) {
+      // Check if doctor has a valid schedule for this time
+      const schedule = await this.dataSource.manager.createQueryBuilder(Schedule, 'schedule')
+        .where('schedule.doctor_id = :doctorId', { doctorId: doctor.id })
+        .andWhere('schedule.work_date = :workDate', { workDate: date })
+        .andWhere('schedule.start_time <= :time', { time })
+        .andWhere('schedule.end_time >= :time', { time })
+        .andWhere('schedule.is_available = true')
+        .getOne();
+
+      if (!schedule) continue;
+
+      // Check overlap
+      const overlapConflict = await this.dataSource.manager
+        .createQueryBuilder(Appointment, 'appt')
+        .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
+        .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
+        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
+        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
+        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
+        .getCount();
+
+      if (overlapConflict === 0) {
+        // Map to include name and avatar for frontend convenience
+        availableDoctors.push({
+          ...doctor,
+          name: doctor.user?.full_name || 'Bác sĩ ẩn danh',
+          avatar_url: doctor.user?.avatar_url || ''
+        } as any);
+      }
+    }
+
+    return availableDoctors;
   }
 }

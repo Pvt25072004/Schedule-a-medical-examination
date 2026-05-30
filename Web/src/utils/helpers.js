@@ -159,3 +159,15 @@ export const removeDiacritics = (str) => {
     .replace(/Đ/g, "D")
     .toLowerCase();
 };
+
+// Smart search string normalization (removes diacritics, spaces, punctuation)
+export const normalizeForSearch = (str) => {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove Vietnamese accents
+    .replace(/[đĐ]/g, "d")
+    .replace(/[^a-z0-9]/g, ""); // Remove spaces, punctuation, and hashtags
+};
+

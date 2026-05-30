@@ -29,9 +29,6 @@ export class Doctor {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ length: 100, nullable: true })
-  specialty: string;
-
   @Column({ length: 255, nullable: true })
   degree: string;
 

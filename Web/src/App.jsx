@@ -17,6 +17,7 @@ import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
 import BookingPage from "./pages/BookingPage";
 import BookingFlowPage from "./pages/BookingFlowPage";
+import PackageBookingFlowPage from "./pages/PackageBookingFlowPage";
 import DoctorListPage from "./pages/DoctorListPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import ChatPage from "./pages/ChatPage";
@@ -125,6 +126,16 @@ const AppRoutes = () => {
           element={
             isAuthenticated ? (
               <BookingPage navigate={navigateTo} />
+            ) : (
+              <Navigate to={PAGES.WELCOME} replace />
+            )
+          }
+        />
+        <Route
+          path={PAGES.BOOK_PACKAGE}
+          element={
+            isAuthenticated ? (
+              <PackageBookingFlowPage />
             ) : (
               <Navigate to={PAGES.WELCOME} replace />
             )
