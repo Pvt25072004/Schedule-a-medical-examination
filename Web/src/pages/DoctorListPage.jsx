@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Search, MapPin, Star, Award, ArrowLeft, Filter, TrendingUp, DollarSign, CheckCircle, Shield } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Card from "../components/common/Card";
@@ -27,6 +27,17 @@ const DoctorListPage = () => {
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(20000000); // Default 20M
   const [isPopularOnly, setIsPopularOnly] = useState(false);
+  const filterRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilters(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -182,7 +193,7 @@ const DoctorListPage = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
-        <div className="relative z-50">
+        <div className="relative z-50" ref={filterRef}>
           <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 flex items-center justify-between border border-gray-100 relative">
             <div className="text-gray-600 font-medium">
               Tìm thấy <span className="text-blue-600 font-bold">{filteredAndSortedDoctors.length}</span> bác sĩ
@@ -408,9 +419,9 @@ const DoctorListPage = () => {
                       </div>
                     )}
                     <div className="flex items-center justify-between text-gray-700 pt-1">
-                      <span className="font-medium">Phí khám dự kiến</span>
+                      <span className="font-medium">Tổng phí (Bác sĩ + CSYT)</span>
                       <span className="text-xl font-bold text-blue-700">
-                        {formatCurrency(doctor.consultationFee)}
+                        {formatCurrency(Number(doctor.consultationFee || 0) + Number(doctor.hospitals?.[0]?.facility_fee || 0))}
                       </span>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,7 +6,8 @@ import { Appointment } from './entities/appointment.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Doctor } from '../doctors/doctor.entity';
 import { Hospital } from '../hospitals/entities/hospital.entity';
-import { Repository, MoreThanOrEqual, In, DataSource } from 'typeorm';
+import { Repository, MoreThanOrEqual, In, DataSource, LessThan } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PricingService } from '../pricing/pricing.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -30,9 +31,14 @@ export class AppointmentsService {
     private dataSource: DataSource,
   ) {}
 
+  private readonly logger = new Logger(AppointmentsService.name);
+
   async create(
     createAppointmentDto: CreateAppointmentDto,
   ): Promise<Appointment> {
+    const fs = require('fs');
+    fs.appendFileSync('payload_log.txt', new Date().toISOString() + ' PAYLOAD: ' + JSON.stringify(createAppointmentDto) + '\n');
+    console.log('PAYLOAD:', JSON.stringify(createAppointmentDto, null, 2));
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     // Bắt đầu Transaction với cấp độ cách ly SERIALIZABLE để chống Race Condition tuyệt đối
@@ -53,9 +59,6 @@ export class AppointmentsService {
           .where('schedule.doctor_id = :doctorId', {
             doctorId: createAppointmentDto.doctor_id,
           })
-          .andWhere('schedule.hospital_id = :hospitalId', {
-            hospitalId: createAppointmentDto.hospital_id,
-          })
           .andWhere('schedule.work_date = :workDate', {
             workDate: appointmentDateStr,
           })
@@ -75,6 +78,9 @@ export class AppointmentsService {
       if (!schedule.is_available) {
         throw new BadRequestException('Ca làm việc này của bác sĩ hiện đã tạm ngưng hoặc không khả dụng. Vui lòng chọn ca khác!');
       }
+
+      // -- NEW: Override hospital_id to match the actual schedule's hospital --
+      createAppointmentDto.hospital_id = schedule.hospital_id;
 
       // -- NEW: Xử lý Service Package & duration --
       let durationMinutes = 30; // default
@@ -230,7 +236,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where,
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['user', 'hospital'],
+      relations: ['user', 'hospital', 'payment'],
     });
   }
 
@@ -238,7 +244,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where: { user_id: userId },
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['doctor', 'hospital', 'review'],
+      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'review', 'payment'],
     });
   }
 
@@ -546,5 +552,29 @@ export class AppointmentsService {
     }
 
     return availableDoctors;
+  }
+
+  // Chạy mỗi 5 phút để dọn dẹp các lịch pending quá 15 phút
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async handleCleanupPendingAppointments() {
+    this.logger.log('Running cleanup for expired pending appointments...');
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() - 15);
+
+    const expiredAppointments = await this.appointmentsRepository.find({
+      where: {
+        status: 'pending',
+        created_at: LessThan(expirationTime),
+      },
+    });
+
+    if (expiredAppointments.length > 0) {
+      for (const appt of expiredAppointments) {
+        appt.status = 'cancelled';
+        appt.cancel_reason = 'Hệ thống tự động hủy do quá hạn thanh toán (15 phút)';
+      }
+      await this.appointmentsRepository.save(expiredAppointments);
+      this.logger.log(`Auto-cancelled ${expiredAppointments.length} expired appointments.`);
+    }
   }
 }

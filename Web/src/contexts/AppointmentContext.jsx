@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { generateId } from "../utils/helpers";
 import { APPOINTMENT_STATUS } from "../utils/constants";
 import { useAuth } from "./AuthContext";
-import { getAppointmentsByUser, updateAppointment } from "../services/appointments.api";
+import { getAppointmentsByUser, updateAppointment, updateAppointmentStatus } from "../services/appointments.api";
 
 const AppointmentContext = createContext();
 
@@ -33,6 +33,16 @@ export const AppointmentProvider = ({ children }) => {
             ? apt.appointment_date.slice(0, 10)
             : apt.appointment_date?.toString().slice(0, 10);
         const rawTime = (apt.appointment_time || "").slice(0, 5);
+        let mappedStatus = apt.status || APPOINTMENT_STATUS.PENDING;
+        if (
+          mappedStatus === APPOINTMENT_STATUS.PENDING &&
+          apt.payment &&
+          apt.payment.payment_method === "vnpay" &&
+          apt.payment.payment_status === "pending"
+        ) {
+          mappedStatus = "awaiting_payment";
+        }
+
         return {
           id: apt.id, // dùng luôn id backend
           backendId: apt.id,
@@ -46,9 +56,13 @@ export const AppointmentProvider = ({ children }) => {
           date: rawDate,
           time: rawTime,
           type: apt.symptoms || "",
-          status: apt.status || APPOINTMENT_STATUS.PENDING,
+          status: mappedStatus,
+          payment: apt.payment,
           cancelReason: apt.cancel_reason || "",
-          hasReview: false,
+          hasReview: !!apt.review,
+          reviewId: apt.review?.id,
+          reviewRating: apt.review?.rating || 0,
+          reviewComment: apt.review?.comment || "",
           notes: "",
           hospital: apt.hospital || null,
           hospitalName: apt.hospital?.name || "STL Clinic",
@@ -94,9 +108,7 @@ export const AppointmentProvider = ({ children }) => {
     const target = appointments.find((apt) => apt.id === id);
     if (target?.backendId) {
       try {
-        await updateAppointment(target.backendId, {
-          status: APPOINTMENT_STATUS.CANCELLED,
-        });
+        await updateAppointmentStatus(target.backendId, APPOINTMENT_STATUS.CANCELLED);
       } catch (e) {
         console.error("Cancel appointment on server failed:", e);
       }
@@ -166,8 +178,8 @@ export const AppointmentProvider = ({ children }) => {
     updateAppointment,
     cancelAppointment,
     deleteAppointment,
-    getUpcomingAppointments,
     getPastAppointments,
+    getUpcomingAppointments,
     getStatistics,
     isSlotAvailable,
     refreshAppointments: loadAppointments,

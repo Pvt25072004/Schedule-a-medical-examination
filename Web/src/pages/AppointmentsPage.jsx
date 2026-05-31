@@ -11,6 +11,9 @@ import {
   Filter,
   Plus,
   ChevronDown,
+  Star,
+  Shield,
+  FileText
 } from "lucide-react";
 import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -22,19 +25,21 @@ import {
   getStatusColor,
   getStatusText,
   getRelativeDate,
+  normalizeForSearch,
 } from "../utils/helpers";
-import { createReview } from "../services/reviews.api";
+import { createReview, updateReview } from "../services/reviews.api";
+import { createVnpayUrl } from "../services/payments.api";
+import { CreditCard } from "lucide-react";
 
 const AppointmentsPage = ({ navigate }) => {
   const {
     appointments,
     cancelAppointment,
-    getStatistics,
-    getPastAppointments,
     updateAppointment,
+    refreshAppointments
   } = useAppointments();
   const { user } = useAuth();
-  const [filter, setFilter] = useState("all");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -46,9 +51,6 @@ const AppointmentsPage = ({ navigate }) => {
   const [reviewAppointment, setReviewAppointment] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  const stats = getStatistics();
-  const pastAppointments = getPastAppointments();
-
   const sortedAppointments = [...appointments].sort(
     (a, b) =>
       new Date(`${b.date}T${b.time || "00:00"}`) -
@@ -56,25 +58,23 @@ const AppointmentsPage = ({ navigate }) => {
   );
 
   const filteredAppointments = sortedAppointments.filter((apt) => {
-    const matchesSearch =
-      apt.doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      apt.specialty.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (filter === "all") return matchesSearch;
-    if (filter === "upcoming")
-      return (
-        (apt.status === "pending" || apt.status === "confirmed") &&
-        matchesSearch
-      );
-    if (filter === "completed")
-      return apt.status === "completed" && matchesSearch;
-    if (filter === "cancelled")
-      return apt.status === "cancelled" && matchesSearch;
-    if (filter === "rejected")
-      return apt.status === APPOINTMENT_STATUS.REJECTED && matchesSearch;
-
-    return matchesSearch;
+    if (!searchQuery) return true;
+    const searchNorm = normalizeForSearch(searchQuery);
+    return (
+      normalizeForSearch(apt.doctorName).includes(searchNorm) ||
+      normalizeForSearch(apt.specialty).includes(searchNorm) ||
+      normalizeForSearch(apt.hospitalName).includes(searchNorm) ||
+      normalizeForSearch(getStatusText(apt.status)).includes(searchNorm)
+    );
   });
+
+  const upcomingAppointments = filteredAppointments.filter(
+    (apt) => apt.status === "pending" || apt.status === "confirmed" || apt.status === "awaiting_payment"
+  );
+
+  const historyAppointments = filteredAppointments.filter(
+    (apt) => apt.status === "completed" || apt.status === "cancelled" || apt.status === APPOINTMENT_STATUS.REJECTED
+  );
 
   const handleCancelAppointment = async () => {
     if (selectedAppointment) {
@@ -85,10 +85,28 @@ const AppointmentsPage = ({ navigate }) => {
     }
   };
 
+  const handleRetryPayment = async (apt) => {
+    try {
+      if (!apt.payment) return;
+      const amount = apt.payment.amount || 500000;
+      const vnpayResponse = await createVnpayUrl({
+        appointment_id: apt.backendId || apt.id,
+        amount: amount,
+        orderInfo: `Thanh toan lich kham web ${apt.backendId || apt.id}`
+      });
+      if (vnpayResponse?.url) {
+        window.location.href = vnpayResponse.url;
+      }
+    } catch (err) {
+      console.warn("Retry payment failed:", err);
+      alert("Không thể tạo URL thanh toán. Vui lòng thử lại sau.");
+    }
+  };
+
   const openReviewModal = (apt) => {
     setReviewAppointment(apt);
-    setReviewRating(5);
-    setReviewComment("");
+    setReviewRating(apt.reviewRating || 5);
+    setReviewComment(apt.reviewComment || "");
     setShowReviewModal(true);
   };
 
@@ -103,18 +121,35 @@ const AppointmentsPage = ({ navigate }) => {
     }
     try {
       setIsSubmittingReview(true);
-      await createReview({
+      const payload = {
         appointment_id: reviewAppointment.backendId || reviewAppointment.id,
         user_id: user.id,
         doctor_id: reviewAppointment.doctorId,
         rating: Number(reviewRating),
         comment: reviewComment,
-      });
-      // Đánh dấu lịch hẹn đã được đánh giá trong context
-      updateAppointment(reviewAppointment.id, { hasReview: true });
+      };
+
+      if (reviewAppointment.hasReview && reviewAppointment.reviewId) {
+        await updateReview(reviewAppointment.reviewId, payload);
+        alert("Đã cập nhật đánh giá thành công!");
+      } else {
+        await createReview(payload);
+        alert("Cảm ơn bạn đã đánh giá bác sĩ!");
+      }
+
+      // Cập nhật lại context hoặc tải lại danh sách
+      if (refreshAppointments) {
+        refreshAppointments();
+      } else {
+        updateAppointment(reviewAppointment.id, {
+          hasReview: true,
+          reviewRating: payload.rating,
+          reviewComment: payload.comment
+        });
+      }
+
       setShowReviewModal(false);
       setReviewAppointment(null);
-      alert("Cảm ơn bạn đã đánh giá bác sĩ!");
     } catch (e) {
       alert(e.message || "Không thể gửi đánh giá");
     } finally {
@@ -122,53 +157,179 @@ const AppointmentsPage = ({ navigate }) => {
     }
   };
 
-  const filterTabs = [
-    { key: "all", label: "Tất cả", count: stats.total, color: "blue" },
-    {
-      key: "upcoming",
-      label: "Sắp tới",
-      count: stats.upcoming,
-      color: "green",
-    },
-    {
-      key: "completed",
-      label: "Hoàn thành",
-      count: stats.completed,
-      color: "purple",
-    },
-    {
-      key: "rejected",
-      label: "Bị từ chối",
-      count: stats.rejected,
-      color: "red",
-    },
-    {
-      key: "cancelled",
-      label: "Đã hủy",
-      count: stats.cancelled,
-      color: "gray",
-    },
-  ];
+  const renderAppointmentCard = (apt, isHistory = false) => {
+    const statusColor = getStatusColor(apt.status);
+    return (
+      <Card
+        key={apt.id}
+        hover
+        className="mb-4 overflow-hidden border-2 border-transparent transition-colors bg-white hover:border-blue-100 shadow-sm"
+      >
+        <div className="p-5">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border-2 border-gray-200">
+                {apt.avatar_url ? (
+                  <img
+                    src={apt.avatar_url}
+                    alt={apt.doctorName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-full h-full p-3 text-gray-400" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">
+                  {apt.doctorName}
+                </h3>
+                <p className="text-blue-600 font-medium text-sm">
+                  {apt.specialty}
+                </p>
+                <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{apt.hospitalName || "Phòng khám nội bộ"}</span>
+                </div>
+              </div>
+            </div>
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-semibold border ${statusColor}`}
+            >
+              {getStatusText(apt.status)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Calendar className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium">
+                {formatDate(apt.date)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-700">
+              <Clock className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium">{apt.time}</span>
+            </div>
+            {apt.type && (
+              <div className="col-span-2 flex items-start gap-2 text-gray-700">
+                <FileText className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <span className="text-sm line-clamp-1" title={apt.type}>
+                  {apt.type}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {apt.status === "cancelled" && apt.cancelReason && (
+            <div className="mb-4 bg-red-50 text-red-700 p-3 rounded-lg text-sm flex items-start gap-2">
+              <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <span className="font-semibold block mb-0.5">Lý do hủy:</span>
+                <span>{apt.cancelReason}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Nút hành động */}
+          <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
+            {apt.status === "pending" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedAppointment(apt);
+                  setShowCancelModal(true);
+                }}
+                className="text-red-600 hover:bg-red-50 hover:border-red-200"
+              >
+                Hủy lịch
+              </Button>
+            )}
+
+            {apt.status === "awaiting_payment" && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleRetryPayment(apt)}
+                className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2 border-none text-white"
+              >
+                <CreditCard className="w-4 h-4" /> Thanh toán ngay
+              </Button>
+            )}
+
+            {apt.status === "awaiting_payment" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedAppointment(apt);
+                  setShowCancelModal(true);
+                }}
+                className="text-gray-600 hover:bg-gray-50"
+              >
+                Hủy đăng ký
+              </Button>
+            )}
+
+            {isHistory && apt.status === "completed" && (
+              <Button
+                variant={apt.hasReview ? "outline" : "primary"}
+                size="sm"
+                onClick={() => openReviewModal(apt)}
+                icon={Star}
+                className={apt.hasReview ? "text-yellow-600 hover:bg-yellow-50 border-yellow-200" : "bg-yellow-500 hover:bg-yellow-600 text-white"}
+              >
+                {apt.hasReview ? "Sửa đánh giá" : "Đánh giá bác sĩ"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header (App bar) */}
+      <header className="bg-white shadow-sm sticky top-0 z-40 py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <button
               onClick={() => navigate(PAGES.HOME)}
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition"
+              className="flex items-center gap-2 text-gray-800 hover:text-blue-600 transition flex-shrink-0"
             >
-              <Calendar className="w-5 h-5" />
-              <span className="font-semibold">Lịch hẹn của tôi</span>
             </button>
+
+            {/* Search Bar & Filter */}
+            <div className="flex-1 w-full max-w-4xl mx-auto md:mx-4 flex gap-2">
+              <div className="relative flex-grow">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm bác sĩ, chuyên khoa, phòng khám..."
+                  className="block w-full pl-11 pr-4 py-2.5 rounded-full text-gray-900 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-300 focus:outline-none transition-all shadow-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="md"
+                icon={Filter}
+                className="rounded-full shadow-sm flex-shrink-0"
+              >
+                Lọc
+              </Button>
+            </div>
 
             <Button
               variant="primary"
-              size="sm"
-              onClick={() => navigate(PAGES.DOCTORS)}
+              size="md"
+              onClick={() => navigate(PAGES.BOOKING)}
               icon={Plus}
+              className="flex-shrink-0 rounded-full shadow-md hover:shadow-lg"
             >
               Đặt lịch mới
             </Button>
@@ -176,256 +337,62 @@ const AppointmentsPage = ({ navigate }) => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {filterTabs.map((tab) => (
-            <Card
-              key={tab.key}
-              hover
-              onClick={() => setFilter(tab.key)}
-              className={`cursor-pointer border-2 transition-all ${
-                filter === tab.key
-                  ? `border-${tab.color}-500 bg-${tab.color}-50`
-                  : "border-gray-200"
-              }`}
-            >
-              <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900 mb-1">
-                  {tab.count}
-                </p>
-                <p
-                  className={`text-sm font-medium ${
-                    filter === tab.key
-                      ? `text-${tab.color}-600`
-                      : "text-gray-600"
-                  }`}
-                >
-                  {tab.label}
-                </p>
-              </div>
-            </Card>
-          ))}
-        </div>
+      {/* Main Content - 2 Columns (2/3 and 1/3) */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <div className="grid lg:grid-cols-3 gap-8">
 
-        {/* Search and Filters */}
-        <Card className="mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm bác sĩ, chuyên khoa..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {/* Left Column: Upcoming Appointments (2/3) */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Clock className="w-6 h-6 text-blue-600" />
+                Lịch hẹn sắp tới
+              </h2>
+              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                {upcomingAppointments.length} lịch
+              </span>
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" size="md" icon={Filter}>
-                Lọc
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Appointments List */}
-        {filteredAppointments.length > 0 ? (
-          <div className="space-y-4">
-            {filteredAppointments.map((apt) => (
-              <Card
-                key={apt.id}
-                hover
-                className="group cursor-pointer"
-                onClick={() => setSelectedAppointment(apt)}
-              >
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* Doctor Info */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform overflow-hidden border">
-                      {apt.avatar_url ? (
-                        <img
-                          src={apt.avatar_url}
-                          alt={apt.doctorName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        apt.avatar_url || "👨‍⚕️"
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-900">
-                            {apt.doctorName}
-                          </h3>
-                          <p className="text-blue-600 text-sm font-medium">
-                            {apt.specialty}
-                          </p>
-                        </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(
-                            apt.status,
-                          )}`}
-                        >
-                          {getStatusText(apt.status)}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span>
-                            {getRelativeDate(apt.date)} - {formatDate(apt.date)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          <span>{apt.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gray-400" />
-                          <span>
-                            {apt.hospitalName || "STL Clinic"}
-                            {apt.hospitalCity && ` - ${apt.hospitalCity}`}
-                            {apt.hospitalAddress && `, ${apt.hospitalAddress}`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {apt.type && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-700">
-                            <span className="font-semibold">Lý do khám: </span>
-                            {apt.type}
-                          </p>
-                        </div>
-                      )}
-
-                      {apt.status === APPOINTMENT_STATUS.REJECTED &&
-                        apt.cancelReason && (
-                          <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-100">
-                            <p className="text-sm text-red-700">
-                              <span className="font-semibold">
-                                Lịch hẹn bị bác sĩ từ chối:
-                              </span>{" "}
-                              {apt.cancelReason}
-                            </p>
-                          </div>
-                        )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  {(apt.status === "pending" || apt.status === "confirmed") && (
-                    <div className="flex md:flex-col gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        icon={Phone}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          alert("Gọi: 1900-xxxx");
-                        }}
-                        className="flex-1 md:flex-none"
-                      >
-                        Liên hệ
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        icon={Edit}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(PAGES.DOCTORS);
-                        }}
-                        className="flex-1 md:flex-none"
-                      >
-                        Đổi lịch
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        icon={X}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAppointment(apt);
-                          setShowCancelModal(true);
-                        }}
-                        className="flex-1 md:flex-none"
-                      >
-                        Hủy
-                      </Button>
-                    </div>
-                  )}
-                </div>
+            {upcomingAppointments.length === 0 ? (
+              <Card className="text-center py-12 bg-white/80 backdrop-blur">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 mb-4">Bạn không có lịch hẹn nào sắp tới</p>
+                <Button variant="primary" onClick={() => navigate(PAGES.DOCTORS)}>
+                  Đặt lịch khám ngay
+                </Button>
               </Card>
-            ))}
+            ) : (
+              <div>
+                {upcomingAppointments.map(apt => renderAppointmentCard(apt, false))}
+              </div>
+            )}
           </div>
-        ) : (
-          <Card className="text-center py-16">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Calendar className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {filter === "all"
-                ? "Chưa có lịch hẹn nào"
-                : `Không có lịch hẹn ${getStatusText(filter).toLowerCase()}`}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Đặt lịch ngay để được bác sĩ chăm sóc tốt nhất
-            </p>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => navigate(PAGES.DOCTORS)}
-              icon={Plus}
-            >
-              Đặt lịch ngay
-            </Button>
-          </Card>
-        )}
 
-        {/* Lịch sử khám bệnh (hoàn thành) */}
-        {pastAppointments.length > 0 && (
-          <div className="mt-10">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Lịch sử khám bệnh
-            </h2>
-            <div className="space-y-3">
-              {pastAppointments.map((apt) => (
-                <Card key={`history-${apt.id}`} className="p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">
-                        {formatDate(apt.date)} · {apt.time}
-                      </p>
-                      <p className="font-semibold text-gray-900">
-                        {apt.doctorName}
-                      </p>
-                      <p className="text-sm text-gray-600">{apt.specialty}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
-                        Đã khám xong
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={apt.hasReview}
-                        onClick={() => openReviewModal(apt)}
-                      >
-                        {apt.hasReview ? "Đã đánh giá" : "Đánh giá bác sĩ"}
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+          {/* Right Column: History (1/3) */}
+          <div className="lg:col-span-1">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Shield className="w-6 h-6 text-gray-600" />
+                Lịch sử khám
+              </h2>
+              <span className="bg-gray-200 text-gray-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                {historyAppointments.length} lịch
+              </span>
             </div>
+
+            {historyAppointments.length === 0 ? (
+              <Card className="text-center py-12 bg-white/80 backdrop-blur border-dashed border-2">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Chưa có lịch sử khám bệnh nào</p>
+              </Card>
+            ) : (
+              <div>
+                {historyAppointments.map(apt => renderAppointmentCard(apt, true))}
+              </div>
+            )}
           </div>
-        )}
+
+        </div>
       </main>
 
       {/* Cancel Modal */}
@@ -433,7 +400,9 @@ const AppointmentsPage = ({ navigate }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-md w-full animate-scale-in">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Hủy lịch hẹn</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Hủy lịch hẹn
+              </h3>
               <button
                 onClick={() => setShowCancelModal(false)}
                 className="p-1 hover:bg-gray-100 rounded-lg transition"
@@ -442,21 +411,29 @@ const AppointmentsPage = ({ navigate }) => {
               </button>
             </div>
 
-            <p className="text-gray-600 mb-4">
-              Bạn có chắc chắn muốn hủy lịch hẹn với{" "}
-              <strong>{selectedAppointment?.doctorName}</strong>?
-            </p>
+            <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-4 text-sm">
+              Bạn có chắc chắn muốn hủy lịch hẹn với bác sĩ{" "}
+              <span className="font-semibold">
+                {selectedAppointment?.doctorName}
+              </span>{" "}
+              vào lúc{" "}
+              <span className="font-semibold">
+                {selectedAppointment?.time} {formatDate(selectedAppointment?.date)}
+              </span>
+              ?
+            </div>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lý do hủy (tùy chọn)
+                Lý do hủy (bắt buộc)
               </label>
               <textarea
-                placeholder="Nhập lý do hủy lịch..."
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                placeholder="Vui lòng cho biết lý do bạn hủy lịch..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                 rows="3"
+                required
               />
             </div>
 
@@ -473,6 +450,7 @@ const AppointmentsPage = ({ navigate }) => {
                 variant="danger"
                 size="md"
                 onClick={handleCancelAppointment}
+                disabled={!cancelReason.trim()}
                 className="flex-1"
               >
                 Xác nhận hủy
@@ -488,7 +466,7 @@ const AppointmentsPage = ({ navigate }) => {
           <Card className="max-w-md w-full animate-scale-in">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-900">
-                Đánh giá bác sĩ
+                {reviewAppointment.hasReview ? "Sửa đánh giá" : "Đánh giá bác sĩ"}
               </h3>
               <button
                 onClick={() => setShowReviewModal(false)}
@@ -498,7 +476,7 @@ const AppointmentsPage = ({ navigate }) => {
               </button>
             </div>
 
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 text-sm">
               Bạn đang đánh giá <strong>{reviewAppointment?.doctorName}</strong>{" "}
               cho buổi khám {formatDate(reviewAppointment?.date)} lúc{" "}
               {reviewAppointment?.time}.
@@ -513,7 +491,7 @@ const AppointmentsPage = ({ navigate }) => {
                 onChange={(e) => setReviewRating(Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {[1, 2, 3, 4, 5].map((n) => (
+                {[5, 4, 3, 2, 1].map((n) => (
                   <option key={n} value={n}>
                     {n} sao
                   </option>
@@ -551,7 +529,7 @@ const AppointmentsPage = ({ navigate }) => {
                 disabled={isSubmittingReview}
                 className="flex-1"
               >
-                Gửi đánh giá
+                {reviewAppointment.hasReview ? "Cập nhật" : "Gửi đánh giá"}
               </Button>
             </div>
           </Card>

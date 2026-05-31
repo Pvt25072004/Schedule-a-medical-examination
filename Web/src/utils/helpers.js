@@ -51,6 +51,7 @@ export const getStatusColor = (status) => {
     completed: "blue",
     cancelled: "red",
     rejected: "red",
+    awaiting_payment: "orange",
   };
   return colors[status] || "gray";
 };
@@ -63,6 +64,7 @@ export const getStatusText = (status) => {
     completed: "Hoàn thành",
     cancelled: "Đã hủy",
     rejected: "Bị từ chối",
+    awaiting_payment: "Chờ thanh toán",
   };
   return texts[status] || status;
 };

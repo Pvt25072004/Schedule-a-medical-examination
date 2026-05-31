@@ -73,6 +73,18 @@ export const updateAppointment = async (id, payload) => {
   return handleResponse(response, "Không thể cập nhật lịch hẹn");
 };
 
+export const updateAppointmentStatus = async (id, status, reason = "") => {
+  const response = await fetch(`${APPOINTMENTS_ENDPOINT}/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ status, reason }),
+  });
+  return handleResponse(response, "Không thể cập nhật trạng thái lịch hẹn");
+};
+
 export const deleteAppointment = async (id) => {
   const response = await fetch(`${APPOINTMENTS_ENDPOINT}/${id}`, {
     method: "DELETE",

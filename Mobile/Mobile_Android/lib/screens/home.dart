@@ -7,15 +7,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:http/http.dart' as http;
 import 'package:shimmer/shimmer.dart';
-import 'chatbot.dart';
+import '../service/news_service.dart';
 import '../service/category_service.dart';
 import '../service/auth_service.dart';
+import '../utils/api_config.dart';
 import '../service/doctor_service.dart';
+import '../service/banner_service.dart';
 import 'booking.dart';
+import 'service_packages_screen.dart';
 import 'specialty_doctors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../subscreens/profile/notification_history.dart';
+import 'chatbot.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // --- Cài đặt Màu Chủ đạo ---
 const Color primaryColor = Colors.greenAccent; // Xanh lá cây
@@ -25,11 +30,7 @@ const Color primaryLightColor = Color(0xFFE8F5E9); // Xanh lá rất nhạt cho 
 // Giả định: Mock data
 
 
-final List<Map<String, String>> bannerData = [
-  {'image': 'assets/images/banner1.jpg', 'title': 'Ưu đãi khám sức khỏe 50%', 'subtitle': 'Duy nhất trong tháng'},
-  {'image': 'assets/images/banner2.jpg', 'title': 'Vaccine mới nhất', 'subtitle': 'Miễn phí tư vấn'},
-  {'image': 'assets/images/banner3.jpg', 'title': 'Tư vấn trực tuyến miễn phí', 'subtitle': 'Đội ngũ chuyên gia'},
-];
+
 
 // Hàm lấy icon thời tiết
 IconData getWeatherIcon(String iconCode) {
@@ -90,18 +91,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<dynamic> _healthNews = [];
   bool _isLoadingNews = false;
   bool _showAllSpecialties = false;
+
+  // -- Phân trang tin tức --
+  int _newsPage = 1;
+  bool _isLoadingMoreNews = false;
+  bool _hasMoreNews = true;
+  final ScrollController _scrollController = ScrollController();
   
   final CategoryService _categoryService = CategoryService();
   final DoctorService _doctorService = DoctorService();
-  
+
+  bool _hasUnreadNotifications = false;
+
+  Future<void> _fetchUnreadNotifications() async {
+    final user = AuthService.currentUser;
+    if (user == null) return;
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/notifications/user/${user.uid}');
+      final response = await http.get(url, headers: {'Authorization': 'Bearer ${AuthService.accessToken}'});
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final unread = data.any((n) => n['is_read'] == false);
+        if (mounted) setState(() => _hasUnreadNotifications = unread);
+      }
+    } catch (_) {}
+  }
   List<dynamic> _categories = [];
   List<dynamic> _topDoctors = [];
+  List<dynamic> _banners = [];
   bool _isLoadingCategories = false;
   bool _isLoadingTopDoctors = false;
+  bool _isLoadingBanners = false;
 
   @override
   void initState() {
     super.initState();
+    _fetchUnreadNotifications();
     // Gán ngay chuyên khoa đã preload từ Splash
     _categories = widget.initialCategories ?? [];
     if (_categories.isNotEmpty) {
@@ -128,18 +153,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     _fadeController.forward().then((_) => _slideController.forward());
     
+    _scrollController.addListener(_onScroll);
+
     // --- PARALLEL LOADING (Tăng hiệu năng) ---
     _refresh();
   }
 
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 50) {
+      if (!_isLoadingMoreNews && _hasMoreNews) {
+        _loadMoreNews();
+      }
+    }
+  }
+
   Future<void> _refresh() async {
+    setState(() {
+      _newsPage = 1;
+      _hasMoreNews = true;
+    });
     // Gọi song song các API để tối ưu tốc độ load
     await Future.wait([
+      _fetchUnreadNotifications(),
       _loadWeather(), 
       _loadNews(), 
       _loadCategories(),
       _loadTopDoctors(),
+      _loadBanners(),
     ]);
+  }
+
+  Future<void> _loadBanners() async {
+    if (mounted) setState(() => _isLoadingBanners = true);
+    try {
+      final banners = await BannerService.fetchBanners();
+      if (mounted) {
+        setState(() {
+          _banners = banners;
+          _isLoadingBanners = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingBanners = false);
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -175,15 +231,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _loadNews() async {
     if (mounted) setState(() => _isLoadingNews = true);
     try {
-      final news = await fetchHealthNews();
+      final news = await NewsService.fetchNews(page: 1, limit: 10);
       if (mounted) {
         setState(() {
           _healthNews = news;
           _isLoadingNews = false;
+          if (news.length < 10) _hasMoreNews = false;
         });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingNews = false);
+    }
+  }
+
+  Future<void> _loadMoreNews() async {
+    if (mounted) setState(() => _isLoadingMoreNews = true);
+    try {
+      _newsPage++;
+      final news = await NewsService.fetchNews(page: _newsPage, limit: 10);
+      if (mounted) {
+        setState(() {
+          if (news.isEmpty) {
+            _hasMoreNews = false;
+          } else {
+            _healthNews.addAll(news);
+            if (news.length < 10) _hasMoreNews = false;
+          }
+          _isLoadingMoreNews = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingMoreNews = false);
     }
   }
 
@@ -252,6 +330,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -360,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   // Nội dung chatbot screen
-                  const Expanded(
+                  Expanded(
                     child: ChatBotScreen(),
                   ),
                 ],
@@ -461,11 +540,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       MaterialPageRoute(
                         builder: (context) => const NotificationHistoryScreen(),
                       ),
-                    );
+                    ).then((_) => _fetchUnreadNotifications());
                   },
                 ),
-                Positioned(
-                  right: 8,
+                if (_hasUnreadNotifications)
+                  Positioned(
+                    right: 8,
                   top: 8,
                   child: Container(
                     width: 8,
@@ -489,6 +569,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: SingleChildScrollView(
+              controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               // Padding bottom cho không gian trống dưới cùng
               padding: const EdgeInsets.only(bottom: 80),
@@ -539,17 +620,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               children: [
                                 Row(
                                   children: [
-                                    const CircleAvatar(
-                                      radius: 20,
-                                      backgroundColor: primaryDarkColor,
-                                      child: Icon(Icons.person, size: 20, color: Colors.white),
-                                    ),
-                                    const SizedBox(width: 12),
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Xin chào,',
+                                          'STL Xin chào,',
                                           style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                                         ),
                                         Text(
@@ -575,6 +650,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const SizedBox(height: 15),
 
                         // --- Banner Carousel (Xít sát Header) ---
+                        if (_isLoadingBanners)
+                           const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Center(child: CircularProgressIndicator())),
+                        if (!_isLoadingBanners && _banners.isNotEmpty)
                         AnimationConfiguration.staggeredList(
                           position: 0,
                           duration: const Duration(milliseconds: 375),
@@ -600,65 +678,81 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     CarouselSlider(
                                       options: CarouselOptions(
                                         height: 140, // Tăng height để chứa dots
-                                        autoPlay: true,
+                                        autoPlay: _banners.length > 1, // Chống khựng
                                         autoPlayInterval: const Duration(seconds: 3),
                                         enlargeCenterPage: true,
+                                        enableInfiniteScroll: _banners.length > 1, // Chống khựng
                                         viewportFraction: 0.95,
                                         onPageChanged: (index, reason) =>
                                             setState(() => _currentBannerIndex = index),
                                       ),
-                                      items: bannerData.map((banner) {
+                                      items: _banners.map((banner) {
                                         return Builder(
                                           builder: (BuildContext context) {
+                                            final String imgUrl = (banner['image_url'] ?? '').toString();
                                             return Container(
                                               width: screenWidth,
                                               margin: const EdgeInsets.symmetric(horizontal: 4),
                                               decoration: BoxDecoration(
                                                 borderRadius: BorderRadius.circular(16),
-                                                image: DecorationImage(
-                                                  image: AssetImage(banner['image']!),
-                                                  fit: BoxFit.cover,
-                                                ),
+                                                color: Colors.grey[200],
                                               ),
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(16),
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      Colors.black.withOpacity(0.4),
-                                                      Colors.transparent,
-                                                    ],
-                                                    begin: Alignment.bottomCenter,
-                                                    end: Alignment.topCenter,
-                                                  ),
-                                                ),
-                                                child: Align(
-                                                  alignment: Alignment.bottomLeft,
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.all(16),
-                                                    child: Column(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        Text(
-                                                          banner['title']!,
-                                                          style: const TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 18,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          banner['subtitle'] ?? 'Ưu đãi',
-                                                          style: const TextStyle(
-                                                            color: Colors.white70,
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                      ],
+                                              clipBehavior: Clip.antiAlias,
+                                              child: Stack(
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  imgUrl.isNotEmpty
+                                                      ? Image.network(
+                                                          imgUrl,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (c, e, s) => const Icon(Icons.image_not_supported, color: Colors.grey),
+                                                        )
+                                                      : const Icon(Icons.image, color: Colors.grey),
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          Colors.black.withOpacity(0.6),
+                                                          Colors.transparent,
+                                                        ],
+                                                        begin: Alignment.bottomCenter,
+                                                        end: Alignment.topCenter,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
+                                                  Align(
+                                                    alignment: Alignment.bottomLeft,
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(16),
+                                                      child: Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            (banner['title'] ?? '').toString(),
+                                                            style: const TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 18,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                          if (banner['description'] != null)
+                                                          Text(
+                                                            banner['description'].toString(),
+                                                            style: const TextStyle(
+                                                              color: Colors.white70,
+                                                              fontSize: 14,
+                                                            ),
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             );
                                           },
@@ -666,13 +760,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       }).toList(),
                                     ),
                                     // Dots overlay ở dưới banner
+                                    if (_banners.length > 1)
                                     Positioned(
                                       bottom: 8,
                                       left: 0,
                                       right: 0,
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
-                                        children: bannerData.asMap().entries.map((entry) {
+                                        children: _banners.asMap().entries.map((entry) {
                                           return AnimatedContainer(
                                             duration: const Duration(milliseconds: 300),
                                             margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -697,91 +792,73 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         // Xít Banner và Phần đặt lịch lại (giảm từ 5 xuống 0)
                         const SizedBox(height: 0),
                         // --- Đặt lịch ngay + Chatbot (Gộp Container, Nền xanh nhạt, Tối ưu khoảng cách) ---
+                        // --- Gói Khám Sức Khỏe & Chatbot ---
                         Container(
                           width: double.infinity,
-                          // Xít container lại
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            // Nền xanh nhạt
                             color: primaryLightColor,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
                             border: Border.all(color: primaryColor.withOpacity(0.3)),
                           ),
                           child: Column(
                             children: [
-                              // Nút Đặt lịch ngay
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    _goToBookingScreen(context);
-                                  },
-                                  icon: const Icon(Icons.calendar_month_outlined, size: 24),
-                                  label: const Text(
-                                    'Đặt lịch ngay',
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryColor,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () => _goToBookingScreen(context),
+                                      icon: const Icon(Icons.calendar_month, size: 20),
+                                      label: const Text('Đặt Bác Sĩ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: primaryColor,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        elevation: 0,
+                                      ),
                                     ),
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    elevation: 0,
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const ServicePackagesScreen()),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.medical_information, size: 20),
+                                      label: const Text('Gói Khám', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orangeAccent,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        elevation: 0,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // Giảm khoảng cách divider
                               const Divider(height: 20, thickness: 1, color: primaryLightColor),
-
-                              // Phần Chatbot
                               InkWell(
-                                onTap: () {
-                                  _showChatbotDialog(context);
-                                },
+                                onTap: () => _showChatbotDialog(context),
                                 child: Row(
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: primaryColor.withOpacity(0.8),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.question_answer_outlined,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
+                                      decoration: BoxDecoration(color: primaryColor.withOpacity(0.8), shape: BoxShape.circle),
+                                      child: const Icon(Icons.question_answer_outlined, color: Colors.white, size: 20),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'Bạn đang gặp vấn đề?',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: primaryDarkColor,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Trò chuyện với bác sĩ AI ngay',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
+                                          const Text('Bạn đang gặp vấn đề?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryDarkColor)),
+                                          Text('Trò chuyện với bác sĩ AI ngay', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                                         ],
                                       ),
                                     ),
@@ -792,7 +869,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        // Xít Container đặt lịch và Chuyên khoa lại
                         const SizedBox(height: 8),
 
                         // --- Chuyên khoa Grid (Xem tất cả) ---
@@ -870,6 +946,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   }
 
                                   final specialty = _categories[index];
+                                  final String catName = (specialty['name'] ?? 'Chuyên khoa').toString();
+                                  
                                   return InkWell(
                                     onTap: () {
                                       Navigator.push(
@@ -890,7 +968,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
-                                            _getCategoryIcon(specialty['name'] ?? ''),
+                                            _getCategoryIcon(catName),
                                             size: 24,
                                             color: primaryColor,
                                           ),
@@ -898,7 +976,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         const SizedBox(height: 4),
                                         Expanded(
                                           child: Text(
-                                            specialty['name'] ?? 'Chuyên khoa',
+                                            catName,
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: Colors.grey[700],
@@ -938,20 +1016,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const SizedBox(height: 8),
 
                         // --- Bác sĩ nổi bật (UI mới, Xịn hơn) ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'Bác sĩ được đề xuất',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: primaryDarkColor,
+                        if (_isLoadingTopDoctors || _topDoctors.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Bác sĩ được đề xuất',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: primaryDarkColor,
+                              ),
                             ),
                           ),
-                        ),
                         const SizedBox(height: 8),
-                        _isLoadingTopDoctors
-                            ? const SizedBox(
+                        if (_isLoadingTopDoctors)
+                             const SizedBox(
                                 height: 185,
                                 child: Center(
                                   child: Padding(
@@ -964,7 +1043,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 ),
                               )
-                            : SizedBox(
+                        else if (_topDoctors.isNotEmpty)
+                             SizedBox(
                                 height: 185,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
@@ -972,10 +1052,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   itemCount: _topDoctors.length,
                                   itemBuilder: (context, index) {
                                     final doctor = _topDoctors[index];
-                                    final double rating = (doctor['rating'] ?? 5.0).toDouble();
+                                    
+                                    // Parse rating an toàn
+                                    double rating = 5.0;
+                                    if (doctor['rating'] != null) {
+                                      if (doctor['rating'] is num) {
+                                        rating = (doctor['rating'] as num).toDouble();
+                                      } else if (doctor['rating'] is String) {
+                                        rating = double.tryParse(doctor['rating']) ?? 5.0;
+                                      }
+                                    }
+                                    
                                     final String hospitalName = (doctor['hospitals'] != null && (doctor['hospitals'] as List).isNotEmpty)
-                                        ? doctor['hospitals'][0]['name']
+                                        ? (doctor['hospitals'][0]['name'] ?? 'Phòng khám riêng').toString()
                                         : 'Phòng khám riêng';
+                                        
+                                    final String doctorName = (doctor['user']?['full_name'] ?? doctor['name'] ?? 'Bác sĩ').toString();
+                                    final String categoryName = (doctor['category']?['name'] ?? 'Chuyên gia').toString();
+                                    
+                                    final String avatarUrl = (doctor['avatar_url'] ?? doctor['user']?['avatar'] ?? '').toString();
 
                                     return Container(
                                       width: 160,
@@ -1003,9 +1098,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 ClipOval(
                                                   child: Container(
                                                     color: primaryColor.withOpacity(0.1),
-                                                    child: (doctor['avatar_url'] != null && doctor['avatar_url'] != '')
+                                                    child: avatarUrl.isNotEmpty
                                                       ? Image.network(
-                                                          doctor['avatar_url'],
+                                                          avatarUrl,
                                                           height: 55,
                                                           width: 55,
                                                           fit: BoxFit.cover,
@@ -1016,7 +1111,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 ),
                                                 const SizedBox(height: 8),
                                                 Text(
-                                                  doctor['name'] ?? 'Bác sĩ',
+                                                  doctorName,
                                                   style: const TextStyle(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.bold,
@@ -1027,7 +1122,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                                 Text(
-                                                  doctor['category']?['name'] ?? 'Chuyên gia',
+                                                  categoryName,
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     color: primaryColor,
@@ -1128,8 +1223,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         elevation: 2,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                         child: InkWell(
-                                          onTap: () {
-                                            showAppSnackBar(context, 'Đọc bài: ${news['title']}');
+                                          onTap: () async {
+                                            final String link = (news['source'] ?? news['link'] ?? '').toString();
+                                            if (link.isNotEmpty) {
+                                              final Uri url = Uri.parse(link);
+                                              if (await canLaunchUrl(url)) {
+                                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                                              } else {
+                                                showAppSnackBar(context, 'Không thể mở liên kết này.');
+                                              }
+                                            } else {
+                                              showAppSnackBar(context, 'Đọc bài: ${(news['title'] ?? 'Bài viết').toString()}');
+                                            }
                                           },
                                           borderRadius: BorderRadius.circular(12),
                                           child: Padding(
@@ -1139,18 +1244,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                               children: [
                                                 ClipRRect(
                                                   borderRadius: BorderRadius.circular(8),
-                                                  child: Image.asset(
-                                                    news['image'],
-                                                    height: 80,
-                                                    width: 80,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) =>
-                                                        Container(
+                                                  child: Builder(
+                                                    builder: (context) {
+                                                      final String imgUrl = (news['image_url'] ?? news['image'] ?? '').toString();
+                                                      if (imgUrl.startsWith('http')) {
+                                                        return Image.network(
+                                                          imgUrl,
                                                           height: 80,
                                                           width: 80,
-                                                          color: Colors.grey[300],
-                                                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                                                        ),
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (c, e, s) => Container(
+                                                            height: 80, width: 80, color: Colors.grey[300],
+                                                            child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                                          ),
+                                                        );
+                                                      } else if (imgUrl.isNotEmpty) {
+                                                        return Image.asset(
+                                                          imgUrl,
+                                                          height: 80,
+                                                          width: 80,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (c, e, s) => Container(
+                                                            height: 80, width: 80, color: Colors.grey[300],
+                                                            child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                                          ),
+                                                        );
+                                                      }
+                                                      return Container(
+                                                        height: 80, width: 80, color: Colors.grey[300],
+                                                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                                      );
+                                                    },
                                                   ),
                                                 ),
                                                 const SizedBox(width: 12),
@@ -1159,7 +1283,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
                                                       Text(
-                                                        news['title'],
+                                                        (news['title'] ?? 'Bài viết').toString(),
                                                         style: const TextStyle(
                                                           fontSize: 16,
                                                           fontWeight: FontWeight.bold,
@@ -1169,7 +1293,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                       ),
                                                       const SizedBox(height: 4),
                                                       Text(
-                                                        news['excerpt'],
+                                                        (news['summary'] ?? news['excerpt'] ?? '').toString(),
                                                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                                                         maxLines: 2,
                                                         overflow: TextOverflow.ellipsis,
@@ -1184,6 +1308,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       );
                                     },
                                   ),
+                                  if (_isLoadingMoreNews)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),

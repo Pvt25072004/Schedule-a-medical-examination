@@ -13,15 +13,42 @@ export class AiService {
     private readonly servicePackagesService: ServicePackagesService,
   ) { }
 
+  private currentKeyIndex = 0;
+
+  private getGroqApiKeys(): string[] {
+    const keys: string[] = [];
+    if (process.env.GROQ_API_KEY) keys.push(process.env.GROQ_API_KEY);
+    if (process.env.GROQ_API_KEY_2) keys.push(process.env.GROQ_API_KEY_2);
+    if (process.env.GROQ_API_KEY_3) keys.push(process.env.GROQ_API_KEY_3);
+    if (process.env.GROQ_API_KEYS) {
+      keys.push(...process.env.GROQ_API_KEYS.split(',').map(k => k.trim()));
+    }
+    return [...new Set(keys)].filter(k => k);
+  }
+
+  private getGroqApiKey(): string {
+    const keys = this.getGroqApiKeys();
+    if (keys.length === 0) {
+      throw new InternalServerErrorException('GROQ_API_KEY is not configured');
+    }
+    return keys[this.currentKeyIndex % keys.length];
+  }
+
+  private switchGroqApiKey() {
+    this.currentKeyIndex++;
+    const keys = this.getGroqApiKeys();
+    console.log(`[AI SERVICE] Rate limit hit. Switched to next Groq API Key (Index: ${this.currentKeyIndex % keys.length} / Total: ${keys.length})`);
+  }
+
   async processChat(messages: any[], bookingData: any): Promise<any> {
     try {
       const systemPrompt = `
 Vai trò: Trợ lý y tế STL Clinic. Đặt lịch khám bệnh. Không tự đoán bịa dữ liệu.
-Mục tiêu thu thập: Triệu chứng/Khoa hoặc Gói khám, Khu vực xong rồi mới tới Bệnh viện, Bác sĩ, Ngày, Giờ.
+Mục tiêu thu thập: Triệu chứng/Khoa hoặc Gói khám, Khu vực mới tới Bệnh viện, Bác sĩ, Ngày, Giờ.
 - Fast-track: Gọi ngay các tool (có thể liên tiếp/song song) nếu có sẵn data. KHÔNG hỏi vòng vo.
 - Giờ khám: BẮT BUỘC dùng tool lấy giờ trống. Nếu user chưa chọn hoặc giờ không khớp, HÃY liệt kê và YÊU CẦU user chọn cụ thể 1 giờ.
 - Tự gợi ý bác sĩ nếu user không chọn. 
-- BƯỚC CUỐI CÙNG: CHỈ KHI đã chốt ĐÚNG 1 giờ khám cụ thể và đủ TẤT CẢ thông tin, mới TÓM TẮT lại và HỎI người dùng "Bạn có đồng ý đặt lịch này không?". 
+- BƯỚC CUỐI CÙNG: CHỈ KHI đã chốt ĐÚNG 1 giờ khám cụ thể và đủ TẤT CẢ thông tin, TÓM TẮT lại và HỎI người dùng đồng ý đặt lịch này không.
 - TUYỆT ĐỐI KHÔNG tự động chốt nếu người dùng chưa trả lời đồng ý/xác nhận.
 - Reset data nếu user đổi ý. Dịch tiếng lóng sang y khoa. KHÔNG kê đơn thuốc.
 
@@ -29,7 +56,7 @@ Status: ${JSON.stringify(bookingData)}
 Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
 `;
 
-      const apiMessages = [{ role: 'system', content: systemPrompt }, ...messages.slice(-6)];
+      const apiMessages = [{ role: 'system', content: systemPrompt }, ...messages.slice(-7)];
 
       const tools = [
         {
@@ -101,10 +128,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
       throw new Error("Quá nhiều lần gọi tool liên tiếp.");
     }
 
-    const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      throw new InternalServerErrorException('GROQ_API_KEY is not configured');
-    }
+    const groqApiKey = this.getGroqApiKey();
 
     // Groq (Llama 3.3) hoàn toàn hỗ trợ dùng tools và json_object cùng lúc.
     // Việc này đảm bảo Model có thể gọi Tool NHIỀU LẦN liên tiếp, 
@@ -124,9 +148,17 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
     });
 
     if (response.status === 429) {
-      if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded');
-      console.warn("Groq API Rate Limit (429) in tool phase. Retrying in 5s...");
-      await new Promise(r => setTimeout(r, 5000));
+      if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded after retries');
+      
+      const keysCount = this.getGroqApiKeys().length;
+      if (keysCount > 1) {
+        this.switchGroqApiKey();
+        // Wait briefly before retrying with new key
+        await new Promise(r => setTimeout(r, 1000));
+      } else {
+        console.warn("Groq API Rate Limit (429) in tool phase. Retrying in 5s...");
+        await new Promise(r => setTimeout(r, 5000));
+      }
       return await this.callGroqWithTools(apiMessages, tools, depth, retryCount + 1);
     }
 
@@ -150,7 +182,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             if (nameMatch && jsonStart !== -1 && jsonEnd !== -1 && jsonEnd >= jsonStart) {
               const funcName = nameMatch[1];
               const funcArgs = failedGen.substring(jsonStart, jsonEnd + 1);
-              
+
               responseMessage = {
                 role: 'assistant',
                 content: '',
@@ -167,7 +199,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
               console.log('Successfully recovered from Groq 400 tool_use_failed via smart extract:', funcName, funcArgs);
             }
           }
-          
+
           if (!recovered) {
             console.warn('Groq API Tool Use Failed. Retrying with syntax hint...');
             const retryMessages = [
@@ -292,10 +324,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
   }
 
   private async finalizeJson(apiMessages: any[], aiProposedReply?: string, retryCount: number = 0): Promise<any> {
-    const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      throw new InternalServerErrorException('GROQ_API_KEY is not configured');
-    }
+    const groqApiKey = this.getGroqApiKey();
 
     const finalMessages = [
       ...apiMessages,
@@ -329,9 +358,16 @@ REQUIRED JSON SCHEMA:
     });
 
     if (response.status === 429) {
-      if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded');
-      console.warn("Groq API Rate Limit (429) in finalize phase. Retrying in 5s...");
-      await new Promise(r => setTimeout(r, 5000));
+      if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded after retries');
+      
+      const keysCount = this.getGroqApiKeys().length;
+      if (keysCount > 1) {
+        this.switchGroqApiKey();
+        await new Promise(r => setTimeout(r, 1000));
+      } else {
+        console.warn("Groq API Rate Limit (429) in finalize phase. Retrying in 5s...");
+        await new Promise(r => setTimeout(r, 5000));
+      }
       return await this.finalizeJson(apiMessages, aiProposedReply, retryCount + 1); // Retry without pushing duplicate system prompt
     }
 

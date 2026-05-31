@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { createAppointment as apiCreateAppointment } from "../services/appointments.api";
-import { createPaymentDemo } from "../services/payments.api";
+import { createPaymentDemo, createVnpayUrl } from "../services/payments.api";
 import { getServicePackageById } from "../services/service-packages.api";
 import { getAvailableTimesForPackage, getAvailableDoctorsForPackage } from "../services/appointments.api";
 import Card from "../components/common/Card";
@@ -42,6 +42,7 @@ const PackageBookingFlowPage = () => {
     type: "Khám gói dịch vụ",
     notes: "",
   });
+  const [paymentMethod, setPaymentMethod] = useState("vnpay");
   
   const [servicePackage, setServicePackage] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -202,6 +203,23 @@ const PackageBookingFlowPage = () => {
       };
 
       const created = await apiCreateAppointment(payload);
+
+      if (paymentMethod === "vnpay") {
+        try {
+          const vnpayResponse = await createVnpayUrl({
+            appointment_id: created?.id,
+            amount: servicePackage.fixed_price || 0,
+            orderInfo: `Thanh toan goi kham web ${created?.id}`
+          });
+          if (vnpayResponse?.url) {
+            window.location.href = vnpayResponse.url;
+            return;
+          }
+        } catch (err) {
+          console.warn("VNPAY URL creation failed:", err);
+          alert("Không thể tạo URL thanh toán VNPAY, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+        }
+      }
 
       try {
         await createPaymentDemo({
@@ -473,9 +491,42 @@ const PackageBookingFlowPage = () => {
                   </div>
                 </div>
 
-                <div className="pt-2 flex justify-between items-center">
+                <div className="pt-2 flex justify-between items-center border-b border-blue-200 pb-4 mb-4">
                   <p className="text-gray-600 font-medium">Chi phí trọn gói</p>
                   <p className="text-xl font-bold text-blue-600">{formatCurrency(servicePackage?.fixed_price || 0)}</p>
+                </div>
+
+                <h4 className="font-bold text-gray-900 mb-2 mt-4">Phương thức thanh toán</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setPaymentMethod("vnpay")}
+                    className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all bg-white ${
+                      paymentMethod === "vnpay" ? "border-blue-600 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">VNP</div>
+                    <div className="flex-1">
+                      <p className={`font-bold ${paymentMethod === "vnpay" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán trực tuyến</p>
+                      <p className="text-sm text-gray-500">Qua cổng VNPAY</p>
+                    </div>
+                    {paymentMethod === "vnpay" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
+                  </button>
+
+                  <button
+                    onClick={() => setPaymentMethod("cash")}
+                    className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all bg-white ${
+                      paymentMethod === "cash" ? "border-blue-600 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-bold ${paymentMethod === "cash" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán tại quầy</p>
+                      <p className="text-sm text-gray-500">Tiền mặt / Chuyển khoản</p>
+                    </div>
+                    {paymentMethod === "cash" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
+                  </button>
                 </div>
               </div>
 

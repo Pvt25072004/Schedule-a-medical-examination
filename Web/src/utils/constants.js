@@ -31,6 +31,7 @@ export const APPOINTMENT_STATUS = {
   COMPLETED: "completed",
   CANCELLED: "cancelled",
   REJECTED: "rejected",
+  AWAITING_PAYMENT: "awaiting_payment",
 };
 
 // API Endpoints

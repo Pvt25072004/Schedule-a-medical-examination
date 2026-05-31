@@ -31,6 +31,7 @@ import NewsPage from "./pages/NewsPage";
 import ApplyDoctorPage from "./pages/ApplyDoctorPage";
 import HospitalRegistrationPage from "./pages/HospitalRegistrationPage";
 import ServicePackagesPage from "./pages/ServicePackagesPage";
+import VNPayReturnPage from "./pages/VNPayReturnPage";
 import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
 import FloatingWidgets from "./components/common/FloatingWidgets";
@@ -162,6 +163,10 @@ const AppRoutes = () => {
         <Route
           path={PAGES.FANPAGE_DETAIL}
           element={<FanpageDetailPage />}
+        />
+        <Route
+          path="/payment/vnpay-return"
+          element={<VNPayReturnPage />}
         />
         <Route
           path={PAGES.NEWS}

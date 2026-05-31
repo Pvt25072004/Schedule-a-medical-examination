@@ -14,8 +14,9 @@ import '../subscreens/booking/step8_area_selection.dart'; // step8_confirmation
 
 class BookingScreen extends StatefulWidget {
   final Map<String, dynamic>? initialDoctorData;
+  final Map<String, dynamic>? initialPackageData;
 
-  const BookingScreen({super.key, this.initialDoctorData});
+  const BookingScreen({super.key, this.initialDoctorData, this.initialPackageData});
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -30,6 +31,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
 
   // Data state được truyền giữa các steps
+  int maxStepReached = 1;
+
   String selectedCity = '';
   Color? cityColor;
   String selectedHospital = '';
@@ -39,6 +42,12 @@ class _BookingScreenState extends State<BookingScreen> {
   Color specialtyColor = Colors.greenAccent;
   String selectedDoctor = '';
   int? selectedDoctorId; // MỚI: Lưu ID thật từ backend
+  
+  // -- Tích hợp Gói Khám --
+  int? selectedPackageId;
+  String selectedPackageName = '';
+  bool isPackageBooking = false;
+
   double selectedPrice = 0.0;
   DateTime selectedDate = DateTime.now();
   String selectedTimeSlot = '';
@@ -55,6 +64,7 @@ class _BookingScreenState extends State<BookingScreen> {
     if (widget.initialDoctorData != null) {
       isDirectBooking = true;
       currentStep = 4; // Nhảy cóc đến bước chọn Ngày/Giờ
+      maxStepReached = 4; // Cho phép hiển thị progress bar đến bước 4
 
       final doc = widget.initialDoctorData!;
       selectedDoctorId = doc['id'] != null ? int.tryParse(doc['id'].toString()) : null;
@@ -79,7 +89,29 @@ class _BookingScreenState extends State<BookingScreen> {
         selectedCity = 'Hà Nội'; // Fallback
       }
       
+      
       selectedPrice = doctorFee + facilityFee;
+    } else if (widget.initialPackageData != null) {
+      isDirectBooking = true;
+      isPackageBooking = true;
+      currentStep = 4; // Nhảy đến chọn Ngày/Giờ
+      maxStepReached = 4;
+
+      final pkg = widget.initialPackageData!;
+      selectedPackageId = pkg['id'] != null ? int.tryParse(pkg['id'].toString()) : null;
+      selectedPackageName = pkg['name'] ?? 'Gói Khám';
+      
+      final priceVal = pkg['price'];
+      if (priceVal is int) {
+        selectedPrice = priceVal.toDouble();
+      } else if (priceVal is double) {
+        selectedPrice = priceVal;
+      }
+      
+      // Giả định package có gán hospital
+      if (pkg['hospital_id'] != null) {
+        selectedHospitalId = int.tryParse(pkg['hospital_id'].toString());
+      }
     }
   }
 
@@ -87,14 +119,29 @@ class _BookingScreenState extends State<BookingScreen> {
   void goToStep(int step, {Map<String, dynamic>? data}) {
     setState(() {
       if (isDirectBooking) {
-        if (step == 5) step = 6; // Bỏ qua bước chọn bác sĩ (vì đã chọn rồi)
+        if (step == 5) {
+          // PHẢI LƯU NGÀY/GIỜ TRƯỚC KHI NHẢY CÓC!
+          if (data != null) {
+            selectedDate = data['date'] is DateTime ? data['date'] : (data['date'] as DateTime? ?? DateTime.now());
+            selectedTimeSlot = data['timeSlot'] ?? '';
+          }
+          goToStep(6, data: {}); // Nhảy cóc qua Chọn Bác sĩ an toàn
+          return; // Dừng lại ở đây
+        }
         if (step < 4) return; // Không cho lùi về các bước chọn khu vực
       }
 
-      // Logic chỉ cho phép chuyển tiến hoặc quay lại bước đã hoàn thành
-      if (step > currentStep && step > 8) return;
+      // Logic chỉ cho phép chuyển tiến tới bước đã hoàn thành
+      if (data == null && step > maxStepReached) {
+        // Ngăn chặn nhảy cóc tới bước chưa hoàn thành thông qua Progress Bar
+        return;
+      }
 
       currentStep = step;
+      if (step > maxStepReached) {
+        maxStepReached = step;
+      }
+
       if (data != null) {
         if (step == 2) {
           selectedCity = data['city'] ?? '';

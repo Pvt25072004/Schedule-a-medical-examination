@@ -292,7 +292,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   }
 
   Widget _buildAppointmentCard(dynamic appt, BuildContext context) {
-    final String status = appt['status'] ?? 'pending';
+    final String status = (appt['status'] ?? 'pending').toString();
     final Color statusColor = _getStatusColor(status);
     
     final String rawDate = appt['appointment_date']?.toString() ?? '';
@@ -300,11 +300,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     final String timeStr = _formatTime(appt['appointment_time']?.toString() ?? '00:00');
     
     final doctor = appt['doctor'];
-    final String docName = doctor != null ? doctor['name'] : 'Bác sĩ hệ thống';
-    final String specialty = doctor != null ? doctor['specialty'] : 'Đa khoa';
+    final String docName = (doctor != null ? (doctor['user']?['full_name'] ?? doctor['name'] ?? 'Bác sĩ hệ thống') : 'Bác sĩ hệ thống').toString();
+    final String specialty = (doctor != null ? (doctor['category']?['name'] ?? doctor['specialty'] ?? 'Đa khoa') : 'Đa khoa').toString();
     
     final hospital = appt['hospital'];
-    final String hospName = hospital != null ? hospital['name'] : 'Bệnh viện đối tác';
+    final String hospName = (hospital != null ? (hospital['name'] ?? 'Bệnh viện đối tác') : 'Bệnh viện đối tác').toString();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -541,7 +541,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   void _showReviewDialog(dynamic appt) {
     final doctor = appt['doctor'];
-    final String docName = doctor != null ? doctor['name'] : 'Bác sĩ';
+    final String docName = (doctor != null ? (doctor['user']?['full_name'] ?? doctor['name'] ?? 'Bác sĩ') : 'Bác sĩ').toString();
     final existingReview = appt['review'];
     final bool isEditing = existingReview != null;
     
