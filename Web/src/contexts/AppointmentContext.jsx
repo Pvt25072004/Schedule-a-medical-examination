@@ -47,7 +47,7 @@ export const AppointmentProvider = ({ children }) => {
           id: apt.id, // dùng luôn id backend
           backendId: apt.id,
           doctorId: apt.doctor_id,
-          doctorName: apt.doctor?.name || "Bác sĩ",
+          doctorName: apt.doctor_name_snapshot || apt.doctor?.user?.full_name || apt.doctor?.name || "Bác sĩ",
           specialty:
             apt.doctor?.specialty ||
             apt.doctor?.category?.name ||
@@ -65,9 +65,10 @@ export const AppointmentProvider = ({ children }) => {
           reviewComment: apt.review?.comment || "",
           notes: "",
           hospital: apt.hospital || null,
-          hospitalName: apt.hospital?.name || "STL Clinic",
+          hospitalName: apt.hospital_name_snapshot || apt.hospital?.name || "STL Clinic",
           hospitalAddress: apt.hospital?.address || "123 Đường ABC, Q.1",
           hospitalCity: apt.hospital?.city || "",
+          price: apt.total_fee || 0,
         };
       });
       setAppointments(mapped);

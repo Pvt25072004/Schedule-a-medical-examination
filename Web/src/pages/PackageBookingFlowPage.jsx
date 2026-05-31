@@ -62,6 +62,7 @@ const PackageBookingFlowPage = () => {
         const pkg = await getServicePackageById(id);
         if (pkg) {
           setServicePackage(pkg);
+          setFormData(prev => ({ ...prev, type: `Khám ${pkg.name}` }));
         } else {
           alert("Không tìm thấy gói khám!");
           navigate(-1);
@@ -426,6 +427,7 @@ const PackageBookingFlowPage = () => {
                   onChange={(e) => handleChange("type", e.target.value)}
                   error={errors.type}
                   icon={FileText}
+                  disabled={true}
                 />
                 
                 <div>

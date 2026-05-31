@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Calendar,
   Clock,
@@ -45,17 +45,41 @@ const AppointmentsPage = ({ navigate }) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState("date_desc");
+  const filterRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilters(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewAppointment, setReviewAppointment] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  const sortedAppointments = [...appointments].sort(
-    (a, b) =>
-      new Date(`${b.date}T${b.time || "00:00"}`) -
-      new Date(`${a.date}T${a.time || "00:00"}`),
-  );
+  const sortedAppointments = [...appointments].sort((a, b) => {
+    if (sortBy === "date_desc") {
+      return new Date(`${b.date}T${b.time || "00:00"}`) - new Date(`${a.date}T${a.time || "00:00"}`);
+    }
+    if (sortBy === "date_asc") {
+      return new Date(`${a.date}T${a.time || "00:00"}`) - new Date(`${b.date}T${b.time || "00:00"}`);
+    }
+    if (sortBy === "price_desc") {
+      return (b.price || 0) - (a.price || 0);
+    }
+    if (sortBy === "price_asc") {
+      return (a.price || 0) - (b.price || 0);
+    }
+    return 0;
+  });
 
   const filteredAppointments = sortedAppointments.filter((apt) => {
     if (!searchQuery) return true;
@@ -314,14 +338,28 @@ const AppointmentsPage = ({ navigate }) => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button
-                variant="outline"
-                size="md"
-                icon={Filter}
-                className="rounded-full shadow-sm flex-shrink-0"
-              >
-                Lọc
-              </Button>
+              <div className="relative" ref={filterRef}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  icon={Filter}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`rounded-full shadow-sm flex-shrink-0 transition-colors ${showFilters ? 'bg-blue-50 text-blue-600 border-blue-200' : ''}`}
+                >
+                  Lọc
+                </Button>
+                {showFilters && (
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 animate-fade-in">
+                    <h3 className="font-bold text-gray-900 mb-3 text-sm">Sắp xếp theo</h3>
+                    <div className="space-y-2">
+                      <button onClick={() => setSortBy("date_desc")} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === 'date_desc' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Ngày gần nhất</button>
+                      <button onClick={() => setSortBy("date_asc")} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === 'date_asc' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Ngày xa nhất</button>
+                      <button onClick={() => setSortBy("price_desc")} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === 'price_desc' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Giá tiền (Cao đến thấp)</button>
+                      <button onClick={() => setSortBy("price_asc")} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === 'price_asc' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Giá tiền (Thấp đến cao)</button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <Button
