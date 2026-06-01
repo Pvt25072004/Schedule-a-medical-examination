@@ -28,7 +28,7 @@ import {
   normalizeForSearch,
 } from "../utils/helpers";
 import { createReview, updateReview } from "../services/reviews.api";
-import { createVnpayUrl } from "../services/payments.api";
+import { createVnpayUrl, createPayosUrl } from "../services/payments.api";
 import { CreditCard } from "lucide-react";
 
 const AppointmentsPage = ({ navigate }) => {
@@ -109,17 +109,29 @@ const AppointmentsPage = ({ navigate }) => {
     }
   };
 
-  const handleRetryPayment = async (apt) => {
+  const handleRetryPayment = async (apt, method = "vnpay") => {
     try {
       if (!apt.payment) return;
       const amount = apt.payment.amount || 500000;
-      const vnpayResponse = await createVnpayUrl({
-        appointment_id: apt.backendId || apt.id,
-        amount: amount,
-        orderInfo: `Thanh toan lich kham web ${apt.backendId || apt.id}`
-      });
-      if (vnpayResponse?.url) {
-        window.location.href = vnpayResponse.url;
+      
+      if (method === "payos") {
+        const payosResponse = await createPayosUrl({
+          appointment_id: apt.backendId || apt.id,
+          amount: amount,
+          orderInfo: `Thanh toan lich kham web ${apt.backendId || apt.id}`
+        });
+        if (payosResponse?.url) {
+          window.location.href = payosResponse.url;
+        }
+      } else {
+        const vnpayResponse = await createVnpayUrl({
+          appointment_id: apt.backendId || apt.id,
+          amount: amount,
+          orderInfo: `Thanh toan lich kham web ${apt.backendId || apt.id}`
+        });
+        if (vnpayResponse?.url) {
+          window.location.href = vnpayResponse.url;
+        }
       }
     } catch (err) {
       console.warn("Retry payment failed:", err);
@@ -271,14 +283,24 @@ const AppointmentsPage = ({ navigate }) => {
             )}
 
             {apt.status === "awaiting_payment" && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => handleRetryPayment(apt)}
-                className="bg-orange-500 hover:bg-orange-600 flex items-center gap-2 border-none text-white"
-              >
-                <CreditCard className="w-4 h-4" /> Thanh toán ngay
-              </Button>
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleRetryPayment(apt, "vnpay")}
+                  className="bg-blue-500 hover:bg-blue-600 flex items-center gap-2 border-none text-white"
+                >
+                  <CreditCard className="w-4 h-4" /> VNPAY
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleRetryPayment(apt, "payos")}
+                  className="bg-indigo-500 hover:bg-indigo-600 flex items-center gap-2 border-none text-white"
+                >
+                  <CreditCard className="w-4 h-4" /> VietQR
+                </Button>
+              </>
             )}
 
             {apt.status === "awaiting_payment" && (

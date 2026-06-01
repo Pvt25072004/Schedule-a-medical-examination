@@ -19,7 +19,7 @@ import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
 import { createAppointment as apiCreateAppointment } from "../services/appointments.api";
 import { getSchedulesByDoctor, getAvailableTimes } from "../services/doctor.schedules.api";
-import { createPaymentDemo, createVnpayUrl } from "../services/payments.api";
+import { createPaymentDemo, createVnpayUrl, createPayosUrl } from "../services/payments.api";
 import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
 import { getHospitals } from "../services/admin.hospitals.api";
 import { getCategories } from "../services/admin.categories.api";
@@ -321,6 +321,23 @@ const BookingFlowPage = ({ navigate }) => {
         } catch (err) {
           console.warn("VNPAY URL creation failed:", err);
           alert("Không thể tạo URL thanh toán VNPAY, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+        }
+      }
+
+      if (paymentMethod === "payos") {
+        try {
+          const payosResponse = await createPayosUrl({
+            appointment_id: created?.id,
+            amount: totalPrice || 500000,
+            orderInfo: `Thanh toan lich kham ${created?.id}`
+          });
+          if (payosResponse?.url) {
+            window.location.href = payosResponse.url;
+            return;
+          }
+        } catch (err) {
+          console.warn("PayOS URL creation failed:", err);
+          alert("Không thể tạo URL thanh toán PayOS, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
         }
       }
 
@@ -807,6 +824,20 @@ const BookingFlowPage = ({ navigate }) => {
                         <p className="text-sm text-gray-500">Qua cổng VNPAY</p>
                       </div>
                       {paymentMethod === "vnpay" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
+                    </button>
+
+                    <button
+                      onClick={() => setPaymentMethod("payos")}
+                      className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
+                        paymentMethod === "payos" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">QR</div>
+                      <div className="flex-1">
+                        <p className={`font-bold ${paymentMethod === "payos" ? "text-indigo-800" : "text-gray-900"}`}>Chuyển khoản VietQR</p>
+                        <p className="text-sm text-gray-500">Qua cổng PayOS</p>
+                      </div>
+                      {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
                     </button>
 
                     <button

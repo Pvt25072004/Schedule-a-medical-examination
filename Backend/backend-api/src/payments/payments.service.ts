@@ -7,6 +7,7 @@ import { Payment } from './entities/payment.entity';
 import { Appointment } from 'src/appointments/entities/appointment.entity';
 import * as crypto from 'crypto';
 import dayjs from 'dayjs';
+import { PayOS } from '@payos/node';
 
 @Injectable()
 export class PaymentsService {
@@ -29,6 +30,8 @@ export class PaymentsService {
 
     const payment = this.paymentsRepository.create({
       ...createPaymentDto,
+      amount: Number(appointment.total_fee),
+      base_fee: Number(appointment.total_fee),
       payment_status: 'pending', // VNPay chưa thanh toán thì để pending
     } as Partial<Payment>);
 
@@ -61,17 +64,28 @@ export class PaymentsService {
       throw new Error('VNPAY config is missing in .env');
     }
 
+    const appointment = await this.appointmentsRepository.findOne({ where: { id: appointmentId } });
+    if (!appointment) throw new Error('Appointment not found');
+    const realAmount = Number(appointment.total_fee);
+
     const vnpay = this.getVnpayInstance();
     const date = new Date();
     const orderId = dayjs(date).format('DDHHmmss');
 
     const paymentUrl = vnpay.buildPaymentUrl({
-      vnp_Amount: amount, // vnpay library automatically multiplies by 100
+      vnp_Amount: realAmount, // vnpay library automatically multiplies by 100
       vnp_IpAddr: ipAddr,
       vnp_ReturnUrl: returnUrl,
       vnp_TxnRef: `${appointmentId}_${orderId}`,
       vnp_OrderInfo: orderInfo,
     });
+
+    // Cập nhật phương thức thanh toán nếu người dùng đổi ý khi retry
+    const payment = await this.paymentsRepository.findOne({ where: { appointment_id: appointmentId } });
+    if (payment) {
+      payment.payment_method = 'vnpay';
+      await this.paymentsRepository.save(payment);
+    }
 
     return paymentUrl;
   }
@@ -103,6 +117,7 @@ export class PaymentsService {
             payment.payment_status = 'completed';
             payment.paid_at = new Date();
             payment.transaction_id = vnp_Params['vnp_TransactionNo'];
+            payment.payment_method = 'vnpay'; // Cập nhật lại chuẩn xác phương thức thanh toán cuối cùng
             await this.paymentsRepository.save(payment);
             
             // Cập nhật lịch khám thành confirmed
@@ -126,6 +141,91 @@ export class PaymentsService {
       }
     } catch (e) {
       return { RspCode: '97', Message: 'Invalid signature' };
+    }
+  }
+
+  getPayosInstance() {
+    const clientId = process.env.PAYOS_CLIENT_ID || '';
+    const apiKey = process.env.PAYOS_API_KEY || '';
+    const checksumKey = process.env.PAYOS_CHECKSUM_KEY || '';
+    if (!clientId || !apiKey || !checksumKey) {
+      throw new Error('PayOS config is missing in .env');
+    }
+    return new PayOS({ clientId, apiKey, checksumKey });
+  }
+
+  async createPayosUrl(req: any, appointmentId: number, amount: number, orderInfo: string): Promise<string> {
+    const payos = this.getPayosInstance();
+    const returnUrl = process.env.PAYOS_RETURN_URL || 'http://localhost:5173/appointments';
+    const cancelUrl = process.env.PAYOS_CANCEL_URL || 'http://localhost:5173/appointments';
+
+    const orderCode = Number(`${appointmentId}${Math.floor(1000 + Math.random() * 9000)}`);
+    
+    const appointment = await this.appointmentsRepository.findOne({ where: { id: appointmentId } });
+    if (!appointment) throw new Error('Appointment not found');
+    const realAmount = Number(appointment.total_fee);
+
+    const payment = await this.paymentsRepository.findOne({ where: { appointment_id: appointmentId } });
+    if (payment) {
+      payment.transaction_id = String(orderCode);
+      payment.payment_method = 'payos';
+      await this.paymentsRepository.save(payment);
+    }
+
+    const requestData = {
+      orderCode,
+      amount: realAmount,
+      description: (orderInfo || `Thanh toan lich ${appointmentId}`).substring(0, 25),
+      returnUrl,
+      cancelUrl,
+    };
+
+    try {
+      const paymentLinkData = await payos.paymentRequests.create(requestData);
+      return paymentLinkData.checkoutUrl;
+    } catch (error) {
+      console.error('PayOS createPaymentLink error:', error);
+      throw new Error('Lỗi tạo link thanh toán PayOS');
+    }
+  }
+
+  async verifyPayosWebhook(webhookData: any): Promise<any> {
+    const payos = this.getPayosInstance();
+
+    try {
+      const data = await payos.webhooks.verify(webhookData);
+      
+      if (data) {
+        const orderCode = String(data.orderCode);
+        
+        const payment = await this.paymentsRepository.findOne({
+          where: { transaction_id: orderCode },
+        });
+
+        if (payment) {
+          if (payment.payment_status === 'completed') {
+            return { message: 'Order already confirmed' };
+          }
+
+          payment.payment_status = 'completed';
+          payment.paid_at = new Date();
+          payment.payment_method = 'payos'; // Cập nhật lại chuẩn xác phương thức thanh toán cuối cùng
+          await this.paymentsRepository.save(payment);
+          
+          const appointment = await this.appointmentsRepository.findOne({ where: { id: payment.appointment_id } });
+          if (appointment) {
+            appointment.status = 'confirmed';
+            await this.appointmentsRepository.save(appointment);
+          }
+          
+          return { success: true, message: 'Payment confirmed via PayOS' };
+        } else {
+          return { success: false, message: 'Order not found' };
+        }
+      }
+    } catch (e) {
+      console.error('PayOS Webhook Error:', e);
+      return { success: false, message: 'Invalid signature or data' };
     }
   }
 

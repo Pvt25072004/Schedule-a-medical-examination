@@ -37,7 +37,7 @@ export const AppointmentProvider = ({ children }) => {
         if (
           mappedStatus === APPOINTMENT_STATUS.PENDING &&
           apt.payment &&
-          apt.payment.payment_method === "vnpay" &&
+          (apt.payment.payment_method === "vnpay" || apt.payment.payment_method === "payos") &&
           apt.payment.payment_status === "pending"
         ) {
           mappedStatus = "awaiting_payment";
@@ -105,16 +105,16 @@ export const AppointmentProvider = ({ children }) => {
     );
   };
 
-  const cancelAppointment = async (id) => {
+  const cancelAppointment = async (id, reason = "") => {
     const target = appointments.find((apt) => apt.id === id);
     if (target?.backendId) {
       try {
-        await updateAppointmentStatus(target.backendId, APPOINTMENT_STATUS.CANCELLED);
+        await updateAppointmentStatus(target.backendId, APPOINTMENT_STATUS.CANCELLED, reason);
       } catch (e) {
         console.error("Cancel appointment on server failed:", e);
       }
     }
-    updateAppointment(id, { status: APPOINTMENT_STATUS.CANCELLED });
+    updateAppointment(id, { status: APPOINTMENT_STATUS.CANCELLED, cancelReason: reason });
   };
 
   const deleteAppointment = (id) => {

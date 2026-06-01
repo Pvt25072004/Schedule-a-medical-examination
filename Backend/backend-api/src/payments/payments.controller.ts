@@ -49,6 +49,32 @@ export class PaymentsController {
     return { message: 'Return from VNPAY processed', data: query, result };
   }
 
+  @Post('payos/create-url')
+  async createPayosUrl(@Req() req: any, @Body() body: { appointment_id: number; amount: number; orderInfo: string }) {
+    const createDto: CreatePaymentDto = {
+      appointment_id: body.appointment_id,
+      amount: body.amount,
+      base_fee: body.amount,
+      online_fee: 0,
+      vat: 0,
+      payment_method: 'payos'
+    };
+    
+    try {
+      await this.paymentsService.create(createDto);
+    } catch (e) {
+      // Đã có payment record, bỏ qua lỗi
+    }
+
+    const url = await this.paymentsService.createPayosUrl(req, body.appointment_id, body.amount, body.orderInfo || 'Thanh toan PayOS');
+    return { url };
+  }
+
+  @Post('payos/webhook')
+  async payosWebhook(@Body() body: any) {
+    return this.paymentsService.verifyPayosWebhook(body);
+  }
+
   @Get('appointment/:appointmentId')
   async getByAppointment(@Param('appointmentId') appointmentId: string) {
     return this.paymentsService.findByAppointment(+appointmentId);

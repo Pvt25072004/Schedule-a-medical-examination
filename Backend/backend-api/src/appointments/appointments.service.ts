@@ -99,9 +99,9 @@ export class AppointmentsService {
       const totalStartMins = h * 60 + m;
       let totalEndMins = totalStartMins + durationMinutes;
 
-      // Xử lý Vắt Ca (Nghỉ trưa từ 11:30 đến 13:30)
+      // Xử lý Vắt Ca (Nghỉ trưa từ 11:30 đến 13:00)
       const morningEndMins = 11 * 60 + 30; // 11:30
-      const lunchDuration = 120; // 2 hours
+      const lunchDuration = 90; // 1.5 hours
 
       if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
         totalEndMins += lunchDuration;
@@ -141,7 +141,7 @@ export class AppointmentsService {
       createAppointmentDto.schedule_id = schedule.id;
 
       const [doctor, hospital] = await Promise.all([
-        queryRunner.manager.findOneBy(Doctor, { id: createAppointmentDto.doctor_id }),
+        queryRunner.manager.findOne(Doctor, { where: { id: createAppointmentDto.doctor_id }, relations: ['user'] }),
         queryRunner.manager.findOneBy(Hospital, { id: createAppointmentDto.hospital_id }),
       ]);
 
@@ -406,7 +406,13 @@ export class AppointmentsService {
         }
 
         if (!isPast && !bookedSlots.has(timeStr)) {
-          availableSlots.add(timeStr);
+          const slotTotalMins = h * 60 + m;
+          // Loại bỏ giờ nghỉ trưa (11:30 - 13:00)
+          if (slotTotalMins >= 11 * 60 + 30 && slotTotalMins < 13 * 60) {
+            // Không thêm slot này
+          } else {
+            availableSlots.add(timeStr);
+          }
         }
 
         m += 30;
@@ -449,7 +455,7 @@ export class AppointmentsService {
         let totalEndMins = totalStartMins + durationMinutes;
 
         const morningEndMins = 11 * 60 + 30; // 11:30
-        const lunchDuration = 120; // 2 hours
+        const lunchDuration = 90; // 1.5 hours
 
         if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
           totalEndMins += lunchDuration;
@@ -505,7 +511,7 @@ export class AppointmentsService {
     let totalEndMins = totalStartMins + durationMinutes;
 
     const morningEndMins = 11 * 60 + 30; // 11:30
-    const lunchDuration = 120; // 2 hours
+    const lunchDuration = 90; // 1.5 hours
 
     if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
       totalEndMins += lunchDuration;

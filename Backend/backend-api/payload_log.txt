@@ -27,3 +27,9 @@
 2026-05-31T18:11:15.643Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":272,"appointment_date":"2026-06-05","appointment_time":"11:00","examination_type":"offline","symptoms":"êfef"}
 2026-05-31T18:11:56.182Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":292,"appointment_date":"2026-06-15","appointment_time":"13:00","examination_type":"offline","symptoms":"séegsg"}
 2026-05-31T18:58:12.907Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"service_package_id":9,"appointment_date":"2026-06-01","appointment_time":"10:00","examination_type":"offline","symptoms":"Khám gói dịch vụ"}
+2026-06-01T15:30:27.703Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":268,"appointment_date":"2026-06-03","appointment_time":"10:30","examination_type":"offline","symptoms":"âfaef"}
+2026-06-01T15:35:27.662Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":294,"appointment_date":"2026-06-16","appointment_time":"11:30","examination_type":"offline","symptoms":"gsrgsdrg"}
+2026-06-01T15:44:57.170Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":272,"appointment_date":"2026-06-05","appointment_time":"10:30","examination_type":"offline","symptoms":"svsfv"}
+2026-06-01T16:36:16.377Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":280,"appointment_date":"2026-06-09","appointment_time":"11:30","examination_type":"offline","symptoms":"ưgwg"}
+2026-06-01T16:52:24.779Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":280,"appointment_date":"2026-06-09","appointment_time":"12:00","examination_type":"offline","symptoms":"gưgsg"}
+2026-06-01T16:52:27.558Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":280,"appointment_date":"2026-06-09","appointment_time":"12:00","examination_type":"offline","symptoms":"gưgsg"}

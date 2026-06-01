@@ -17,7 +17,7 @@ import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
 import { createAppointment as apiCreateAppointment } from "../services/appointments.api";
 import { getSchedulesByDoctor } from "../services/doctor.schedules.api";
-import { createPaymentDemo, createVnpayUrl } from "../services/payments.api";
+import { createPaymentDemo, createVnpayUrl, createPayosUrl } from "../services/payments.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
@@ -100,8 +100,12 @@ const BookingPage = ({ navigate }) => {
   }, [doctors, doctorRatingsMap, reviews]);
 
   const selectedDoctor = doctorsWithRatings.find(
-    (d) => d.id === formData.doctorId,
+    (d) => String(d.id) === String(formData.doctorId)
   );
+  const selectedHospital = selectedDoctor?.hospitals?.[0];
+  const doctorFee = Number(selectedDoctor?.consultation_fee) || Number(selectedDoctor?.consultationFee) || 0;
+  const hospitalFee = Number(selectedHospital?.facility_fee) || 0;
+  const totalPrice = (doctorFee + hospitalFee) || 500000;
 
   const filteredDoctors = doctorsWithRatings.filter((doctor) => {
     const name = (doctor.name || "").toLowerCase();
@@ -313,7 +317,7 @@ const BookingPage = ({ navigate }) => {
         try {
           const vnpayResponse = await createVnpayUrl({
             appointment_id: created?.id,
-            amount: selectedDoctor?.consultationFee || 500000,
+            amount: totalPrice,
             orderInfo: `Thanh toan lich kham web ${created?.id}`
           });
           if (vnpayResponse?.url) {
@@ -326,11 +330,28 @@ const BookingPage = ({ navigate }) => {
         }
       }
 
+      if (paymentMethod === "payos") {
+        try {
+          const payosResponse = await createPayosUrl({
+            appointment_id: created?.id,
+            amount: totalPrice,
+            orderInfo: `Thanh toan lich kham ${created?.id}`
+          });
+          if (payosResponse?.url) {
+            window.location.href = payosResponse.url;
+            return;
+          }
+        } catch (err) {
+          console.warn("PayOS URL creation failed:", err);
+          alert("Không thể tạo URL thanh toán PayOS, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+        }
+      }
+
       try {
         await createPaymentDemo({
           appointment_id: created?.id,
-          amount: selectedDoctor?.consultationFee || 500000,
-          base_fee: selectedDoctor?.consultationFee || 500000,
+          amount: totalPrice,
+          base_fee: totalPrice,
           payment_method: "cash",
         });
       } catch (err) {
@@ -698,7 +719,7 @@ const BookingPage = ({ navigate }) => {
 
                       <div className="flex items-center justify-between border-b border-dashed border-gray-200 pb-6 mb-6">
                          <span className="text-gray-500 font-medium">Phí khám dự kiến</span>
-                         <span className="text-2xl font-bold text-blue-600">{formatCurrency(selectedDoctor?.consultationFee || 500000)}</span>
+                         <span className="text-2xl font-bold text-blue-600">{formatCurrency(totalPrice)}</span>
                       </div>
 
                       <h4 className="font-bold text-gray-900 mb-4">Phương thức thanh toán</h4>
@@ -715,6 +736,20 @@ const BookingPage = ({ navigate }) => {
                             <p className="text-sm text-gray-500">Qua cổng VNPAY</p>
                           </div>
                           {paymentMethod === "vnpay" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
+                        </button>
+
+                        <button
+                          onClick={() => setPaymentMethod("payos")}
+                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
+                            paymentMethod === "payos" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">QR</div>
+                          <div className="flex-1">
+                            <p className={`font-bold ${paymentMethod === "payos" ? "text-indigo-800" : "text-gray-900"}`}>Chuyển khoản VietQR</p>
+                            <p className="text-sm text-gray-500">Qua cổng PayOS</p>
+                          </div>
+                          {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
                         </button>
 
                         <button

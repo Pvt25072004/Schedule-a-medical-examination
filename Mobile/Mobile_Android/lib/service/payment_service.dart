@@ -46,6 +46,39 @@ class PaymentService {
     }
   }
 
+  Future<String?> createPayosUrl({
+    required int appointmentId,
+    required double amount,
+    required String orderInfo,
+  }) async {
+    try {
+      final payload = {
+        'appointment_id': appointmentId,
+        'amount': amount,
+        'orderInfo': orderInfo,
+      };
+
+      print('🚀 Gọi API tạo URL PayOS: ${jsonEncode(payload)}');
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/payments/payos/create-url'),
+        headers: _getHeaders(),
+        body: jsonEncode(payload),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        return data['url'] as String?;
+      } else {
+        print('🔥 Lỗi từ backend PayOS: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('🔥 PaymentService Error (PayOS): $e');
+      return null;
+    }
+  }
+
   /// Lấy thông tin thanh toán của lịch hẹn
   Future<Map<String, dynamic>?> checkPaymentStatus(int appointmentId) async {
     try {
