@@ -28,7 +28,7 @@ export class HospitalRegistrationsService {
     private emailService: EmailService,
     private usersService: UsersService,
     private hospitalsService: HospitalsService,
-  ) {}
+  ) { }
 
   async initRegistration(dto: CreateHospitalRegistrationDto) {
     // Check if email already exists in users
@@ -60,7 +60,10 @@ export class HospitalRegistrationsService {
     // Send OTP via EmailService
     await this.emailService.sendOtpEmail(dto.admin_email, otp);
 
-    return { message: 'OTP đã được gửi đến email của bạn' };
+    return { 
+      message: 'OTP đã được gửi đến email của bạn',
+      registrationId: registration.id
+    };
   }
 
   async verifyOtp(dto: VerifyOtpDto) {

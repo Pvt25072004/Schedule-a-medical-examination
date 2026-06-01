@@ -299,136 +299,126 @@ const WelcomePage = ({ navigate }) => {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Global Header is rendered outside in AppRoutes */}
 
-      {/* Hero Section - MedPro Style */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
-                <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
-                Nền tảng đặt khám trực tuyến #1 Việt Nam
-              </div>
+      {/* Hero Section - Redesigned */}
+      <section className="relative overflow-hidden pt-2 pb-24 lg:pt-4 lg:pb-32 bg-[#f8fbff]">
+        {/* Background Decorative Shapes */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[600px] h-[600px] bg-gradient-to-br from-[#48a1f3]/20 to-transparent rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[500px] h-[500px] bg-gradient-to-tr from-[#f99b1c]/20 to-transparent rounded-full blur-[100px] pointer-events-none"></div>
 
-              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                Đặt lịch khám
-                <span className="text-blue-600"> nhanh chóng</span>
-                <br />
-                với bác sĩ giỏi
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left Content */}
+            <div className="space-y-10">
+              {/* <div className="inline-flex items-center gap-3 bg-white border border-[#48a1f3]/20 text-[#143250] px-5 py-2.5 rounded-full text-sm font-bold shadow-sm shadow-[#48a1f3]/10">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#48a1f3] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#48a1f3]"></span>
+                </span>
+                Nền tảng Y tế Số #1 Việt Nam
+              </div> */}
+
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#143250] leading-[1.15] tracking-tight">
+                Chăm sóc sức khoẻ <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#f99b1c]">
+                  Chủ động & Dễ dàng
+                </span>
               </h1>
 
-              <p className="text-xl text-gray-600 leading-relaxed">
-                Kết nối bạn với các bác sĩ chuyên khoa hàng đầu. Đặt lịch
-                online, khám bệnh dễ dàng, tiết kiệm thời gian.....
+              <p className="text-xl text-gray-500 leading-relaxed max-w-lg">
+                Kết nối với hàng trăm bác sĩ chuyên khoa hàng đầu. Đặt lịch khám chỉ với 30 giây, mọi lúc mọi nơi.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  variant="primary"
-                  size="lg"
+              <div className="flex flex-col sm:flex-row gap-5">
+                <button
                   onClick={() => requireAuthAndNavigate(PAGES.BOOKING)}
-                  icon={Calendar}
-                  className="text-lg"
+                  className="px-8 py-4 bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] text-white rounded-full font-bold shadow-lg shadow-[#48a1f3]/40 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2 text-lg"
                 >
-                  Đặt lịch ngay
-                </Button>
+                  <Calendar className="w-6 h-6" /> Đặt lịch khám ngay
+                </button>
                 {!isAuthenticated && (
-                  <Button
-                    variant="outline"
-                    size="lg"
+                  <button
                     onClick={() => navigate(PAGES.LOGIN)}
-                    className="text-lg"
+                    className="px-8 py-4 bg-white text-[#143250] rounded-full font-bold shadow-md hover:bg-gray-50 border border-gray-100 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 text-lg"
                   >
                     Đăng nhập / Đăng ký
-                  </Button>
+                  </button>
                 )}
               </div>
 
               {/* Quick Stats */}
-              <div className="flex items-center gap-8 pt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 border-t border-gray-200/60">
                 {stats.map((stat, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
+                  <div key={index} className="flex flex-col gap-1 text-center sm:text-left">
+                    <div className="text-3xl font-black text-[#143250]">
                       {stat.number}
                     </div>
-                    <div className="text-sm text-gray-600">{stat.label}</div>
+                    <div className="text-sm font-bold text-gray-500">{stat.label}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Right Image/Illustration */}
-            <div className="relative">
-              <div className="relative z-10">
+            <div className="relative lg:h-[600px] flex items-center justify-center mt-10 lg:mt-0">
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#48a1f3]/20 to-[#f99b1c]/10 rounded-full blur-3xl transform rotate-12 -z-10"></div>
+
+              {/* Main Image Masking */}
+              <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[90%] max-w-md mx-auto z-10">
                 <img
-                  src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=600&q=80"
+                  src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&q=80"
                   alt="Doctor"
-                  className="rounded-2xl shadow-2xl w-full"
+                  className="w-full h-full object-cover rounded-[3rem] shadow-2xl border-8 border-white"
                 />
 
                 {/* Floating Cards */}
-                <div className="absolute -left-6 top-20 animate-float">
-                  <Card className="p-4 bg-white shadow-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <Shield className="w-6 h-6 text-green-600" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900">An toàn</div>
-                        <div className="text-sm text-gray-500">
-                          100% bảo mật
-                        </div>
+                <div className="absolute -left-4 sm:-left-12 top-20 animate-bounce" style={{ animationDuration: '4s' }}>
+                  <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white flex items-center gap-4">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-100 rounded-full flex items-center justify-center">
+                      <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-green-500" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-[#143250] sm:text-lg">An toàn</div>
+                      <div className="text-xs sm:text-sm font-medium text-gray-500">
+                        100% bảo mật
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 </div>
 
-                <div
-                  className="absolute -right-6 bottom-20 animate-float"
-                  style={{ animationDelay: "1s" }}
-                >
-                  <Card className="p-4 bg-white shadow-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Clock className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900">
-                          Nhanh chóng
-                        </div>
-                        <div className="text-sm text-gray-500">Chỉ 30 giây</div>
-                      </div>
+                <div className="absolute -right-4 sm:-right-12 bottom-20 sm:bottom-32 animate-bounce" style={{ animationDuration: '5s', animationDelay: '1s' }}>
+                  <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white flex items-center gap-4">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#48a1f3]/20 rounded-full flex items-center justify-center">
+                      <Clock className="w-6 h-6 sm:w-7 sm:h-7 text-[#48a1f3]" />
                     </div>
-                  </Card>
+                    <div>
+                      <div className="font-bold text-[#143250] sm:text-lg">Nhanh chóng</div>
+                      <div className="text-xs sm:text-sm font-medium text-gray-500">Chỉ 30 giây</div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Background Decoration */}
-              <div className="absolute -z-10 top-10 right-10 w-72 h-72 bg-blue-200 rounded-full blur-3xl opacity-50"></div>
-              <div className="absolute -z-10 bottom-10 left-10 w-72 h-72 bg-purple-200 rounded-full blur-3xl opacity-50"></div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Tại sao chọn STL Clinic??
+      {/* Features Section - Redesigned */}
+      <section id="features" className="py-24 bg-white relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl lg:text-5xl font-black text-[#143250] mb-6 tracking-tight">
+              Tại sao chọn <span className="text-[#48a1f3]">STL Clinic</span>?
             </h2>
-            <p className="text-xl text-gray-600">
-              Chúng tôi cam kết mang đến trải nghiệm khám chữa bệnh tốt nhất
+            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+              Chúng tôi cam kết mang đến trải nghiệm y tế trực tuyến tiện lợi, an toàn và chuyên nghiệp nhất.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card 
-                key={index} 
-                hover 
-                className="text-center group cursor-pointer"
+              <div
+                key={index}
+                className="group relative bg-white rounded-[2rem] p-8 text-center cursor-pointer border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transform hover:-translate-y-2 transition-all duration-500 overflow-hidden"
                 onClick={() => {
                   if (feature.title === "Đặt lịch Online") {
                     requireAuthAndNavigate(PAGES.BOOKING);
@@ -439,77 +429,82 @@ const WelcomePage = ({ navigate }) => {
                   }
                 }}
               >
-                <div
-                  className={`w-16 h-16 bg-${feature.color}-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}
-                >
-                  <feature.icon
-                    className={`w-8 h-8 text-${feature.color}-600`}
-                  />
+                {/* Background color shift */}
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-50/0 to-gray-50/100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                <div className="relative z-10">
+                  <div className={`w-20 h-20 mx-auto bg-${feature.color}-50 rounded-[1.5rem] flex items-center justify-center mb-8 transform group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+                    <feature.icon className={`w-10 h-10 text-${feature.color}-500`} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#143250] mb-4">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-500 leading-relaxed font-medium">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Banner Carousel Section */}
+      {/* Banner Carousel Section - Redesigned */}
       {banners.length > 0 && (
-        <section className="py-12 bg-white overflow-hidden border-t border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <div className="flex justify-between items-end mb-8">
+        <section className="py-24 bg-white relative overflow-hidden border-t border-gray-100/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Chương trình nổi bật</h2>
-                <p className="text-gray-600">Những ưu đãi và sự kiện mới nhất từ STL Clinic</p>
+                <h2 className="text-4xl lg:text-5xl font-black text-[#143250] mb-4 tracking-tight">
+                  Chương trình <span className="text-[#f99b1c]">Nổi bật</span>
+                </h2>
+                <p className="text-xl text-gray-500 max-w-2xl">Những ưu đãi và sự kiện mới nhất từ hệ thống STL Clinic</p>
               </div>
-              <div className="flex gap-3">
-                <button 
+              <div className="flex gap-4">
+                <button
                   onClick={() => setCurrentBannerIdx(Math.max(0, currentBannerIdx - 1))}
                   disabled={currentBannerIdx === 0}
-                  className="p-3 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors shadow-sm"
+                  className="w-12 h-12 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:text-[#48a1f3] hover:border-[#48a1f3] hover:bg-blue-50 disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:bg-transparent transition-all shadow-sm"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-6 h-6" />
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentBannerIdx(Math.min(Math.max(0, banners.length - 3), currentBannerIdx + 1))}
                   disabled={currentBannerIdx >= Math.max(0, banners.length - 3)}
-                  className="p-3 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-600 transition-colors shadow-sm"
+                  className="w-12 h-12 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:text-[#48a1f3] hover:border-[#48a1f3] hover:bg-blue-50 disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:bg-transparent transition-all shadow-sm"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-6 h-6" />
                 </button>
               </div>
             </div>
-            
-            <div className="overflow-hidden -mx-3 px-3 py-4">
-              <div 
-                className="flex transition-transform duration-500 ease-out"
+
+            <div className="overflow-hidden -mx-4 px-4 py-4">
+              <div
+                className="flex transition-transform duration-700 ease-out"
                 style={{ transform: `translateX(-${currentBannerIdx * (100 / 3)}%)` }}
               >
                 {banners.map((banner) => (
-                  <div 
-                    key={banner.id} 
-                    className="w-full md:w-1/3 shrink-0 px-3 group cursor-pointer" 
+                  <div
+                    key={banner.id}
+                    className="w-full md:w-1/3 shrink-0 px-4 group cursor-pointer"
                     onClick={() => {
-                      if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
+                      if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id } });
                       else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
                       else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
                     }}
                   >
-                    <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 h-[220px]">
-                      <img 
-                        src={banner.image_url} 
-                        alt={banner.title} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                    <div className="relative rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] transition-all duration-500 h-[260px] transform hover:-translate-y-2">
+                      <img
+                        src={banner.image_url}
+                        alt={banner.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-5">
-                        <span className="inline-block px-2 py-1 bg-blue-500/80 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider rounded w-max mb-2">
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#143250]/90 via-[#143250]/40 to-transparent flex flex-col justify-end p-6">
+                        <span className="inline-block px-3 py-1 bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] text-white text-xs font-bold uppercase tracking-wider rounded-lg w-max mb-3 shadow-md shadow-[#48a1f3]/30">
                           Nổi bật
                         </span>
-                        <h3 className="text-white font-bold text-lg mb-1 leading-tight group-hover:text-blue-200 transition-colors">{banner.title}</h3>
-                        {banner.description && <p className="text-gray-300 text-sm line-clamp-2 opacity-90">{banner.description}</p>}
+                        <h3 className="text-white font-bold text-xl mb-2 leading-tight group-hover:text-[#48a1f3] transition-colors">{banner.title}</h3>
+                        {banner.description && <p className="text-gray-200 text-sm line-clamp-2 opacity-90">{banner.description}</p>}
                       </div>
                     </div>
                   </div>
@@ -517,16 +512,14 @@ const WelcomePage = ({ navigate }) => {
               </div>
             </div>
 
-            {/* Dots for multi-item carousel */}
             {banners.length > 3 && (
-              <div className="flex justify-center mt-6 gap-2">
+              <div className="flex justify-center mt-10 gap-2">
                 {Array.from({ length: Math.max(1, banners.length - 2) }).map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentBannerIdx(idx)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      currentBannerIdx === idx ? "w-6 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
-                    }`}
+                    className={`h-2.5 rounded-full transition-all duration-500 ${currentBannerIdx === idx ? "w-8 bg-[#48a1f3]" : "w-2.5 bg-gray-200 hover:bg-gray-300"
+                      }`}
                   />
                 ))}
               </div>
@@ -535,211 +528,209 @@ const WelcomePage = ({ navigate }) => {
         </section>
       )}
 
-      {/* Doctors Section */}
-      <section id="doctors" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Đội ngũ Bác sĩ
-            </h2>
-            <p className="text-xl text-gray-600">
-              Bác sĩ giàu kinh nghiệm, tận tâm với nghề
-            </p>
+      {/* Doctors Section - Redesigned */}
+      <section id="doctors" className="py-24 bg-[#f8fbff] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div>
+              <h2 className="text-4xl lg:text-5xl font-black text-[#143250] mb-4 tracking-tight">
+                Đội ngũ Bác sĩ <span className="text-[#48a1f3]">Hàng đầu</span>
+              </h2>
+              <p className="text-xl text-gray-500 max-w-2xl">
+                Các chuyên gia y tế giàu kinh nghiệm, tận tâm với nghề, luôn sẵn sàng chăm sóc sức khoẻ của bạn.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate(PAGES.DOCTORS)}
+              className="px-6 py-3 bg-white text-[#143250] border border-gray-200 rounded-full font-bold shadow-sm hover:shadow-md hover:bg-gray-50 hover:-translate-y-0.5 transition-all flex items-center gap-2 whitespace-nowrap"
+            >
+              Xem tất cả <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {doctorsList.slice(0, 6).map((doctor) => (
-              <Card key={doctor.id} hover className="group">
-                <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl flex-shrink-0 group-hover:scale-110 transition-transform text-white overflow-hidden border-2 border-white shadow-sm">
-                    {doctor.avatar_url ? (
-                      <img
-                        src={doctor.avatar_url}
-                        alt={doctor.user?.full_name || doctor.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      doctor.avatar || "👨‍⚕️"
-                    )}
+              <div key={doctor.id} className="group relative bg-white rounded-[2rem] p-6 transition-all duration-500 hover:-translate-y-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] border border-gray-100 flex flex-col">
+                <div className="absolute inset-0 bg-gradient-to-b from-[#48a1f3]/0 to-[#48a1f3]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[2rem]"></div>
+                <div className="flex items-start gap-5 relative z-10">
+                  <div className="w-24 h-24 rounded-[1.5rem] bg-gradient-to-br from-[#48a1f3] to-[#3da3f5] p-1 flex-shrink-0 shadow-lg shadow-[#48a1f3]/30 overflow-hidden transform group-hover:scale-105 transition-transform duration-500">
+                    <div className="w-full h-full bg-white rounded-[1.3rem] overflow-hidden">
+                      {doctor.avatar_url ? (
+                        <img src={doctor.avatar_url} alt={doctor.user?.full_name || doctor.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl bg-gray-50">👨‍⚕️</div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">
+                  <div className="flex-1 pt-1">
+                    <h3 className="text-xl font-bold text-[#143250] mb-1 line-clamp-2">
                       {doctor.user?.full_name || doctor.name}
                     </h3>
-                    <p className="text-blue-600 font-medium text-sm mb-2">
+                    <p className="text-[#f99b1c] font-semibold text-sm mb-3">
                       {doctor.specialty || doctor.category?.name || "Đa khoa"}
                     </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
+                    <div className="flex items-center gap-4 text-sm text-gray-500 font-medium bg-gray-50 w-fit px-3 py-1.5 rounded-lg">
+                      <span className="flex items-center gap-1 text-yellow-500">
                         ⭐ {doctor.averageRating || "4.8"}
                       </span>
+                      <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                       <span>{doctor.experience || 5} năm KN</span>
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  fullWidth
-                  className="mt-4"
+                <button
                   onClick={() => requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: doctor.id } })}
+                  className="mt-6 w-full py-3.5 bg-gray-50 text-[#143250] group-hover:bg-[#48a1f3] group-hover:text-white rounded-xl font-bold transition-colors duration-300 relative z-10 flex items-center justify-center gap-2"
                 >
-                  Đặt lịch khám
-                </Button>
-              </Card>
+                  <Calendar className="w-5 h-5" /> Đặt lịch khám
+                </button>
+              </div>
             ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => navigate(PAGES.DOCTORS)}
-            >
-              Xem tất cả bác sĩ
-            </Button>
           </div>
         </div>
       </section>
 
-      {/* Popular Packages Section */}
+      {/* Popular Packages Section - Redesigned */}
       {popularPackages.length > 0 && (
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-24 bg-white relative overflow-hidden border-t border-gray-100">
+          <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-[#f99b1c]/5 rounded-full blur-[80px] pointer-events-none"></div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Các gói dịch vụ nổi bật
+              <h2 className="text-4xl lg:text-5xl font-black text-[#143250] mb-4 tracking-tight">
+                Gói dịch vụ <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f99b1c] to-[#fbc374]">Nổi bật</span>
               </h2>
-              <p className="text-xl text-gray-600">
-                Các gói khám sức khỏe được nhiều bệnh nhân lựa chọn nhất
+              <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+                Các gói khám sức khỏe toàn diện được lựa chọn nhiều nhất
               </p>
             </div>
 
             <div className="relative group/slider">
               {popularPackages.length > 3 && (
-                <button 
+                <button
                   onClick={() => scrollPackages('left')}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 z-20 w-12 h-12 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all focus:outline-none"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-20 w-14 h-14 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#f99b1c] hover:border-[#f99b1c] hover:bg-orange-50 transition-all focus:outline-none"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-7 h-7" />
                 </button>
               )}
-              
-              <div 
+
+              <div
                 ref={packagesScrollRef}
-                className="flex overflow-x-auto gap-6 pb-8 pt-4 px-2 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden"
+                className="flex overflow-x-auto gap-8 pb-10 pt-4 px-4 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {popularPackages.map((pkg) => (
-                  <div key={pkg.id} className="min-w-[320px] max-w-[360px] shrink-0 snap-start flex">
-                    <Card hover className="flex flex-col w-full h-full border-2 border-transparent hover:border-blue-100 transition-colors bg-white">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
+                  <div key={pkg.id} className="min-w-[340px] max-w-[380px] shrink-0 snap-start flex group">
+                    <div className="flex flex-col w-full h-full bg-white rounded-[2rem] p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transform group-hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
+                      {/* Decorative top border gradient */}
+                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#48a1f3] to-[#f99b1c] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="w-16 h-16 bg-gradient-to-br from-[#48a1f3]/10 to-[#48a1f3]/5 rounded-2xl flex items-center justify-center text-[#48a1f3] group-hover:bg-[#48a1f3] group-hover:text-white transition-colors duration-500 shadow-inner">
                           <Shield className="w-8 h-8" />
                         </div>
-                        <div className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                          🔥 {pkg.booking_count} lượt đặt
+                        <div className="bg-orange-50 text-[#f99b1c] border border-orange-100 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-sm">
+                          🔥 {pkg.booking_count} lượt
                         </div>
                       </div>
-                      
-                      <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+
+                      <h3 className="text-xl font-bold text-[#143250] mb-3 line-clamp-2 group-hover:text-[#48a1f3] transition-colors">
                         {pkg.name}
                       </h3>
-                      
-                      <p className="text-gray-600 mb-4 flex-1 line-clamp-3">
+
+                      <p className="text-gray-500 mb-6 flex-1 line-clamp-3 leading-relaxed">
                         {pkg.description || "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu."}
                       </p>
-                      
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded-lg">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-blue-500" />
+
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-8 bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Clock className="w-5 h-5 text-[#48a1f3]" />
                           <span>{pkg.duration_minutes || 30} phút</span>
                         </div>
                         {pkg.fixed_price && (
-                          <div className="flex items-center gap-1 font-semibold text-blue-700">
-                            Giá: {Number(pkg.fixed_price).toLocaleString("vi-VN")}đ
+                          <div className="flex items-center gap-1 font-bold text-[#f99b1c] ml-auto text-lg">
+                            {Number(pkg.fixed_price).toLocaleString("vi-VN")}đ
                           </div>
                         )}
                       </div>
-                      
-                      <Button
-                        variant="primary"
-                        fullWidth
-                        className="mt-auto shadow-md hover:shadow-lg"
+
+                      <button
+                        className="mt-auto w-full py-4 bg-gray-50 text-[#143250] border border-gray-200 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:from-[#48a1f3] group-hover:to-[#3da3f5] group-hover:text-white rounded-xl font-bold transition-all duration-300 shadow-sm group-hover:shadow-md flex items-center justify-center gap-2"
                         onClick={() => requireAuthAndNavigate(PAGES.BOOKING, { state: { packageId: pkg.id } })}
                       >
-                        Đặt gói này
-                      </Button>
-                    </Card>
+                        Đặt gói này <ChevronRight className="w-5 h-5 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
 
               {popularPackages.length > 3 && (
-                <button 
+                <button
                   onClick={() => scrollPackages('right')}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 z-20 w-12 h-12 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all focus:outline-none"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-20 w-14 h-14 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#f99b1c] hover:border-[#f99b1c] hover:bg-orange-50 transition-all focus:outline-none"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="w-7 h-7" />
                 </button>
               )}
             </div>
-            
-            <div className="text-center mt-12">
-              <Button
-                variant="outline"
-                size="lg"
+
+            <div className="text-center mt-8">
+              <button
                 onClick={() => navigate(PAGES.SERVICE_PACKAGES)}
-                className="font-semibold"
+                className="inline-flex items-center gap-2 font-bold text-[#48a1f3] hover:text-[#143250] transition-colors group"
               >
-                Xem tất cả dịch vụ
-              </Button>
+                Xem tất cả dịch vụ <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
         </section>
       )}
 
-      {/* Single Banner Auto-play Section */}
+      {/* Single Banner Auto-play Section - Redesigned */}
       {banners.length > 0 && (
-        <section className="py-12 bg-white border-t border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <div 
-              className="relative rounded-3xl overflow-hidden shadow-xl h-[200px] md:h-[280px] group cursor-pointer"
+        <section className="py-16 bg-[#f8fbff] relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div
+              className="relative rounded-[2.5rem] overflow-hidden shadow-[0_20px_40px_rgba(72,161,243,0.15)] h-[250px] md:h-[350px] group cursor-pointer border-4 border-white"
               onClick={() => {
                 const banner = banners[singleBannerIdx];
                 if (!banner) return;
-                if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id }});
+                if (banner.doctor_id) requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: banner.doctor_id } });
                 else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
                 else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
               }}
             >
-              <div 
+              <div
                 className="flex h-full w-full transition-transform duration-700 ease-in-out"
                 style={{ transform: `translateX(-${singleBannerIdx * 100}%)` }}
               >
                 {banners.map((banner, idx) => (
-                  <div 
+                  <div
                     key={banner.id}
                     className="w-full h-full shrink-0 relative"
                   >
-                    <img 
-                      src={banner.image_url} 
-                      alt={banner.title} 
-                      className="w-full h-full object-cover"
+                    <img
+                      src={banner.image_url}
+                      alt={banner.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 md:p-12">
-                      <span className="inline-block px-3 py-1 bg-blue-500/90 text-white text-xs font-bold uppercase tracking-wider rounded-full w-max mb-3 shadow-lg">
-                        Quảng cáo nổi bật
-                      </span>
-                      <h3 className="text-white font-bold text-2xl md:text-4xl mb-2 drop-shadow-md">{banner.title}</h3>
-                      {banner.description && <p className="text-gray-200 text-sm md:text-lg max-w-3xl drop-shadow">{banner.description}</p>}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#143250]/90 via-[#143250]/40 to-transparent flex flex-col justify-center p-8 md:p-16">
+                      <div className="max-w-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-700">
+                        <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-[#f99b1c] to-[#fbc374] text-white text-xs font-black uppercase tracking-widest rounded-lg w-max mb-4 shadow-lg shadow-orange-500/30">
+                          Sự kiện nổi bật
+                        </span>
+                        <h3 className="text-white font-black text-3xl md:text-5xl mb-4 leading-tight drop-shadow-md">{banner.title}</h3>
+                        {banner.description && <p className="text-blue-50 text-sm md:text-lg max-w-xl opacity-90 drop-shadow line-clamp-2 md:line-clamp-3">{banner.description}</p>}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-              
+
               {/* Dots for single banner */}
-              <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+              <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-3">
                 {banners.map((_, idx) => (
                   <button
                     key={idx}
@@ -747,9 +738,8 @@ const WelcomePage = ({ navigate }) => {
                       e.stopPropagation();
                       setSingleBannerIdx(idx);
                     }}
-                    className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
-                      singleBannerIdx === idx ? "w-8 bg-blue-500" : "w-2 bg-white/60 hover:bg-white"
-                    }`}
+                    className={`h-2.5 rounded-full transition-all duration-500 shadow-md ${singleBannerIdx === idx ? "w-10 bg-[#48a1f3]" : "w-2.5 bg-white/60 hover:bg-white"
+                      }`}
                   />
                 ))}
               </div>
@@ -758,63 +748,68 @@ const WelcomePage = ({ navigate }) => {
         </section>
       )}
 
-      {/* Specialties Section */}
-      <section id="specialties" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Specialties Section - Redesigned */}
+      <section id="specialties" className="py-24 bg-white relative">
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-[#48a1f3]/10 to-transparent rounded-full blur-[80px] pointer-events-none"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Chuyên khoa
+            <h2 className="text-4xl lg:text-5xl font-black text-[#143250] mb-4 tracking-tight">
+              Khám theo <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#f99b1c]">Chuyên khoa</span>
             </h2>
-            <p className="text-xl text-gray-600">
-              Đa dạng các chuyên khoa phục vụ nhu cầu khám chữa bệnh
+            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+              Đa dạng chuyên khoa đáp ứng mọi nhu cầu khám chữa bệnh của bạn và gia đình
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {categoriesList.map((specialty) => (
-              <Card
+              <div
                 key={specialty.id}
-                hover
-                className="text-center cursor-pointer group"
+                className="group relative bg-white rounded-3xl p-6 text-center cursor-pointer border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transform hover:-translate-y-2 transition-all duration-300"
                 onClick={() => navigate(PAGES.DOCTORS, { state: { specialty: specialty.name } })}
               >
-                <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">
-                  {specialty.icon || getCategoryIcon(specialty.name)}
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-[#48a1f3] group-hover:to-[#3da3f5] rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 shadow-inner group-hover:shadow-[#48a1f3]/40">
+                  <span className="text-3xl group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-0 group-hover:invert">
+                    {specialty.icon || getCategoryIcon(specialty.name)}
+                  </span>
                 </div>
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-bold text-[#143250] group-hover:text-[#48a1f3] transition-colors">
                   {specialty.name}
                 </h3>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section - Redesigned */}
       {!isAuthenticated && (
-        <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-4xl font-bold mb-4">Sẵn sàng bắt đầu?</h2>
-            <p className="text-xl mb-8 text-blue-100">
-              Đặt lịch khám ngay hôm nay để nhận được sự chăm sóc tốt nhất
+        <section className="py-24 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[#143250]"></div>
+          {/* Background Decorative blobs for CTA */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#48a1f3]/30 rounded-full blur-[100px] pointer-events-none transform translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#f99b1c]/20 rounded-full blur-[100px] pointer-events-none transform -translate-x-1/2 translate-y-1/2"></div>
+
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <h2 className="text-4xl lg:text-5xl font-black text-white mb-6 tracking-tight">
+              Sẵn sàng để <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#f99b1c]">bắt đầu?</span>
+            </h2>
+            <p className="text-xl text-blue-100/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Tạo tài khoản miễn phí ngay hôm nay để trải nghiệm dịch vụ y tế thông minh, tiện lợi và tiết kiệm thời gian nhất.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                variant="secondary"
-                size="lg"
+            <div className="flex flex-col sm:flex-row gap-5 justify-center">
+              <button
                 onClick={() => navigate(PAGES.REGISTER)}
-                className="bg-white text-blue-600 hover:bg-gray-50"
+                className="px-8 py-4 bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] text-white rounded-full font-bold shadow-lg shadow-[#48a1f3]/40 hover:shadow-xl hover:-translate-y-1 transition-all text-lg"
               >
-                Đăng ký miễn phí
-              </Button>
-              <Button
-                variant="ghost"
-                size="lg"
+                Đăng ký tài khoản miễn phí
+              </button>
+              <button
                 onClick={() => navigate(PAGES.LOGIN)}
-                className="text-white border-2 border-white hover:bg-white/10"
+                className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-full font-bold hover:bg-white/20 hover:-translate-y-1 transition-all text-lg"
               >
-                Đăng nhập ngay
-              </Button>
+                Đăng nhập
+              </button>
             </div>
           </div>
         </section>

@@ -124,96 +124,104 @@ const HomePage = ({ navigate }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f8fbff] pb-12 relative overflow-hidden">
+      {/* Decorative Blurs */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#48a1f3]/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-[#f99b1c]/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+      
       {/* Header is managed globally in AppRoutes */}
 
-      {/* Banner Section removed as requested */}
-
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Xin chào, {user?.fullName || "Bạn"}! 👋
-          </h2>
-          <p className="text-gray-600">
-            Hôm nay bạn cảm thấy thế nào? Hãy để chúng tôi chăm sóc sức khỏe của
-            bạn.
-          </p>
+        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-black text-[#143250] mb-3 tracking-tight">
+              Xin chào, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#f99b1c]">{user?.fullName || "Bạn"}</span>! 👋
+            </h2>
+            <p className="text-lg text-gray-500 max-w-2xl">
+              Hôm nay bạn cảm thấy thế nào? Hãy để chúng tôi chăm sóc sức khỏe của bạn.
+            </p>
+          </div>
+          <div className="flex gap-3 shrink-0">
+            <button onClick={() => navigate(PAGES.BOOKING)} className="px-6 py-3.5 bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] text-white rounded-xl font-bold shadow-lg shadow-[#48a1f3]/30 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2">
+              <Plus className="w-5 h-5" /> Đặt lịch mới
+            </button>
+          </div>
         </div>
 
         {/* Health Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {healthMetrics.map((metric, index) => (
-            <Card key={index} className="relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">{metric.label}</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {metric.value}
-                  </p>
-                  <p
-                    className={`text-sm font-medium text-${metric.color}-600 mt-2 flex items-center gap-1`}
-                  >
-                    <TrendingUp className="w-4 h-4" />
-                    {metric.change} so với tháng trước
-                  </p>
-                </div>
-                <div
-                  className={`w-16 h-16 bg-${metric.color}-100 rounded-2xl flex items-center justify-center`}
+            <div key={index} className="bg-white rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 border border-gray-100 flex items-center justify-between group">
+              <div>
+                <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{metric.label}</p>
+                <p className="text-4xl font-black text-[#143250] mb-2 group-hover:scale-105 origin-left transition-transform duration-300">
+                  {metric.value}
+                </p>
+                <p
+                  className={`text-sm font-bold flex items-center gap-1 ${
+                    metric.color === "blue" ? "text-[#48a1f3]" : metric.color === "purple" ? "text-purple-500" : "text-[#f99b1c]"
+                  }`}
                 >
-                  <metric.icon className={`w-8 h-8 text-${metric.color}-600`} />
-                </div>
+                  <TrendingUp className="w-4 h-4" />
+                  {metric.change} tháng trước
+                </p>
               </div>
-            </Card>
+              <div
+                className={`w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500 ${
+                  metric.color === "blue" ? "bg-blue-50 text-[#48a1f3]" : metric.color === "purple" ? "bg-purple-50 text-purple-500" : "bg-orange-50 text-[#f99b1c]"
+                }`}
+              >
+                <metric.icon className="w-10 h-10" />
+              </div>
+            </div>
           ))}
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold text-[#143250] mb-6 flex items-center gap-2">
             Thao tác nhanh
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {quickActions.map((action, index) => (
-              <Card
+              <div
                 key={index}
-                hover
                 onClick={() => navigate(action.page)}
-                className="group cursor-pointer"
+                className="group cursor-pointer bg-white rounded-3xl p-6 text-center border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-300"
               >
                 <div
-                  className={`w-12 h-12 bg-gradient-to-br ${action.gradient} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-lg`}
+                  className={`w-16 h-16 mx-auto bg-gradient-to-br ${action.gradient} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500 shadow-lg`}
                 >
-                  <action.icon className="w-6 h-6 text-white" />
+                  <action.icon className="w-8 h-8 text-white" />
                 </div>
-                <p className="font-semibold text-gray-900 text-sm">
+                <p className="font-bold text-[#143250] group-hover:text-[#48a1f3] transition-colors">
                   {action.label}
                 </p>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Appointments */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-8">
             {/* Upcoming Appointments */}
-            <Card>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <Clock className="w-6 h-6 text-blue-600" />
+            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-bold text-[#143250] flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-[#48a1f3]" />
+                  </div>
                   Lịch hẹn sắp tới
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => navigate(PAGES.APPOINTMENTS)}
-                  icon={ArrowRight}
-                  iconPosition="right"
+                  className="text-[#48a1f3] font-bold hover:text-[#143250] transition-colors flex items-center gap-1 group bg-blue-50 hover:bg-gray-100 px-4 py-2 rounded-full"
                 >
-                  Xem tất cả
-                </Button>
+                  Xem tất cả <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
               </div>
 
               {upcomingAppointments.length > 0 ? (
@@ -221,169 +229,171 @@ const HomePage = ({ navigate }) => {
                   {upcomingAppointments.map((apt) => (
                     <div
                       key={apt.id}
-                      className="p-4 border-l-4 border-blue-500 bg-blue-50 rounded-lg hover:shadow-md transition cursor-pointer"
+                      className="p-5 border border-gray-100 bg-gray-50/50 hover:bg-[#48a1f3]/5 rounded-[1.5rem] hover:shadow-md hover:border-[#48a1f3]/30 transition-all cursor-pointer group"
                       onClick={() => navigate(PAGES.APPOINTMENTS)}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow">
-                              <User className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-gray-900">
-                                {apt.doctorName}
-                              </h4>
-                              <p className="text-sm text-blue-600">
-                                {apt.specialty}
-                              </p>
-                            </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 text-[#48a1f3] group-hover:bg-[#48a1f3] group-hover:text-white transition-colors duration-300">
+                            <User className="w-7 h-7" />
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 ml-13">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {getRelativeDate(apt.date)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {apt.time}
-                            </span>
+                          <div>
+                            <h4 className="font-bold text-[#143250] text-lg mb-0.5">
+                              {apt.doctorName}
+                            </h4>
+                            <p className="text-sm text-[#f99b1c] font-semibold mb-2">
+                              {apt.specialty}
+                            </p>
+                            <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
+                              <span className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-100">
+                                <Calendar className="w-4 h-4 text-[#48a1f3]" />
+                                {getRelativeDate(apt.date)}
+                              </span>
+                              <span className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-100">
+                                <Clock className="w-4 h-4 text-[#f99b1c]" />
+                                {apt.time}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <span
-                          className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                            apt.status === "pending"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : apt.status === "confirmed"
-                                ? "bg-green-100 text-green-700"
-                                : apt.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : apt.status === "completed"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {getStatusText(apt.status)}
-                        </span>
+                        <div className="flex justify-start sm:justify-end">
+                          <span
+                            className={`px-4 py-2 text-sm font-bold rounded-xl shadow-sm ${
+                              apt.status === "pending"
+                                ? "bg-yellow-50 text-yellow-600 border border-yellow-200"
+                                : apt.status === "confirmed"
+                                  ? "bg-green-50 text-green-600 border border-green-200"
+                                  : apt.status === "rejected"
+                                    ? "bg-red-50 text-red-600 border border-red-200"
+                                    : apt.status === "completed"
+                                      ? "bg-blue-50 text-blue-600 border border-blue-200"
+                                      : "bg-gray-100 text-gray-600 border border-gray-300"
+                            }`}
+                          >
+                            {getStatusText(apt.status)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center py-16 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
+                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm border border-gray-100">
                     <Calendar className="w-10 h-10 text-gray-400" />
                   </div>
-                  <p className="text-gray-600 mb-4">Bạn chưa có lịch hẹn nào</p>
-                  <Button
-                    variant="primary"
+                  <h4 className="text-xl font-bold text-[#143250] mb-2">Chưa có lịch hẹn</h4>
+                  <p className="text-gray-500 mb-8 max-w-xs mx-auto">Đặt lịch ngay để được chăm sóc sức khỏe tốt nhất từ các bác sĩ chuyên khoa.</p>
+                  <button
                     onClick={() => navigate(PAGES.DOCTORS)}
-                    icon={Plus}
+                    className="px-8 py-3.5 bg-white text-[#143250] border-2 border-gray-200 hover:border-[#48a1f3] hover:text-[#48a1f3] hover:bg-blue-50 rounded-xl font-bold transition-all flex items-center gap-2 mx-auto"
                   >
-                    Đặt lịch ngay
-                  </Button>
+                    <Plus className="w-5 h-5" /> Khám bệnh ngay
+                  </button>
                 </div>
               )}
-            </Card>
+            </div>
 
             {/* Specialties */}
-            <Card>
-              <h3 className="text-xl font-bold text-gray-900 mb-6">
-                Chuyên khoa phổ biến
-              </h3>
-              {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-bold text-[#143250] flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-[#f99b1c]" />
+                  </div>
+                  Chuyên khoa
+                </h3>
+                <button
+                  onClick={() => navigate(PAGES.DOCTORS)}
+                  className="text-[#48a1f3] font-bold hover:text-[#143250] transition-colors flex items-center gap-1 group bg-blue-50 hover:bg-gray-100 px-4 py-2 rounded-full"
+                >
+                  Tất cả <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {categoriesList.slice(0, 8).map((specialty) => (
                   <div
                     key={specialty.id}
-                    className="p-4 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition cursor-pointer text-center group"
-                    onClick={() => navigate(PAGES.DOCTORS)}
-                  >
-                    <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">
-                      {specialty.icon}
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {specialty.name}
-                    </p>
-                  </div>
-                ))}
-              </div> */}
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6">
-                {categoriesList.map((specialty) => (
-                  <Card
-                    key={specialty.id}
-                    hover
-                    className="text-center cursor-pointer group"
+                    className="group relative bg-gray-50 hover:bg-white rounded-2xl p-5 text-center cursor-pointer border border-transparent hover:border-gray-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transform hover:-translate-y-1 transition-all duration-300"
                     onClick={() =>
                       navigate(PAGES.DOCTORS, {
                         state: { specialty: specialty.name },
                       })
                     }
                   >
-                    <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">
-                      {specialty.icon || getCategoryIcon(specialty.name)}
+                    <div className="w-14 h-14 mx-auto bg-white group-hover:bg-gradient-to-br group-hover:from-[#48a1f3] group-hover:to-[#3da3f5] rounded-xl flex items-center justify-center mb-3 transition-all duration-300 shadow-sm group-hover:shadow-md">
+                      <span className="text-3xl group-hover:scale-110 transition-transform duration-300 filter group-hover:brightness-0 group-hover:invert">
+                        {specialty.icon || getCategoryIcon(specialty.name)}
+                      </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-bold text-[#143250] text-sm group-hover:text-[#48a1f3] transition-colors line-clamp-2">
                       {specialty.name}
                     </h3>
-                  </Card>
+                  </div>
                 ))}
               </div>
-            </Card>
+            </div>
           </div>
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Health Tip */}
-            <Card className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">{randomTip.icon}</span>
+            <div className="relative rounded-[2rem] overflow-hidden p-8 text-white shadow-lg shadow-blue-500/20 group cursor-pointer" onClick={() => window.open("https://moh.gov.vn/", "_blank")}>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#48a1f3] to-[#143250] transition-transform duration-700 group-hover:scale-110"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-[20px] -ml-10 -mb-10"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform">
+                    <span className="text-2xl">{randomTip.icon}</span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg leading-tight text-white">Mẹo sức khỏe</h4>
+                    <p className="text-xs text-blue-200/90 font-medium uppercase tracking-wider">{randomTip.category}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-lg mb-1">💡 Mẹo sức khỏe</h4>
-                  <p className="text-sm text-blue-100">{randomTip.category}</p>
-                </div>
+                <p className="text-white/95 leading-relaxed font-medium text-lg">
+                  "{randomTip.content}"
+                </p>
               </div>
-              <p className="text-white/90 leading-relaxed">
-                {randomTip.content}
-              </p>
-            </Card>
+            </div>
 
             {/* Quick Book */}
-            <Card className="border-2 border-blue-200 bg-blue-50">
-              <h4 className="font-bold text-gray-900 mb-3">Đặt lịch nhanh</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Đặt lịch khám chỉ trong 30 giây với bác sĩ giỏi nhất
+            <div className="bg-gradient-to-b from-orange-50 to-white rounded-[2rem] p-8 border border-orange-100/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-[#f99b1c]/10 rounded-full blur-[40px] -mr-10 -mt-10 group-hover:bg-[#f99b1c]/20 transition-colors duration-500"></div>
+              <h4 className="text-xl font-black text-[#143250] mb-3 relative z-10">Đặt lịch khám nhanh</h4>
+              <p className="text-gray-500 mb-8 relative z-10 font-medium">
+                Hệ thống sẽ gợi ý bác sĩ chuyên môn phù hợp nhất cho bạn.
               </p>
-              <Button
-                variant="primary"
-                fullWidth
+              <button
                 onClick={() => navigate(PAGES.DOCTORS)}
-                icon={Calendar}
+                className="w-full py-4 bg-gradient-to-r from-[#f99b1c] to-[#fbc374] text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2 relative z-10"
               >
-                Đặt lịch ngay
-              </Button>
-            </Card>
+                <Calendar className="w-5 h-5" /> Đặt lịch ngay
+              </button>
+            </div>
 
             {/* Support */}
-            <Card>
-              <h4 className="font-bold text-gray-900 mb-3">Cần hỗ trợ?</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Đội ngũ hỗ trợ 24/7 luôn sẵn sàng giúp bạn
+            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center group hover:border-[#48a1f3]/30 transition-colors">
+              <div className="w-16 h-16 bg-blue-50 text-[#48a1f3] rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 group-hover:bg-[#48a1f3] group-hover:text-white transition-all duration-300">
+                <MessageCircle className="w-8 h-8" />
+              </div>
+              <h4 className="text-xl font-bold text-[#143250] mb-2">Cần hỗ trợ?</h4>
+              <p className="text-gray-500 mb-6 text-sm font-medium">
+                Đội ngũ CSKH chuyên nghiệp luôn sẵn sàng hỗ trợ bạn 24/7.
               </p>
-              <Button
-                variant="outline"
-                fullWidth
+              <button
                 onClick={() => navigate(PAGES.CHAT)}
-                icon={MessageCircle}
+                className="w-full py-3.5 bg-gray-50 text-[#143250] border border-gray-200 hover:border-transparent hover:bg-[#48a1f3] hover:text-white rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
               >
-                Chat ngay
-              </Button>
-            </Card>
+                 Trò chuyện trực tuyến <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </main>
-      <footer id="contact" className="bg-gray-900 text-white py-12">
+      <footer id="contact" className="bg-gray-900 text-white py-12 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
