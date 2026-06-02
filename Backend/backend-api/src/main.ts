@@ -2,9 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'body-parser';
+import helmet from 'helmet';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Chuẩn hóa lỗi trả về (Global Exception Filter)
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Bảo vệ Web khỏi XSS và các lỗ hổng Injection khác bằng các HTTP Header an toàn
+  app.use(helmet());
 
   // Tăng giới hạn kích thước body để nhận được ảnh base64 (avatar, CCCD)
   app.use(

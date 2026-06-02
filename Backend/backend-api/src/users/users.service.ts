@@ -16,8 +16,20 @@ export class UsersService {
     private cloudinaryService: CloudinaryService,
   ) { }
 
-  async findAll(): Promise<User[]> {
-    return await this.usersRepository.find();
+  async findAll(page: number = 1, limit: number = 100): Promise<{ data: User[]; total: number; page: number; limit: number; totalPages: number }> {
+    const [data, total] = await this.usersRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { id: 'DESC' }, // Lấy người dùng mới nhất
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number) {
@@ -113,6 +125,7 @@ export class UsersService {
   async remove(id: number): Promise<void> {
     const user = (await this.findOne(id)) as User;
 
+    // 1. Xóa ảnh trên Cloudinary (nếu có lỗi DB thì ảnh vẫn bị xóa trên mây, nhưng rủi ro này chấp nhận được)
     if (user.avatar_public_id) {
       await this.cloudinaryService.deleteImage(user.avatar_public_id);
     }
@@ -123,55 +136,45 @@ export class UsersService {
       await this.cloudinaryService.deleteImage(user.id_card_back_public_id);
     }
 
-    // Là Admin tối cao, chúng ta có quyền force delete toàn bộ dữ liệu liên quan.
-    // Tạm thời vô hiệu hóa kiểm tra khóa ngoại để xóa, HOẶC xóa theo đúng thứ tự.
-    // Cách an toàn nhất là xóa theo cây (Từ lá đến rễ)
+    // Thực thi Xóa trong Transaction để tránh sinh ra dữ liệu rác nếu lỡ sập giữa chừng
+    await this.usersRepository.manager.transaction(async (transactionalEntityManager) => {
+      let appointmentIds: number[] = [];
 
-    // Lấy tất cả appointment_id liên quan đến user (dù là bác sĩ hay bệnh nhân)
-    let appointmentIds: number[] = [];
+      const doctorRows = await transactionalEntityManager.query('SELECT id FROM doctors WHERE user_id = ?', [id]);
+      const doctorId = doctorRows.length > 0 ? doctorRows[0].id : null;
 
-    const doctorRows = await this.usersRepository.manager.query('SELECT id FROM doctors WHERE user_id = ?', [id]);
-    const doctorId = doctorRows.length > 0 ? doctorRows[0].id : null;
+      if (doctorId) {
+        const appts = await transactionalEntityManager.query('SELECT id FROM appointments WHERE doctor_id = ?', [doctorId]);
+        appointmentIds.push(...appts.map((a: any) => a.id));
+      }
 
-    if (doctorId) {
-      const appts = await this.usersRepository.manager.query('SELECT id FROM appointments WHERE doctor_id = ?', [doctorId]);
-      appointmentIds.push(...appts.map((a: any) => a.id));
-    }
+      const patientAppts = await transactionalEntityManager.query('SELECT id FROM appointments WHERE user_id = ?', [id]);
+      appointmentIds.push(...patientAppts.map((a: any) => a.id));
 
-    const patientAppts = await this.usersRepository.manager.query('SELECT id FROM appointments WHERE user_id = ?', [id]);
-    appointmentIds.push(...patientAppts.map((a: any) => a.id));
+      appointmentIds = [...new Set(appointmentIds)];
 
-    // Xóa trùng lặp (nếu có)
-    appointmentIds = [...new Set(appointmentIds)];
+      if (appointmentIds.length > 0) {
+        const idsString = appointmentIds.join(',');
+        await transactionalEntityManager.query(`DELETE FROM payments WHERE appointment_id IN (${idsString})`);
+        await transactionalEntityManager.query(`DELETE FROM reviews WHERE appointment_id IN (${idsString})`);
+        await transactionalEntityManager.query(`DELETE FROM appointments WHERE id IN (${idsString})`);
+      }
 
-    // 1. Xóa Payments và Reviews của các Appointment này
-    if (appointmentIds.length > 0) {
-      const idsString = appointmentIds.join(',');
-      await this.usersRepository.manager.query(`DELETE FROM payments WHERE appointment_id IN (${idsString})`);
-      await this.usersRepository.manager.query(`DELETE FROM reviews WHERE appointment_id IN (${idsString})`);
-    }
+      if (doctorId) {
+        await transactionalEntityManager.query('DELETE FROM reviews WHERE doctor_id = ?', [doctorId]);
+        await transactionalEntityManager.query('DELETE FROM schedules WHERE doctor_id = ?', [doctorId]);
+        await transactionalEntityManager.query('DELETE FROM doctor_applications WHERE doctor_id = ?', [doctorId]);
+        await transactionalEntityManager.query('DELETE FROM banners WHERE doctor_id = ?', [doctorId]);
+        await transactionalEntityManager.query('DELETE FROM doctor_hospital WHERE doctor_id = ?', [doctorId]); // Xóa bảng join
+        await transactionalEntityManager.query('DELETE FROM doctors WHERE id = ?', [doctorId]);
+      }
 
-    // 2. Xóa Appointments
-    if (appointmentIds.length > 0) {
-      const idsString = appointmentIds.join(',');
-      await this.usersRepository.manager.query(`DELETE FROM appointments WHERE id IN (${idsString})`);
-    }
+      await transactionalEntityManager.query('DELETE FROM reviews WHERE user_id = ?', [id]);
+      await transactionalEntityManager.query('DELETE FROM likes WHERE user_id = ?', [id]);
+      await transactionalEntityManager.query('DELETE FROM comments WHERE user_id = ?', [id]);
 
-    // 3. Nếu là Bác sĩ, xóa các dữ liệu liên kết khác
-    if (doctorId) {
-      await this.usersRepository.manager.query('DELETE FROM reviews WHERE doctor_id = ?', [doctorId]);
-      await this.usersRepository.manager.query('DELETE FROM schedules WHERE doctor_id = ?', [doctorId]);
-      await this.usersRepository.manager.query('DELETE FROM doctor_applications WHERE doctor_id = ?', [doctorId]);
-      await this.usersRepository.manager.query('DELETE FROM banners WHERE doctor_id = ?', [doctorId]);
-      await this.usersRepository.manager.query('DELETE FROM doctors WHERE id = ?', [doctorId]);
-    }
-
-    // 4. Xóa dữ liệu user liên kết
-    await this.usersRepository.manager.query('DELETE FROM reviews WHERE user_id = ?', [id]);
-    await this.usersRepository.manager.query('DELETE FROM likes WHERE user_id = ?', [id]);
-    await this.usersRepository.manager.query('DELETE FROM comments WHERE user_id = ?', [id]);
-
-    // Cuối cùng xóa User
-    await this.usersRepository.remove(user);
+      // Cuối cùng xóa User
+      await transactionalEntityManager.remove(user);
+    });
   }
 }

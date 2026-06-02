@@ -30,7 +30,7 @@ const FloatingWidgets = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const hideChatRoutes = [PAGES.DOCTOR_DASHBOARD, PAGES.ADMIN_DASHBOARD, PAGES.BANNER_MANAGEMENT];
+  const hideChatRoutes = [PAGES.DOCTOR_DASHBOARD, PAGES.BANNER_MANAGEMENT];
   const shouldHideChat = hideChatRoutes.some(route => location.pathname.startsWith(route));
 
   const [messages, setMessages] = useState(() => {

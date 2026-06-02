@@ -58,7 +58,7 @@ export class DoctorsService {
     return Array.from(topRatedPerCategory.values());
   }
 
-  async findAll(hospitalId?: number, categoryId?: number, date?: string, time?: string): Promise<Doctor[]> {
+  async findAll(hospitalId?: number, categoryId?: number, date?: string, time?: string, page: number = 1, limit: number = 100): Promise<{ data: Doctor[]; total: number; page: number; limit: number; totalPages: number }> {
     const query = this.doctorsRepository.createQueryBuilder('doctor')
       .leftJoinAndSelect('doctor.category', 'category')
       .leftJoinAndSelect('doctor.hospitals', 'hospital')
@@ -89,7 +89,17 @@ export class DoctorsService {
         .setParameter('statuses', ['pending', 'confirmed']);
     }
 
-    return query.getMany();
+    query.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number): Promise<Doctor | null> {

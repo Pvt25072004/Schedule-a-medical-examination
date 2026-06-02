@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -35,8 +36,8 @@ import { ServicePackagesModule } from './service-packages/service-packages.modul
 @Module({
   imports: [
     ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
+      ttl: 60000, // 60 seconds
+      limit: 100, // Tăng limit lên 100 request/phút để không chặn Web Admin tải data
     }]),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -88,6 +89,13 @@ import { ServicePackagesModule } from './service-packages/service-packages.modul
     ServicePackagesModule,
   ],
   controllers: [AppController, EmailController],
-  providers: [AppService, FirebaseService],
+  providers: [
+    AppService,
+    FirebaseService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule { }
