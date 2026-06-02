@@ -328,12 +328,12 @@ const DoctorDashboardPage = ({ navigate }) => {
     () =>
       Array.isArray(doctorProfile?.hospitals)
         ? doctorProfile.hospitals.map((h) => ({
-            id: h.id,
-            hospital: h.name,
-            // Hiện tại backend chưa có thông tin vai trò / since, tạm để mặc định
-            role: "Bác sĩ",
-            since: "",
-          }))
+          id: h.id,
+          hospital: h.name,
+          // Hiện tại backend chưa có thông tin vai trò / since, tạm để mặc định
+          role: "Bác sĩ",
+          since: "",
+        }))
         : [],
     [doctorProfile?.hospitals],
   );
@@ -414,7 +414,7 @@ const DoctorDashboardPage = ({ navigate }) => {
       alert("Đã gửi yêu cầu thành công, vui lòng chờ Admin Bệnh viện duyệt.");
       setShowRequestForm(false);
       setRequestForm({ hospital_id: "", message: "" });
-      
+
       const reqs = await getMyRequests(doctorProfile.id);
       setMyRequests(Array.isArray(reqs) ? reqs : []);
     } catch (err) {
@@ -435,7 +435,7 @@ const DoctorDashboardPage = ({ navigate }) => {
       alert("Đã gửi yêu cầu hủy liên kết, vui lòng chờ Admin Bệnh viện duyệt.");
       setUnlinkHospitalId(null);
       setUnlinkReason("");
-      
+
       const reqs = await getMyRequests(doctorProfile.id);
       setMyRequests(Array.isArray(reqs) ? reqs : []);
     } catch (err) {

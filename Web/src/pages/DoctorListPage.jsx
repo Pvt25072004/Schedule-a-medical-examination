@@ -50,7 +50,7 @@ const DoctorListPage = () => {
           getCategories(),
         ]);
         
-        const list = Array.isArray(docsData) ? docsData : [];
+        const list = Array.isArray(docsData) ? docsData : (docsData?.data || []);
         const normalized = list.map((d) => ({
           ...d,
           name: d.name || d.user?.full_name || "Bác sĩ",
@@ -60,9 +60,9 @@ const DoctorListPage = () => {
         }));
         
         setDoctors(normalized);
-        setReviews(Array.isArray(revsData) ? revsData : []);
-        setHospitalsList(Array.isArray(hospsData) ? hospsData : []);
-        setCategoriesList(Array.isArray(catsData) ? catsData : []);
+        setReviews(Array.isArray(revsData) ? revsData : (revsData?.data || []));
+        setHospitalsList(Array.isArray(hospsData) ? hospsData : (hospsData?.data || []));
+        setCategoriesList(Array.isArray(catsData) ? catsData : (catsData?.data || []));
       } catch (error) {
         console.error("Error loading doctor list:", error);
       } finally {
