@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   AlertCircle,
   CheckCircle,
+  HeartPulse,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import Button from "../components/common/Button";
@@ -16,6 +17,7 @@ import { PAGES, USER_ROLES } from "../utils/constants";
 import { validateEmail } from "../utils/helpers";
 import { useGoogleLogin } from "@react-oauth/google";
 import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
+import logo from "../assets/LOGOmain.jpg";
 
 const FACEBOOK_APP_ID = "963479733091448";
 
@@ -134,85 +136,140 @@ const LoginPage = ({ navigate }) => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-6xl w-full grid lg:grid-cols-2 gap-8 items-center">
+    <div className="min-h-screen bg-[#f4f8fb] font-sans text-gray-800 selection:bg-[#48a1f3]/30 flex items-center justify-center p-4 md:p-8">
+      <div className="max-w-6xl w-full bg-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(20,50,80,0.08)] overflow-hidden flex flex-col lg:flex-row min-h-[700px] border border-white/60 relative">
         {/* Left Side - Branding */}
-        <div className="hidden lg:block">
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl">
-                <span className="text-white font-bold text-3xl">S</span>
+        <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-[#143250] to-[#1e4a77] relative p-12 flex-col justify-between text-white overflow-hidden">
+          {/* Decorative Blobs */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+            <div className="absolute top-10 left-10 w-96 h-96 bg-[#48a1f3]/20 rounded-full blur-[80px]"></div>
+            <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#f99b1c]/10 rounded-full blur-[80px]"></div>
+          </div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-white/10 border border-white/20 overflow-hidden shrink-0">
+                <img src={logo} alt="STL Clinic Logo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">STL Clinic</h1>
-                <p className="text-gray-600">Nền tảng y tế hàng đầu</p>
+                <h1 className="text-4xl font-black tracking-tight drop-shadow-md">STL Clinic</h1>
+                <p className="text-[#48a1f3] font-medium text-lg">Nền tảng y tế hàng đầu</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-4xl font-bold text-gray-900 leading-tight">
-                Chào mừng trở lại! 👋
+              <h2 className="text-5xl font-black leading-tight drop-shadow-lg">
+                Chào mừng <br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#fbc374]">trở lại! 👋</span>
               </h2>
-              <p className="text-xl text-gray-600">
+              <p className="text-xl text-blue-100/80 font-light">
                 Đăng nhập để tiếp tục quản lý sức khỏe của bạn
               </p>
             </div>
 
             {/* Features */}
-            <div className="space-y-4 pt-8">
+            <div className="space-y-5 pt-6">
               {[
                 { icon: "✓", text: "Đặt lịch khám nhanh chóng" },
                 { icon: "✓", text: "Quản lý hồ sơ bệnh án" },
                 { icon: "✓", text: "Tư vấn online 24/7" },
               ].map((feature, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-green-600 font-bold">
+                <div key={index} className="flex items-center gap-4">
+                  <div className="w-8 h-8 bg-[#48a1f3]/20 rounded-full flex items-center justify-center border border-[#48a1f3]/30">
+                    <span className="text-[#fbc374] font-bold">
                       {feature.icon}
                     </span>
                   </div>
-                  <span className="text-gray-700">{feature.text}</span>
+                  <span className="text-blue-50 font-medium">{feature.text}</span>
                 </div>
               ))}
             </div>
 
-            {/* Illustration */}
-            <div className="relative pt-8">
-              <img
-                src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=500&q=80"
-                alt="Medical"
-                className="rounded-2xl shadow-2xl"
-              />
+            {/* Social Login */}
+            <div className="pt-8 mt-8 border-t border-white/10">
+              <p className="text-sm text-blue-200/80 font-medium mb-4">Hoặc đăng nhập nhanh bằng mạng xã hội</p>
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => googleLoginRef()}
+                  className="bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm !justify-center"
+                >
+                  <img
+                    src="https://www.google.com/favicon.ico"
+                    alt="Google"
+                    className="w-5 h-5 mr-2 bg-white rounded-full p-0.5"
+                  />
+                  Google
+                </Button>
+                <FacebookLogin
+                  appId={FACEBOOK_APP_ID}
+                  fields="name,email,picture"
+                  callback={(response) => {
+                    if (response?.accessToken) {
+                      handleSocialLogin(response.accessToken, "facebook");
+                    } else {
+                      setErrors({
+                        general: "Đăng nhập Facebook bị hủy hoặc thất bại",
+                      });
+                    }
+                  }}
+                  render={(renderProps) => (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      onClick={renderProps.onClick}
+                      className="bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm !justify-center"
+                    >
+                      <img
+                        src="https://www.facebook.com/favicon.ico"
+                        alt="Facebook"
+                        className="w-5 h-5 mr-2 rounded-full"
+                      />
+                      Facebook
+                    </Button>
+                  )}
+                />
+              </div>
             </div>
+          </div>
+          
+          <div className="relative z-10 text-sm text-blue-200/60 font-medium">
+            &copy; 2026 STL Clinic. All rights reserved.
           </div>
         </div>
 
         {/* Right Side - Login Form */}
-        <div>
-          {/* Mobile Back Button */}
-          <button
-            onClick={() => navigate(PAGES.WELCOME)}
-            className="lg:hidden flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Quay lại</span>
-          </button>
+        <div className="w-full lg:w-7/12 p-8 md:p-12 xl:p-16 flex flex-col bg-white relative">
+          
+          {/* Top Bar: Back Button */}
+          <div className="flex items-center justify-between mb-10 pb-6 border-b border-gray-100">
+            <button
+              onClick={() => navigate(PAGES.WELCOME)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-xl transition-all font-bold shadow-sm hover:shadow active:scale-95 text-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Quay lại Trang chủ</span>
+            </button>
+          </div>
 
-          <Card className="shadow-2xl">
+          <div className="max-w-md w-full mx-auto my-auto">
+            
             {/* Mobile Logo */}
-            <div className="lg:hidden text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl mx-auto mb-3">
-                <span className="text-white font-bold text-2xl">S</span>
+            <div className="lg:hidden text-center mb-8">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4 border border-gray-100 overflow-hidden">
+                <img src={logo} alt="STL Clinic Logo" className="w-full h-full object-cover" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Đăng nhập</h2>
-              <p className="text-gray-600 mt-1">Chào mừng bạn quay trở lại</p>
+              <h2 className="text-3xl font-black text-[#143250]">Đăng nhập</h2>
+              <p className="text-gray-500 mt-2 font-medium">Chào mừng bạn quay trở lại</p>
             </div>
 
-            <div className="hidden lg:block mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="hidden lg:block mb-10">
+              <h2 className="text-4xl font-black text-[#143250] mb-3 tracking-tight">
                 Đăng nhập
               </h2>
-              <p className="text-gray-600">Nhập thông tin để tiếp tục</p>
+              <p className="text-gray-500 font-medium text-lg">Chào mừng bạn quay trở lại hệ thống.</p>
             </div>
 
             {/* Success Message */}
@@ -272,36 +329,33 @@ const LoginPage = ({ navigate }) => {
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-[#48a1f3] border-gray-300 rounded focus:ring-[#48a1f3] transition-all"
                   />
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-600 font-medium group-hover:text-[#143250] transition-colors">
                     Ghi nhớ đăng nhập
                   </span>
                 </label>
 
                 <button
                   type="button"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-sm text-[#48a1f3] hover:text-[#f99b1c] font-semibold transition-colors"
                 >
                   Quên mật khẩu?
                 </button>
               </div>
 
-              <Button
+              <button
                 type="submit"
-                variant="primary"
-                size="lg"
-                fullWidth
-                loading={isLoading}
                 disabled={isLoading}
+                className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] hover:from-[#3da3f5] hover:to-[#48a1f3] shadow-lg shadow-[#48a1f3]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
-              </Button>
+                {isLoading ? "Đang đăng nhập..." : "Đăng nhập ngay"}
+              </button>
             </form>
 
             {/* Demo Credentials */}
@@ -318,70 +372,19 @@ const LoginPage = ({ navigate }) => {
               </div>
             </div> */}
 
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Hoặc</span>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => googleLoginRef()}
-              >
-                <img
-                  src="https://www.google.com/favicon.ico"
-                  alt="Google"
-                  className="w-5 h-5"
-                />
-                Google
-              </Button>
-              <FacebookLogin
-                appId={FACEBOOK_APP_ID}
-                fields="name,email,picture"
-                callback={(response) => {
-                  if (response?.accessToken) {
-                    handleSocialLogin(response.accessToken, "facebook");
-                  } else {
-                    setErrors({
-                      general: "Đăng nhập Facebook bị hủy hoặc thất bại",
-                    });
-                  }
-                }}
-                render={(renderProps) => (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="md"
-                    onClick={renderProps.onClick}
-                  >
-                    <img
-                      src="https://www.facebook.com/favicon.ico"
-                      alt="Facebook"
-                      className="w-5 h-5"
-                    />
-                    Facebook
-                  </Button>
-                )}
-              />
-            </div>
 
             {/* Register Link */}
-            <p className="text-center text-gray-600 mt-6">
+            <p className="text-center text-gray-500 mt-10 font-medium text-base">
               Chưa có tài khoản?{" "}
               <button
                 onClick={() => navigate(PAGES.REGISTER)}
-                className="text-blue-600 font-semibold hover:text-blue-700 transition"
+                className="text-[#f99b1c] font-bold hover:text-[#e08915] transition-colors"
               >
                 Đăng ký ngay
               </button>
             </p>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

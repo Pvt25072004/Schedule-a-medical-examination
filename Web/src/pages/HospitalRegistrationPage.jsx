@@ -15,7 +15,7 @@ import {
 
 export default function HospitalRegistrationPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0); // 0: Init, 1: OTP, 2: Info, 3: Docs, 4: Confirm, 5: Success
+  const [step, setStep] = useState(-1); // -1: Intro, 0: Init, 1: OTP, 2: Info, 3: Docs, 4: Confirm, 5: Success
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registrationId, setRegistrationId] = useState(null);
@@ -416,11 +416,28 @@ export default function HospitalRegistrationPage() {
               )}
 
               {/* FORM RENDER BASED ON STEP */}
-              <div className="flex-1">
+              <div className="flex-1 transition-all duration-500">
+
+                {/* STEP -1: Start Button */}
+                {step === -1 && (
+                  <div className="flex flex-col items-center justify-center h-full min-h-[350px] animate-in fade-in zoom-in duration-500 text-center">
+                    <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                      <Building2 className="w-12 h-12 text-[#48a1f3]" />
+                    </div>
+                    <h3 className="text-3xl font-black text-[#143250] mb-3">Tham gia mạng lưới y tế</h3>
+                    <p className="text-gray-500 mb-8 max-w-sm">Chuẩn bị thông tin pháp lý của cơ sở và nhấn bắt đầu để tiến hành đăng ký.</p>
+                    <button
+                      onClick={() => setStep(0)}
+                      className="px-10 py-4 bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] text-white rounded-full font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all flex items-center gap-2 text-lg"
+                    >
+                      Bắt đầu Đăng ký <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* STEP 0: Init Contact Info */}
                 {step === 0 && (
-                  <form onSubmit={handleInit} className="space-y-5 animate-fadeIn">
+                  <form onSubmit={handleInit} className="space-y-5 animate-slideUpFade">
                     <div className="text-center mb-8">
                       <h3 className="text-2xl font-bold text-[#143250]">Người đại diện</h3>
                       <p className="text-gray-500 text-sm mt-1">Cung cấp email để nhận mã xác thực đăng ký</p>
@@ -712,6 +729,22 @@ export default function HospitalRegistrationPage() {
 
       {/* FOOTER - simple spacer if needed */}
       <div className="h-10 bg-[#e8f2fc]"></div>
+      {/* Custom Styles for Animation */}
+      <style jsx>{`
+        @keyframes slideUpFade {
+          0% {
+            opacity: 0;
+            transform: translateY(40px) scale(0.98);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .animate-slideUpFade {
+          animation: slideUpFade 4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </div>
   );
 }
