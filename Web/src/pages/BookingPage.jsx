@@ -122,7 +122,7 @@ const BookingPage = ({ navigate }) => {
       try {
         setLoadingDoctors(true);
         const data = await getDoctorsApi();
-        const list = Array.isArray(data) ? data : [];
+        const list = Array.isArray(data) ? data : (data?.data || []);
         // Chuẩn hóa một số field để dùng cho UI
         const normalized = list.map((d) => ({
           ...d,
@@ -143,7 +143,7 @@ const BookingPage = ({ navigate }) => {
       try {
         setLoadingReviews(true);
         const data = await getAllReviews();
-        setReviews(Array.isArray(data) ? data : []);
+        setReviews(Array.isArray(data) ? data : (data?.data || []));
       } catch (e) {
         console.error("Load reviews for booking error:", e);
         setReviews([]);
