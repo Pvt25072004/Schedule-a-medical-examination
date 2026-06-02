@@ -342,12 +342,14 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
         foregroundColor: Colors.black87,
         elevation: 1,
         actions: [
-          if (unreadCount > 0)
-            IconButton(
-              icon: const Icon(Icons.done_all_rounded),
-              tooltip: 'Đánh dấu tất cả đã đọc',
-              onPressed: _markAllAsRead,
+          IconButton(
+            icon: Icon(
+              Icons.done_all_rounded,
+              color: unreadCount > 0 ? primaryTeal : Colors.grey,
             ),
+            tooltip: 'Đánh dấu tất cả đã đọc',
+            onPressed: unreadCount > 0 ? _markAllAsRead : null,
+          ),
         ],
       ),
       body: _isLoading

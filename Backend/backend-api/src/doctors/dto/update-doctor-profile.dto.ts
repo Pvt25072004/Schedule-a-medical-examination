@@ -14,11 +14,6 @@ export class UpdateDoctorProfileDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
-  specialty?: string;
-
-  @IsOptional()
-  @IsString()
   @MaxLength(500)
   avatar_url?: string;
 

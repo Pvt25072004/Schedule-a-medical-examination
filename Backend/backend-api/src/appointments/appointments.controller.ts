@@ -28,6 +28,7 @@ import { Appointment } from './entities/appointment.entity';
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
+
   @Get('available-times')
   async getAvailableTimes(
     @Query('doctorId') doctorId: string,
@@ -37,6 +38,29 @@ export class AppointmentsController {
       throw new BadRequestException('Thiếu doctorId hoặc date');
     }
     return this.appointmentsService.getAvailableTimes(+doctorId, date);
+  }
+
+  @Get('available-times/package')
+  async getAvailableTimesForPackage(
+    @Query('packageId') packageId: string,
+    @Query('date') date: string,
+  ) {
+    if (!packageId || !date) {
+      throw new BadRequestException('Thiếu packageId hoặc date');
+    }
+    return this.appointmentsService.getAvailableTimesForPackage(+packageId, date);
+  }
+
+  @Get('available-doctors/package')
+  async getAvailableDoctorsForPackage(
+    @Query('packageId') packageId: string,
+    @Query('date') date: string,
+    @Query('time') time: string,
+  ) {
+    if (!packageId || !date || !time) {
+      throw new BadRequestException('Thiếu packageId, date hoặc time');
+    }
+    return this.appointmentsService.getAvailableDoctorsForPackage(+packageId, date, time);
   }
 
   @Post('/')

@@ -17,7 +17,7 @@ import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
 import { createAppointment as apiCreateAppointment } from "../services/appointments.api";
 import { getSchedulesByDoctor } from "../services/doctor.schedules.api";
-import { createPaymentDemo } from "../services/payments.api";
+import { createPaymentDemo, createVnpayUrl, createPayosUrl } from "../services/payments.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
@@ -49,6 +49,7 @@ const BookingPage = ({ navigate }) => {
     type: "",
     notes: "",
   });
+  const [paymentMethod, setPaymentMethod] = useState("vnpay");
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -99,13 +100,16 @@ const BookingPage = ({ navigate }) => {
   }, [doctors, doctorRatingsMap, reviews]);
 
   const selectedDoctor = doctorsWithRatings.find(
-    (d) => d.id === formData.doctorId,
+    (d) => String(d.id) === String(formData.doctorId)
   );
+  const selectedHospital = selectedDoctor?.hospitals?.[0];
+  const doctorFee = Number(selectedDoctor?.consultation_fee) || Number(selectedDoctor?.consultationFee) || 0;
+  const hospitalFee = Number(selectedHospital?.facility_fee) || 0;
+  const totalPrice = (doctorFee + hospitalFee) || 500000;
 
   const filteredDoctors = doctorsWithRatings.filter((doctor) => {
     const name = (doctor.name || "").toLowerCase();
     const specialty = (
-      doctor.specialty ||
       doctor.category?.name ||
       ""
     ).toLowerCase();
@@ -122,8 +126,10 @@ const BookingPage = ({ navigate }) => {
         // Chuẩn hóa một số field để dùng cho UI
         const normalized = list.map((d) => ({
           ...d,
-          specialty: d.specialty || d.category?.name || "Đa khoa",
-          consultationFee: d.consultationFee || d.price || 500000,
+          name: d.name || d.user?.full_name || "Bác sĩ",
+          avatar_url: d.avatar_url || d.user?.avatar_url || null,
+          specialty: d.category?.name || "Đa khoa",
+          consultationFee: d.consultation_fee || d.consultationFee || d.price || 500000,
         }));
         setDoctors(normalized);
       } catch (e) {
@@ -307,11 +313,45 @@ const BookingPage = ({ navigate }) => {
 
       console.log("CREATED:", created);
 
+      if (paymentMethod === "vnpay") {
+        try {
+          const vnpayResponse = await createVnpayUrl({
+            appointment_id: created?.id,
+            amount: totalPrice,
+            orderInfo: `Thanh toan lich kham web ${created?.id}`
+          });
+          if (vnpayResponse?.url) {
+            window.location.href = vnpayResponse.url;
+            return;
+          }
+        } catch (err) {
+          console.warn("VNPAY URL creation failed:", err);
+          alert("Không thể tạo URL thanh toán VNPAY, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+        }
+      }
+
+      if (paymentMethod === "payos") {
+        try {
+          const payosResponse = await createPayosUrl({
+            appointment_id: created?.id,
+            amount: totalPrice,
+            orderInfo: `Thanh toan lich kham ${created?.id}`
+          });
+          if (payosResponse?.url) {
+            window.location.href = payosResponse.url;
+            return;
+          }
+        } catch (err) {
+          console.warn("PayOS URL creation failed:", err);
+          alert("Không thể tạo URL thanh toán PayOS, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+        }
+      }
+
       try {
         await createPaymentDemo({
           appointment_id: created?.id,
-          amount: selectedDoctor?.consultationFee || 500000,
-          base_fee: selectedDoctor?.consultationFee || 500000,
+          amount: totalPrice,
+          base_fee: totalPrice,
           payment_method: "cash",
         });
       } catch (err) {
@@ -363,45 +403,53 @@ const BookingPage = ({ navigate }) => {
   // Success Modal
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center animate-scale-in">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-green-600" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+          <div className="bg-gradient-to-br from-green-400 to-green-600 p-8 text-center text-white">
+            <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-md">
+              <CheckCircle className="w-14 h-14 text-white drop-shadow-md" />
+            </div>
+            <h2 className="text-3xl font-bold mb-2 drop-shadow-md">
+              Đặt lịch thành công!
+            </h2>
+            <p className="text-green-50 font-medium">
+              Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi
+            </p>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">
-            Đặt lịch thành công!
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Lịch hẹn của bạn đã được xác nhận. Chúng tôi sẽ gửi thông báo nhắc
-            nhở trước giờ khám.
-          </p>
 
-          <div className="bg-blue-50 rounded-xl p-4 mb-6 text-left">
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">{selectedDoctor?.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
-                <span>{formatDate(formData.date)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
-                <span>{formData.time}</span>
+          <div className="p-8">
+            <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
+              <div className="space-y-4 text-sm">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><User className="w-4 h-4 text-gray-400"/> Bác sĩ</span>
+                  <span className="font-bold text-gray-900">{selectedDoctor?.name}</span>
+                </div>
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400"/> Ngày khám</span>
+                  <span className="font-bold text-gray-900">{formatDate(formData.date)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400"/> Giờ khám</span>
+                  <span className="font-bold text-gray-900">{formData.time}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            onClick={() => navigate(PAGES.APPOINTMENTS)}
-          >
-            Xem lịch hẹn
-          </Button>
-        </Card>
+            <p className="text-gray-500 text-center text-sm mb-8 leading-relaxed">
+              Chúng tôi sẽ gửi tin nhắn SMS và Email thông báo chi tiết lịch hẹn đến bạn. Vui lòng kiểm tra hộp thư!
+            </p>
+
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={() => navigate(PAGES.APPOINTMENTS)}
+              className="py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all"
+            >
+              Xem danh sách lịch hẹn
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -430,39 +478,38 @@ const BookingPage = ({ navigate }) => {
 
               {/* Selected Doctor Info */}
               {selectedDoctor && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6">
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">{selectedDoctor.avatar}</div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-900">
+                <div className="relative overflow-hidden p-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl mb-8 shadow-lg text-white">
+                  <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
+                  <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-blue-400 opacity-20 rounded-full blur-xl"></div>
+                  
+                  <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 bg-white/20 p-1 rounded-2xl flex-shrink-0 backdrop-blur-sm">
+                      <div className="w-full h-full bg-white rounded-xl flex items-center justify-center text-4xl overflow-hidden shadow-inner">
+                        {selectedDoctor.avatar_url ? (
+                          <img src={selectedDoctor.avatar_url} alt={selectedDoctor.name} className="w-full h-full object-cover" />
+                        ) : (
+                          selectedDoctor.avatar || "👨‍⚕️"
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 text-center sm:text-left">
+                      <div className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold backdrop-blur-md mb-2">
+                        Bác sĩ Phụ trách
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-bold mb-1">
                         {selectedDoctor.name}
                       </h3>
-                      <p className="text-blue-600 text-sm mb-2">
-                        {selectedDoctor.specialty}
+                      <p className="text-blue-100 font-medium mb-4 flex items-center justify-center sm:justify-start gap-2">
+                        <Award className="w-4 h-4" /> {selectedDoctor.specialty}
                       </p>
-                      {Array.isArray(selectedDoctor.hospitals) &&
-                        selectedDoctor.hospitals.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-blue-200">
-                            <div className="flex items-start gap-2 text-sm">
-                              <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {selectedDoctor.hospitals[0].name}
-                                </p>
-                                {selectedDoctor.hospitals[0].city && (
-                                  <p className="text-blue-600">
-                                    {selectedDoctor.hospitals[0].city}
-                                  </p>
-                                )}
-                                {selectedDoctor.hospitals[0].address && (
-                                  <p className="text-gray-600 text-xs mt-0.5">
-                                    {selectedDoctor.hospitals[0].address}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                      
+                      {Array.isArray(selectedDoctor.hospitals) && selectedDoctor.hospitals.length > 0 && (
+                        <div className="inline-flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl backdrop-blur-md text-sm w-full sm:w-auto">
+                          <MapPin className="w-4 h-4 text-blue-200 flex-shrink-0" />
+                          <span className="truncate">{selectedDoctor.hospitals[0].name} {selectedDoctor.hospitals[0].city ? `- ${selectedDoctor.hospitals[0].city}` : ''}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -485,10 +532,11 @@ const BookingPage = ({ navigate }) => {
 
               {/* Time Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Chọn khung giờ <span className="text-red-500">*</span>
+                <label className="block text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-500" />
+                  Chọn khung giờ khám <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
                   {availableSlots.length > 0 ? (
                     availableSlots.map((time) => {
                       const available = formData.date
@@ -498,6 +546,9 @@ const BookingPage = ({ navigate }) => {
                             time,
                           )
                         : true;
+                      
+                      const isSelected = formData.time === time;
+
                       return (
                         <button
                           key={time}
@@ -505,25 +556,31 @@ const BookingPage = ({ navigate }) => {
                             available && handleChange("time", time)
                           }
                           disabled={!available}
-                          className={`py-3 px-4 rounded-lg border-2 transition-all font-medium text-sm ${
-                            formData.time === time
-                              ? "bg-blue-600 text-white border-blue-600 shadow-lg"
+                          className={`relative py-3 px-2 rounded-xl border-2 transition-all font-semibold text-sm flex flex-col items-center justify-center gap-1 ${
+                            isSelected
+                              ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200 transform scale-105 z-10"
                               : available
-                                ? "border-gray-200 hover:border-blue-500 hover:shadow-md"
-                                : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                                ? "bg-white border-gray-200 text-gray-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                                : "bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed opacity-60"
                           }`}
                         >
-                          <Clock className="w-4 h-4 inline mr-1" />
-                          {time}
+                          <span className="text-base">{time}</span>
                           {!available && (
-                            <span className="block text-xs mt-1">Đã đầy</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-red-500 bg-red-50 px-2 py-0.5 rounded-full absolute -top-2">Đã kín</span>
+                          )}
+                          {isSelected && (
+                            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                              <CheckCircle className="w-3 h-3 text-blue-600" />
+                            </div>
                           )}
                         </button>
                       );
                     })
                   ) : (
-                    <div className="col-span-full text-gray-500 py-6 text-center border-2 border-dashed border-gray-200 rounded-lg">
-                      Không có ca khám nào khả dụng trong ngày này. Vui lòng chọn ngày khác.
+                    <div className="col-span-full py-12 px-4 bg-gray-50 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+                       <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                       <h3 className="text-lg font-bold text-gray-700 mb-1">Chưa có lịch khám</h3>
+                       <p className="text-gray-500">Bác sĩ chưa có lịch làm việc trong ngày này. Vui lòng chọn một ngày khác.</p>
                     </div>
                   )}
                 </div>
@@ -590,87 +647,136 @@ const BookingPage = ({ navigate }) => {
                   />
                 </div>
 
-                {/* Summary */}
-                <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl">
-                  <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                {/* Summary - Receipt Style */}
+                <div className="mt-8 pt-8 border-t border-gray-100">
+                  <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-blue-600" />
-                    Tóm tắt đặt lịch
+                    Phiếu Tóm Tắt Đặt Lịch
                   </h3>
 
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
-                      <User className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-600">Bác sĩ</p>
-                        <p className="font-semibold text-gray-900">
-                          {selectedDoctor?.name}
-                        </p>
-                        <p className="text-sm text-blue-600">
-                          {selectedDoctor?.specialty}
-                        </p>
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
+                    {/* Decorative receipt edge */}
+                    <div className="absolute top-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSI4Ij48cGF0aCBkPSJNMCAwTDEwIDhsMTAtOFYwaC0yMHoiIGZpbGw9IiNmM2Y0ZjYiLz48L3N2Zz4=')] bg-repeat-x"></div>
+                    
+                    <div className="p-6 sm:p-8 pt-10">
+                      <div className="flex items-center gap-4 mb-8 pb-8 border-b border-dashed border-gray-200">
+                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl shadow-inner">
+                           {selectedDoctor?.avatar_url ? (
+                            <img src={selectedDoctor.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            selectedDoctor?.avatar || "👨‍⚕️"
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 font-medium mb-1">Bác sĩ phụ trách</p>
+                          <h4 className="text-xl font-bold text-gray-900">{selectedDoctor?.name}</h4>
+                          <p className="text-blue-600 text-sm font-medium">{selectedDoctor?.specialty}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
-                      <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-600">Ngày khám</p>
-                        <p className="font-semibold text-gray-900">
-                          {formatDate(formData.date)}
-                        </p>
-                      </div>
-                    </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 pb-8 border-b border-dashed border-gray-200">
+                        <div className="flex gap-4">
+                          <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <Calendar className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500 font-medium mb-1">Ngày khám</p>
+                            <p className="text-lg font-bold text-gray-900">{formatDate(formData.date)}</p>
+                          </div>
+                        </div>
 
-                    <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
-                      <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-600">Giờ khám</p>
-                        <p className="font-semibold text-gray-900">
-                          {formData.time}
-                        </p>
-                      </div>
-                    </div>
+                        <div className="flex gap-4">
+                          <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <Clock className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500 font-medium mb-1">Giờ khám</p>
+                            <p className="text-lg font-bold text-gray-900">{formData.time}</p>
+                          </div>
+                        </div>
 
-                    <div className="flex items-start gap-3 p-3 bg-white rounded-lg">
-                      <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-600">Địa điểm</p>
-                        {Array.isArray(selectedDoctor?.hospitals) &&
-                        selectedDoctor.hospitals.length > 0 ? (
-                          <>
-                            <p className="font-semibold text-gray-900">
-                              {selectedDoctor.hospitals[0].name}
-                            </p>
-                            {selectedDoctor.hospitals[0].city && (
-                              <p className="text-sm text-blue-600">
-                                {selectedDoctor.hospitals[0].city}
-                              </p>
+                        <div className="flex gap-4 md:col-span-2">
+                          <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500 font-medium mb-1">Địa điểm khám</p>
+                            {Array.isArray(selectedDoctor?.hospitals) && selectedDoctor.hospitals.length > 0 ? (
+                              <>
+                                <p className="text-lg font-bold text-gray-900">{selectedDoctor.hospitals[0].name}</p>
+                                <p className="text-gray-600 mt-1">{selectedDoctor.hospitals[0].address}</p>
+                                {selectedDoctor.hospitals[0].city && <p className="text-blue-600 font-medium text-sm mt-0.5">{selectedDoctor.hospitals[0].city}</p>}
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-lg font-bold text-gray-900">STL Clinic</p>
+                                <p className="text-gray-600 mt-1">123 Đường ABC, Q.1, TP.HCM</p>
+                              </>
                             )}
-                            {selectedDoctor.hospitals[0].address && (
-                              <p className="text-sm text-gray-600">
-                                {selectedDoctor.hospitals[0].address}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-semibold text-gray-900">
-                              STL Clinic
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              123 Đường ABC, Q.1, TP.HCM
-                            </p>
-                          </>
-                        )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-b border-dashed border-gray-200 pb-6 mb-6">
+                         <span className="text-gray-500 font-medium">Phí khám dự kiến</span>
+                         <span className="text-2xl font-bold text-blue-600">{formatCurrency(totalPrice)}</span>
+                      </div>
+
+                      <h4 className="font-bold text-gray-900 mb-4">Phương thức thanh toán</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button
+                          onClick={() => setPaymentMethod("vnpay")}
+                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
+                            paymentMethod === "vnpay" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">VNP</div>
+                          <div className="flex-1">
+                            <p className={`font-bold ${paymentMethod === "vnpay" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán trực tuyến</p>
+                            <p className="text-sm text-gray-500">Qua cổng VNPAY</p>
+                          </div>
+                          {paymentMethod === "vnpay" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
+                        </button>
+
+                        <button
+                          onClick={() => setPaymentMethod("payos")}
+                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
+                            paymentMethod === "payos" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">QR</div>
+                          <div className="flex-1">
+                            <p className={`font-bold ${paymentMethod === "payos" ? "text-indigo-800" : "text-gray-900"}`}>Chuyển khoản VietQR</p>
+                            <p className="text-sm text-gray-500">Qua cổng PayOS</p>
+                          </div>
+                          {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
+                        </button>
+
+                        <button
+                          onClick={() => setPaymentMethod("cash")}
+                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
+                            paymentMethod === "cash" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <p className={`font-bold ${paymentMethod === "cash" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán tại quầy</p>
+                            <p className="text-sm text-gray-500">Tiền mặt / Chuyển khoản</p>
+                          </div>
+                          {paymentMethod === "cash" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Lưu ý:</strong> Vui lòng đến trước giờ hẹn 15 phút.
-                    Mang theo CMND/CCCD và sổ khám bệnh (nếu có).
+                <div className="p-5 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl flex gap-3">
+                  <Star className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-yellow-800 leading-relaxed">
+                    <strong>Lưu ý quan trọng:</strong> Vui lòng đến trước giờ hẹn <strong>15 phút</strong> để làm thủ tục.
+                    Hãy mang theo CMND/CCCD hoặc giấy tờ tùy thân, cùng sổ khám bệnh/kết quả xét nghiệm cũ (nếu có).
                   </p>
                 </div>
               </div>
@@ -680,7 +786,7 @@ const BookingPage = ({ navigate }) => {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => setStep(2)}
+                onClick={() => setStep(1)}
                 icon={ArrowLeft}
                 className="flex-1"
               >

@@ -36,6 +36,16 @@ export const getDoctors = async () => {
   return handleResponse(response, "Không thể tải danh sách bác sĩ");
 };
 
+export const getTopRatedDoctors = async () => {
+  const response = await fetch(`${DOCTORS_ENDPOINT}/top-rated`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+    credentials: "include",
+  });
+  return handleResponse(response, "Không thể tải danh sách bác sĩ nổi bật");
+};
+
 export const createDoctor = async (payload) => {
   const response = await fetch(DOCTORS_ENDPOINT, {
     method: "POST",

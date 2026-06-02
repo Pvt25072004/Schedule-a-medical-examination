@@ -22,7 +22,7 @@ import {
   updateAppointment,
   deleteAppointment,
 } from "../services/appointments.api";
-import { getDoctors } from "../services/admin.doctors.api";
+import { getTopRatedDoctors } from "../services/admin.doctors.api";
 import { getCategories } from "../services/admin.categories.api";
 import { getActiveHospitalBanners } from "../services/admin.hospital.banner.api";
 import { getPopularServicePackages } from "../services/service-packages.api";
@@ -158,7 +158,7 @@ const WelcomePage = ({ navigate }) => {
     const loadData = async () => {
       try {
         const [docs, cats, bannerData, packagesData] = await Promise.all([
-          getDoctors(),
+          getTopRatedDoctors(),
           getCategories(),
           getActiveHospitalBanners(),
           getPopularServicePackages()

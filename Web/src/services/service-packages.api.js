@@ -23,3 +23,15 @@ export const getAllServicePackages = async () => {
     throw error;
   }
 };
+
+export const getServicePackageById = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/service-packages/${id}`);
+    if (!response.ok) {
+      throw new Error("Không thể tải thông tin gói dịch vụ");
+    }
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};

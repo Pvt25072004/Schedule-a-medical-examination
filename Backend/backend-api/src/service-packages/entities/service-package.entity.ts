@@ -45,6 +45,9 @@ export class ServicePackage {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ default: false })
+  requires_fasting: boolean;
+
   @Column({ type: 'int', default: 0 })
   booking_count: number;
 
