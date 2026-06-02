@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../service/appointment_service.dart';
+import '../../service/payment_service.dart';
 import '../../utils/snackbar_helper.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Step7Payment extends StatefulWidget {
   final double bookingPrice;
@@ -45,6 +47,9 @@ class _Step7PaymentState extends State<Step7Payment> {
   final Color primaryColor = Colors.greenAccent;
   final Color primaryDarkColor = const Color(0xFF1B5E20);
   final AppointmentService _appointmentService = AppointmentService();
+  final PaymentService _paymentService = PaymentService();
+  
+  String selectedPaymentMethod = 'cash'; // 'cash', 'vnpay', 'momo', 'zalopay'
 
   String _formatPrice(double price) {
     final formatter = NumberFormat('###,###', 'vi_VN');
@@ -52,21 +57,23 @@ class _Step7PaymentState extends State<Step7Payment> {
   }
 
   Widget _buildPaymentButton(
-      String label, Color color, String assetName, BuildContext context) {
+      String methodKey, String label, Color color, String assetName, BuildContext context) {
+    bool isSelected = selectedPaymentMethod == methodKey;
+    
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: OutlinedButton(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Đang mở ứng dụng $label...')),
-            );
+            setState(() {
+              selectedPaymentMethod = methodKey;
+            });
           },
           style: OutlinedButton.styleFrom(
+            backgroundColor: isSelected ? color.withOpacity(0.1) : Colors.transparent,
             padding: const EdgeInsets.symmetric(vertical: 12),
-            side: BorderSide(color: color, width: 1.5),
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            side: BorderSide(color: isSelected ? color : Colors.grey.shade300, width: isSelected ? 2.0 : 1.0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -76,10 +83,10 @@ class _Step7PaymentState extends State<Step7Payment> {
                   : (assetName == 'ZaloPay'
                   ? Icons.wallet
                   : Icons.mobile_friendly),
-                  color: color,
+                  color: isSelected ? color : Colors.grey.shade600,
                   size: 24),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(color: color, fontSize: 12)),
+              Text(label, style: TextStyle(color: isSelected ? color : Colors.grey.shade600, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
             ],
           ),
         ),
@@ -167,6 +174,20 @@ class _Step7PaymentState extends State<Step7Payment> {
                         });
                         
                         try {
+                          // Validation: Ensure time slot is not empty
+                          if (widget.timeSlot.isEmpty) {
+                            setStateInDialog(() {
+                              isSubmitting = false;
+                              isButtonEnabled = true;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Lỗi: Bạn chưa chọn Giờ khám. Vui lòng quay lại Bước 4 để chọn giờ khám!')),
+                            );
+                            timer?.cancel();
+                            Navigator.of(dialogContext).pop();
+                            return;
+                          }
+
                           // Chuyển đổi Date thành ISO yyyy-MM-dd
                           final String dateStr = DateFormat('yyyy-MM-dd').format(widget.date);
                           
@@ -188,6 +209,100 @@ class _Step7PaymentState extends State<Step7Payment> {
                           // Lấy ID trả về từ Backend để làm mã Booking
                           final String realBookingCode = response != null ? response['id'].toString() : 'STL-${DateTime.now().millisecondsSinceEpoch % 10000}';
                           
+                           // Gọi thanh toán VNPAY/PayOS nếu được chọn
+                           if ((selectedPaymentMethod == 'vnpay' || selectedPaymentMethod == 'payos') && response != null) {
+                              setStateInDialog(() {
+                                isSubmitting = true;
+                              });
+                              
+                              String? url;
+                              if (selectedPaymentMethod == 'payos') {
+                                url = await _paymentService.createPayosUrl(
+                                  appointmentId: response['id'],
+                                  amount: widget.bookingPrice,
+                                  orderInfo: 'Thanh toan lich kham $realBookingCode'
+                                );
+                              } else {
+                                url = await _paymentService.createVnpayUrl(
+                                  appointmentId: response['id'],
+                                  amount: widget.bookingPrice,
+                                  orderInfo: 'Thanh toan lich kham $realBookingCode'
+                                );
+                              }
+                              
+                              if (url != null) {
+                                 final uri = Uri.parse(url);
+                                 if (await canLaunchUrl(uri)) {
+                                    timer?.cancel();
+                                    Navigator.of(dialogContext).pop(); // Close current dialog
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    
+                                    // Show verification dialog
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (BuildContext verifyContext) {
+                                        bool isChecking = false;
+                                        return StatefulBuilder(builder: (context, setVerifyState) {
+                                          return AlertDialog(
+                                            title: const Text('Xác nhận Thanh toán', style: TextStyle(color: Colors.green)),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Text('Vui lòng hoàn tất thanh toán trên trình duyệt web/ứng dụng ngân hàng vừa mở.'),
+                                                const SizedBox(height: 15),
+                                                const Text('Sau khi thanh toán xong, hãy quay lại đây và nhấn nút bên dưới để hoàn tất.', style: TextStyle(fontStyle: FontStyle.italic)),
+                                                if (isChecking) ...[
+                                                  const SizedBox(height: 20),
+                                                  const CircularProgressIndicator(),
+                                                  const SizedBox(height: 10),
+                                                  const Text('Đang kiểm tra kết quả...'),
+                                                ]
+                                              ],
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: isChecking ? null : () => Navigator.of(verifyContext).pop(),
+                                                child: const Text('Hủy bỏ', style: TextStyle(color: Colors.red)),
+                                              ),
+                                              ElevatedButton(
+                                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                                                onPressed: isChecking ? null : () async {
+                                                  setVerifyState(() => isChecking = true);
+                                                  // Call check status API
+                                                  final paymentStatus = await _paymentService.checkPaymentStatus(response['id']);
+                                                  setVerifyState(() => isChecking = false);
+                                                  
+                                                  if (paymentStatus != null && paymentStatus['payment_status'] == 'completed') {
+                                                    Navigator.of(verifyContext).pop();
+                                                    widget.onNext({
+                                                      'bookingCode': realBookingCode,
+                                                    });
+                                                  } else {
+                                                    showAppSnackBar(context, 'Thanh toán chưa hoàn tất. Vui lòng thanh toán lại.', color: Colors.orange);
+                                                  }
+                                                },
+                                                child: const Text('Đã hoàn tất thanh toán'),
+                                              ),
+                                            ],
+                                          );
+                                        });
+                                      }
+                                    );
+                                    return; // Don't call onNext automatically
+                                 } else {
+                                    showAppSnackBar(context, 'Không thể mở trang thanh toán', color: Colors.red);
+                                 }
+                              } else {
+                                 showAppSnackBar(context, 'Lỗi tạo URL thanh toán', color: Colors.red);
+                              }
+                           }
+                          
+                          timer?.cancel();
+                          if (Navigator.of(dialogContext).canPop()) {
+                             Navigator.of(dialogContext).pop();
+                          }
+
                           widget.onNext({
                             'bookingCode': realBookingCode,
                           });
@@ -339,9 +454,9 @@ class _Step7PaymentState extends State<Step7Payment> {
 
                 Row(
                   children: [
-                    _buildPaymentButton('Momo', const Color(0xFFAD006C), 'Momo', context),
-                    _buildPaymentButton('ZaloPay', const Color(0xFF0089FF), 'ZaloPay', context),
-                    _buildPaymentButton('VNPay', const Color(0xFFE50019), 'VNPay', context),
+                    _buildPaymentButton('cash', 'Tiền mặt', Colors.green, 'Cash', context),
+                    _buildPaymentButton('payos', 'VietQR', Colors.indigo, 'PayOS', context),
+                    _buildPaymentButton('vnpay', 'VNPay', const Color(0xFFE50019), 'VNPay', context),
                   ],
                 ),
                 const SizedBox(height: 40),

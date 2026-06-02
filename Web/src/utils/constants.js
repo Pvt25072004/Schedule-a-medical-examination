@@ -6,6 +6,7 @@ export const PAGES = {
   REGISTER: "/register",
   BOOKING: "/booking",
   BOOK_DOCTOR: "/book-doctor",
+  BOOK_PACKAGE: "/book-package/:id",
   APPOINTMENTS: "/appointments",
   CHAT: "/chat",
   SETTINGS: "/settings",
@@ -30,6 +31,7 @@ export const APPOINTMENT_STATUS = {
   COMPLETED: "completed",
   CANCELLED: "cancelled",
   REJECTED: "rejected",
+  AWAITING_PAYMENT: "awaiting_payment",
 };
 
 // API Endpoints

@@ -22,10 +22,6 @@ export class RegisterGuestDoctorDto {
   category_id: number;
 
   @IsString()
-  @IsNotEmpty()
-  specialty: string;
-
-  @IsString()
   @IsOptional()
   degree?: string;
 

@@ -8,6 +8,7 @@ import 'screens/booking.dart';
 import 'screens/home.dart';
 import 'screens/qr_scan.dart';
 import 'screens/chatbot.dart';
+import 'screens/social_feed_screen.dart';
 import 'service/auth_service.dart';
 import 'screens/doctor_dashboard.dart';
 
@@ -170,6 +171,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               children: [
                 HomeScreen(onBookingTap: _switchToBooking),
                 const BookingScreen(),
+                const SocialFeedScreen(),
                 const AppointmentsScreen(),
                 const ProfileScreen(),
               ],
@@ -332,10 +334,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 navItem(Icons.home, "Trang chủ", 0),
-                navItem(Icons.medical_services, "Đặt lịch", 1),
+                navItem(Icons.public, "Cộng đồng", 2),
                 const SizedBox(width: 40),
-                navItem(Icons.list_alt, "Lịch hẹn", 2),
-                navItem(Icons.person, "Tài khoản", 3),
+                navItem(Icons.list_alt, "Lịch hẹn", 3),
+                navItem(Icons.person, "Tài khoản", 4),
               ],
             ),
           ),

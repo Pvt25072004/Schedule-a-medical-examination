@@ -39,3 +39,27 @@ export const createPaymentDemo = async (payload) => {
   });
   return handleResponse(response, "Không thể tạo thanh toán demo");
 };
+
+export const createVnpayUrl = async (payload) => {
+  const response = await fetch(`${PAYMENTS_ENDPOINT}/vnpay/create-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, "Không thể tạo URL thanh toán VNPAY");
+};
+
+export const createPayosUrl = async (payload) => {
+  const response = await fetch(`${PAYMENTS_ENDPOINT}/payos/create-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, "Không thể tạo URL thanh toán PayOS");
+};

@@ -51,6 +51,7 @@ export const getStatusColor = (status) => {
     completed: "blue",
     cancelled: "red",
     rejected: "red",
+    awaiting_payment: "orange",
   };
   return colors[status] || "gray";
 };
@@ -63,6 +64,7 @@ export const getStatusText = (status) => {
     completed: "Hoàn thành",
     cancelled: "Đã hủy",
     rejected: "Bị từ chối",
+    awaiting_payment: "Chờ thanh toán",
   };
   return texts[status] || status;
 };
@@ -159,3 +161,15 @@ export const removeDiacritics = (str) => {
     .replace(/Đ/g, "D")
     .toLowerCase();
 };
+
+// Smart search string normalization (removes diacritics, spaces, punctuation)
+export const normalizeForSearch = (str) => {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove Vietnamese accents
+    .replace(/[đĐ]/g, "d")
+    .replace(/[^a-z0-9]/g, ""); // Remove spaces, punctuation, and hashtags
+};
+

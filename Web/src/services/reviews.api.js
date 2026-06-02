@@ -37,6 +37,18 @@ export const createReview = async (payload) => {
   return handleResponse(response, "Không thể gửi đánh giá");
 };
 
+export const updateReview = async (id, payload) => {
+  const response = await fetch(`${REVIEWS_ENDPOINT}/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, "Không thể cập nhật đánh giá");
+};
+
 export const getReviewsByDoctor = async (doctorId) => {
   const response = await fetch(`${REVIEWS_ENDPOINT}/doctor/${doctorId}`, {
     headers: {

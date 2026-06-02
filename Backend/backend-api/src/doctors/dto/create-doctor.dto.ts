@@ -13,10 +13,6 @@ export class CreateDoctorDto {
   @IsNotEmpty()
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
-  specialty: string;
-
   @IsEmail()
   @IsNotEmpty()
   email: string;

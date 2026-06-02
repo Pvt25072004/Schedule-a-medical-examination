@@ -149,7 +149,7 @@ const Header = () => {
                 </div>
               </>
             )}
-            
+
             {!isAuthenticated && (
               <div className="relative group ml-4">
                 <button className="text-amber-600 hover:text-amber-700 font-semibold transition flex items-center gap-1 border border-amber-200 px-4 py-2 rounded-full hover:bg-amber-50">
@@ -199,7 +199,7 @@ const Header = () => {
                       onClick={() => navigate(PAGES.HOME)}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
                     >
-                      Bảng điều khiển / Đặt lịch
+                      Bảng điều khiển
                     </button>
                     <button
                       onClick={() => navigate(PAGES.APPOINTMENTS)}

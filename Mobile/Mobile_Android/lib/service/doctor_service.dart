@@ -119,4 +119,70 @@ class DoctorService {
       return [];
     }
   }
+  /// Ứng tuyển làm bác sĩ
+  Future<bool> applyForDoctor(Map<String, dynamic> data) async {
+    try {
+      final urlStr = '${ApiConfig.baseUrl}/doctors/applications';
+      final token = AuthService.accessToken;
+      final headers = {'Content-Type': 'application/json'};
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await http.post(
+        Uri.parse(urlStr),
+        headers: headers,
+        body: jsonEncode(data),
+      ).timeout(ApiConfig.timeout);
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('🔥 applyForDoctor Error: $e');
+      return false;
+    }
+  }
+
+  /// Lấy danh sách đơn ứng tuyển của tôi
+  Future<List<dynamic>> fetchMyApplications() async {
+    try {
+      final urlStr = '${ApiConfig.baseUrl}/doctors/me/applications';
+      final token = AuthService.accessToken;
+      final headers = {'Content-Type': 'application/json'};
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await http.get(
+        Uri.parse(urlStr),
+        headers: headers,
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+      }
+      return [];
+    } catch (e) {
+      print('🔥 fetchMyApplications Error: $e');
+      return [];
+    }
+  }
+
+  /// Đăng ký tài khoản Guest (Dành cho Lễ tân tạo tài khoản nhanh)
+  Future<bool> registerGuestDoctor(Map<String, dynamic> data) async {
+    try {
+      final urlStr = '${ApiConfig.baseUrl}/doctors/register-guest';
+      final headers = {'Content-Type': 'application/json'};
+
+      final response = await http.post(
+        Uri.parse(urlStr),
+        headers: headers,
+        body: jsonEncode(data),
+      ).timeout(ApiConfig.timeout);
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('🔥 registerGuestDoctor Error: $e');
+      return false;
+    }
+  }
 }

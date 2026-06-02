@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { generateId } from "../utils/helpers";
 import { APPOINTMENT_STATUS } from "../utils/constants";
 import { useAuth } from "./AuthContext";
-import { getAppointmentsByUser, updateAppointment } from "../services/appointments.api";
+import { getAppointmentsByUser, updateAppointment, updateAppointmentStatus } from "../services/appointments.api";
 
 const AppointmentContext = createContext();
 
@@ -33,11 +33,21 @@ export const AppointmentProvider = ({ children }) => {
             ? apt.appointment_date.slice(0, 10)
             : apt.appointment_date?.toString().slice(0, 10);
         const rawTime = (apt.appointment_time || "").slice(0, 5);
+        let mappedStatus = apt.status || APPOINTMENT_STATUS.PENDING;
+        if (
+          mappedStatus === APPOINTMENT_STATUS.PENDING &&
+          apt.payment &&
+          (apt.payment.payment_method === "vnpay" || apt.payment.payment_method === "payos") &&
+          apt.payment.payment_status === "pending"
+        ) {
+          mappedStatus = "awaiting_payment";
+        }
+
         return {
           id: apt.id, // dùng luôn id backend
           backendId: apt.id,
           doctorId: apt.doctor_id,
-          doctorName: apt.doctor?.name || "Bác sĩ",
+          doctorName: apt.doctor_name_snapshot || apt.doctor?.user?.full_name || apt.doctor?.name || "Bác sĩ",
           specialty:
             apt.doctor?.specialty ||
             apt.doctor?.category?.name ||
@@ -46,14 +56,19 @@ export const AppointmentProvider = ({ children }) => {
           date: rawDate,
           time: rawTime,
           type: apt.symptoms || "",
-          status: apt.status || APPOINTMENT_STATUS.PENDING,
+          status: mappedStatus,
+          payment: apt.payment,
           cancelReason: apt.cancel_reason || "",
-          hasReview: false,
+          hasReview: !!apt.review,
+          reviewId: apt.review?.id,
+          reviewRating: apt.review?.rating || 0,
+          reviewComment: apt.review?.comment || "",
           notes: "",
           hospital: apt.hospital || null,
-          hospitalName: apt.hospital?.name || "STL Clinic",
+          hospitalName: apt.hospital_name_snapshot || apt.hospital?.name || "STL Clinic",
           hospitalAddress: apt.hospital?.address || "123 Đường ABC, Q.1",
           hospitalCity: apt.hospital?.city || "",
+          price: apt.total_fee || 0,
         };
       });
       setAppointments(mapped);
@@ -90,18 +105,16 @@ export const AppointmentProvider = ({ children }) => {
     );
   };
 
-  const cancelAppointment = async (id) => {
+  const cancelAppointment = async (id, reason = "") => {
     const target = appointments.find((apt) => apt.id === id);
     if (target?.backendId) {
       try {
-        await updateAppointment(target.backendId, {
-          status: APPOINTMENT_STATUS.CANCELLED,
-        });
+        await updateAppointmentStatus(target.backendId, APPOINTMENT_STATUS.CANCELLED, reason);
       } catch (e) {
         console.error("Cancel appointment on server failed:", e);
       }
     }
-    updateAppointment(id, { status: APPOINTMENT_STATUS.CANCELLED });
+    updateAppointment(id, { status: APPOINTMENT_STATUS.CANCELLED, cancelReason: reason });
   };
 
   const deleteAppointment = (id) => {
@@ -166,8 +179,8 @@ export const AppointmentProvider = ({ children }) => {
     updateAppointment,
     cancelAppointment,
     deleteAppointment,
-    getUpcomingAppointments,
     getPastAppointments,
+    getUpcomingAppointments,
     getStatistics,
     isSlotAvailable,
     refreshAppointments: loadAppointments,

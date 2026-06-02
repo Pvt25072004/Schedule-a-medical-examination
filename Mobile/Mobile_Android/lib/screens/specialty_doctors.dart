@@ -150,18 +150,18 @@ class _SpecialtyDoctorsScreenState extends State<SpecialtyDoctorsScreen> {
   }
 
   Widget _buildDoctorCard(dynamic doctor, Color themeColor) {
-    final String name = doctor['name'] ?? 'Bác sĩ chuyên khoa';
-    final String specialty = doctor['specialty'] ?? 'Đa khoa';
+    final String name = (doctor['user']?['full_name'] ?? doctor['name'] ?? 'Bác sĩ chuyên khoa').toString();
+    final String specialty = (doctor['category']?['name'] ?? doctor['specialty'] ?? 'Đa khoa').toString();
     final double rating = doctor['rating'] != null ? double.tryParse(doctor['rating'].toString()) ?? 5.0 : 5.0;
     final int reviewCount = doctor['review_count'] != null ? int.tryParse(doctor['review_count'].toString()) ?? 0 : 0;
     
-    final String description = doctor['description'] ?? 'Chưa cập nhật thông tin mô tả chi tiết kinh nghiệm làm việc.';
-    
-    // Extract connected hospitals
+    final String description = (doctor['description'] ?? 'Chưa cập nhật thông tin mô tả chi tiết kinh nghiệm làm việc.').toString();
+    final String avatarUrl = (doctor['user']?['avatar'] ?? doctor['avatar_url'] ?? '').toString();
+
     final hospitalsRaw = doctor['hospitals'] as List?;
     final String hospitalNames = (hospitalsRaw != null && hospitalsRaw.isNotEmpty)
-        ? hospitalsRaw.map((h) => h['name'].toString()).join(', ')
-        : 'Bệnh viện Đa khoa TW';
+        ? hospitalsRaw.map((h) => h['name']).join(' - ')
+        : 'Phòng khám riêng';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
