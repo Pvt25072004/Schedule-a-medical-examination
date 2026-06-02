@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Eye,
   EyeOff,
+  HeartPulse,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import Button from "../components/common/Button";
@@ -24,6 +25,7 @@ import {
 import { sendRegistrationOtp } from "../services/api";
 import { useGoogleLogin } from "@react-oauth/google";
 import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
+import logo from "../assets/LOGOmain.jpg";
 
 const FACEBOOK_APP_ID = "963479733091448";
 
@@ -198,273 +200,71 @@ const RegisterPage = ({ navigate }) => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate(PAGES.WELCOME)}
-          className="flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 transition"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Trang chủ</span>
-        </button>
+    <div className="min-h-screen bg-[#f4f8fb] font-sans text-gray-800 selection:bg-[#48a1f3]/30 flex items-center justify-center p-4 md:p-8">
+      <div className="max-w-7xl w-full bg-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(20,50,80,0.08)] overflow-hidden flex flex-col lg:flex-row border border-white/60 relative">
+        {/* Left Side - Branding */}
+        <div className="hidden lg:flex lg:w-4/12 bg-gradient-to-br from-[#143250] to-[#1e4a77] relative p-10 flex-col text-white overflow-hidden">
+          {/* Decorative Blobs */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+            <div className="absolute top-10 left-10 w-96 h-96 bg-[#48a1f3]/20 rounded-full blur-[80px]"></div>
+            <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#f99b1c]/10 rounded-full blur-[80px]"></div>
+          </div>
 
-        <Card className="shadow-xl">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Left: Intro */}
-            <div className="space-y-4">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Đăng ký tài khoản
+          <div className="relative z-10 flex flex-col h-full">
+            <div>
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-white/10 border border-white/20 overflow-hidden shrink-0">
+                  <img src={logo} alt="STL Clinic Logo" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-black tracking-tight drop-shadow-md">STL Clinic</h1>
+                  <p className="text-[#48a1f3] font-medium text-lg">Nền tảng y tế hàng đầu</p>
+                </div>
+              </div>
+              <h1 className="text-4xl font-black text-white leading-tight">
+                Đăng ký <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#fbc374]">Tài khoản mới</span>
               </h1>
-              <p className="text-gray-600">
-                Tạo tài khoản để đặt lịch khám, quản lý hồ sơ sức khỏe và nhận
-                thông báo từ phòng khám.
+              <p className="text-blue-100/80 font-medium mt-4 text-lg">
+                Tham gia nền tảng y tế để quản lý sức khỏe thông minh và tiện lợi nhất.
               </p>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+
+              <ul className="space-y-6 pt-8 text-sm font-medium">
+                <li className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <span className="w-8 h-8 rounded-full bg-[#48a1f3] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-[#48a1f3]/30">
                     1
                   </span>
-                  Nhập thông tin cá nhân và tài khoản
+                  <span className="pt-1.5 text-white/90 text-base">Khai báo thông tin cá nhân bảo mật</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                <li className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <span className="w-8 h-8 rounded-full bg-[#f99b1c] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-[#f99b1c]/30">
                     2
                   </span>
-                  Xác nhận thông tin liên hệ
+                  <span className="pt-1.5 text-white/90 text-base">Xác thực OTP qua email nhanh chóng</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                <li className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <span className="w-8 h-8 rounded-full bg-[#10b981] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-[#10b981]/30">
                     3
                   </span>
-                  Bắt đầu đặt lịch khám ngay
+                  <span className="pt-1.5 text-white/90 text-base">Sẵn sàng đặt lịch khám mọi lúc mọi nơi</span>
                 </li>
               </ul>
-
-              {/* Success Message */}
-              {showSuccess && (
-                <div className="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <p className="text-sm">
-                    Đăng ký thành công! Đang chuyển hướng...
-                  </p>
-                </div>
-              )}
             </div>
 
-            {/* Right: Form */}
-            {step === 1 ? (
-              <form className="space-y-4" onSubmit={handleSendOtp}>
-                {errors.general && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                    {errors.general}
-                  </div>
-                )}
-
-                <Input
-                  type="text"
-                  name="fullName"
-                  label="Họ và tên"
-                  placeholder="Nguyễn Văn A"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  error={errors.fullName}
-                  icon={User}
-                  required
-                />
-
-                <Input
-                  type="email"
-                  name="email"
-                  label="Email"
-                  placeholder="example@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  error={errors.email}
-                  icon={Mail}
-                  required
-                />
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      label="Mật khẩu"
-                      placeholder="Tối thiểu 6 ký tự"
-                      value={formData.password}
-                      onChange={handleChange}
-                      error={errors.password}
-                      icon={Lock}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? "text" : "password"}
-                      name="confirmPassword"
-                      label="Xác nhận mật khẩu"
-                      placeholder="Nhập lại mật khẩu"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      error={errors.confirmPassword}
-                      icon={Lock}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    type="date"
-                    name="dateOfBirth"
-                    label="Ngày sinh"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    error={errors.dateOfBirth}
-                    icon={Calendar}
-                    required
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Giới tính <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
-                        errors.gender
-                          ? "border-red-300 focus:border-red-500 focus:ring-red-200"
-                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
-                      }`}
-                    >
-                      <option value="">Chọn giới tính</option>
-                      <option value="male">Nam</option>
-                      <option value="female">Nữ</option>
-                      <option value="other">Khác</option>
-                    </select>
-                    {errors.gender && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.gender}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <Input
-                  type="tel"
-                  name="phone"
-                  label="Số điện thoại"
-                  placeholder="0123456789"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  error={errors.phone}
-                  icon={Phone}
-                  helperText="Số điện thoại 10-11 chữ số"
-                  required
-                />
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tỉnh/Thành phố <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
-                        errors.city
-                          ? "border-red-300 focus:border-red-500 focus:ring-red-200"
-                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
-                      }`}
-                    >
-                      <option value="">Chọn tỉnh/thành phố</option>
-                      {CITIES.map((city) => (
-                        <option key={city.value} value={city.value}>
-                          {city.label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.city && (
-                      <p className="text-red-600 text-sm mt-1">{errors.city}</p>
-                    )}
-                  </div>
-
-                  <Input
-                    type="text"
-                    name="address"
-                    label="Địa chỉ chi tiết"
-                    placeholder="Số nhà, đường, phường/xã"
-                    value={formData.address}
-                    onChange={handleChange}
-                    error={errors.address}
-                    icon={MapPin}
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  loading={isLoading}
-                  disabled={isLoading}
-                  className="w-full mt-2"
-                >
-                  Đăng ký
-                </Button>
-
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">
-                      Hoặc tiếp tục với
-                    </span>
-                  </div>
-                </div>
-
-                {/* Social Login */}
-                <div className="grid grid-cols-2 gap-3">
+            <div className="mt-auto pt-8">
+              {/* Social Login */}
+              <div className="pt-6 border-t border-white/10 mb-6">
+                <p className="text-sm text-blue-200/80 font-medium mb-4">Hoặc đăng ký nhanh bằng mạng xã hội</p>
+                <div className="grid grid-cols-2 gap-4">
                   <Button
-                    type="button"
                     variant="outline"
                     size="md"
                     onClick={() => googleLoginRef()}
+                    className="bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm !justify-center"
                   >
                     <img
                       src="https://www.google.com/favicon.ico"
                       alt="Google"
-                      className="w-5 h-5"
+                      className="w-5 h-5 mr-2 bg-white rounded-full p-0.5"
                     />
                     Google
                   </Button>
@@ -486,110 +286,340 @@ const RegisterPage = ({ navigate }) => {
                         variant="outline"
                         size="md"
                         onClick={renderProps.onClick}
+                        className="bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm !justify-center"
                       >
                         <img
                           src="https://www.facebook.com/favicon.ico"
                           alt="Facebook"
-                          className="w-5 h-5"
+                          className="w-5 h-5 mr-2 rounded-full"
                         />
                         Facebook
                       </Button>
                     )}
                   />
                 </div>
+              </div>
 
-                <p className="text-center text-gray-600 text-sm mt-4">
-                  Đã có tài khoản?{" "}
+              <div className="text-sm text-blue-200/60 font-medium">
+                &copy; 2026 STL Clinic. All rights reserved.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Form */}
+        <div className="w-full lg:w-8/12 p-8 md:p-12 bg-white relative">
+
+          {/* Top Bar: Back Button & Step */}
+          <div className="flex items-center justify-between mb-10 pb-6 border-b border-gray-100">
+            <button
+              onClick={() => navigate(PAGES.WELCOME)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-xl transition-all font-bold shadow-sm hover:shadow active:scale-95 text-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Quay lại Trang chủ</span>
+            </button>
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-[#f4f8fb] border border-blue-100 text-[#143250] rounded-xl font-bold text-sm shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#48a1f3] animate-pulse"></span>
+              Bước {step}/2
+            </div>
+          </div>
+          {/* Mobile Header Intro (Only shows on mobile since left side is hidden) */}
+          <div className="lg:hidden mb-8 text-center">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4 border border-gray-100 overflow-hidden">
+              <img src={logo} alt="STL Clinic Logo" className="w-full h-full object-cover" />
+            </div>
+            <h1 className="text-3xl font-black text-[#143250] leading-tight mb-2">
+              Đăng ký tài khoản
+            </h1>
+            <p className="text-gray-500 font-medium">
+              Tham gia nền tảng y tế để quản lý sức khỏe thông minh và tiện lợi nhất.
+            </p>
+          </div>
+
+          {showSuccess && (
+            <div className="mb-6 bg-[#ebfbf5] border border-[#10b981]/30 text-[#047857] px-5 py-4 rounded-xl flex items-center gap-3 font-medium shadow-sm">
+              <CheckCircle className="w-6 h-6 text-[#10b981] flex-shrink-0" />
+              <p>Đăng ký thành công! Đang chuyển hướng...</p>
+            </div>
+          )}
+          {step === 1 ? (
+            <form className="space-y-4" onSubmit={handleSendOtp}>
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {errors.general}
+                </div>
+              )}
+
+              <Input
+                type="text"
+                name="fullName"
+                label="Họ và tên"
+                placeholder="Nguyễn Văn A"
+                value={formData.fullName}
+                onChange={handleChange}
+                error={errors.fullName}
+                icon={User}
+                required
+              />
+
+              <Input
+                type="email"
+                name="email"
+                label="Email"
+                placeholder="example@email.com"
+                value={formData.email}
+                onChange={handleChange}
+                error={errors.email}
+                icon={Mail}
+                required
+              />
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    label="Mật khẩu"
+                    placeholder="Tối thiểu 6 ký tự"
+                    value={formData.password}
+                    onChange={handleChange}
+                    error={errors.password}
+                    icon={Lock}
+                    required
+                  />
                   <button
                     type="button"
-                    onClick={() => navigate(PAGES.LOGIN)}
-                    className="text-blue-600 font-semibold hover:text-blue-700"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
                   >
-                    Đăng nhập ngay
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
-                </p>
-              </form>
-            ) : (
-              <form className="space-y-6" onSubmit={handleRegister}>
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Xác thực OTP
-                  </h2>
-                  <p className="text-gray-600 text-sm">
-                    Mã OTP gồm 6 chữ số đã được gửi đến email
-                    <br />
-                    <span className="font-semibold">{formData.email}</span>
-                  </p>
                 </div>
 
-                {errors.general && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                    {errors.general}
-                  </div>
-                )}
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    label="Xác nhận mật khẩu"
+                    placeholder="Nhập lại mật khẩu"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    error={errors.confirmPassword}
+                    icon={Lock}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
+                    className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <Input
+                  type="date"
+                  name="dateOfBirth"
+                  label="Ngày sinh"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  error={errors.dateOfBirth}
+                  icon={Calendar}
+                  required
+                />
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                    Nhập mã OTP
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Giới tính <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) =>
-                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
-                    className="w-full text-center text-2xl tracking-widest px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="------"
-                  />
-                  {errors.otp && (
-                    <p className="text-red-600 text-sm mt-2 text-center">
-                      {errors.otp}
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.gender
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                      }`}
+                  >
+                    <option value="">Chọn giới tính</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                    <option value="other">Khác</option>
+                  </select>
+                  {errors.gender && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {errors.gender}
                     </p>
                   )}
                 </div>
+              </div>
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={isLoading}
-                  disabled={isLoading || otp.length !== 6}
+              <Input
+                type="tel"
+                name="phone"
+                label="Số điện thoại"
+                placeholder="0123456789"
+                value={formData.phone}
+                onChange={handleChange}
+                error={errors.phone}
+                icon={Phone}
+                helperText="Số điện thoại 10-11 chữ số"
+                required
+              />
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tỉnh/Thành phố <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.city
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                      }`}
+                  >
+                    <option value="">Chọn tỉnh/thành phố</option>
+                    {CITIES.map((city) => (
+                      <option key={city.value} value={city.value}>
+                        {city.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.city && (
+                    <p className="text-red-600 text-sm mt-1">{errors.city}</p>
+                  )}
+                </div>
+
+                <Input
+                  type="text"
+                  name="address"
+                  label="Địa chỉ chi tiết"
+                  placeholder="Số nhà, đường, phường/xã"
+                  value={formData.address}
+                  onChange={handleChange}
+                  error={errors.address}
+                  icon={MapPin}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full mt-4 flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] hover:from-[#3da3f5] hover:to-[#48a1f3] shadow-lg shadow-[#48a1f3]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Đang xử lý..." : "Tiếp tục"}
+              </button>
+
+
+
+              <p className="text-center text-gray-500 text-sm mt-6 font-medium">
+                Đã có tài khoản?{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate(PAGES.LOGIN)}
+                  className="text-[#f99b1c] font-bold hover:text-[#e08915] transition-colors"
                 >
-                  Xác nhận
-                </Button>
-
-                <div className="text-center">
-                  {countdown > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      Gửi lại mã sau{" "}
-                      <span className="font-semibold text-blue-600">
-                        {countdown}s
-                      </span>
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-semibold transition"
-                    >
-                      Gửi lại mã OTP
-                    </button>
-                  )}
-                  <p className="mt-4 text-sm text-gray-500">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="hover:text-gray-700 underline"
-                    >
-                      Quay lại sửa thông tin
-                    </button>
-                  </p>
+                  Đăng nhập ngay
+                </button>
+              </p>
+            </form>
+          ) : (
+            <form className="space-y-8" onSubmit={handleRegister}>
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#fff4e5] text-[#f99b1c] rounded-full mb-4 shadow-sm border border-[#f99b1c]/20">
+                  <Mail className="w-8 h-8" />
                 </div>
-              </form>
-            )}
-          </div>
-        </Card>
+                <h2 className="text-3xl font-black text-[#143250] mb-3">
+                  Xác thực Email
+                </h2>
+                <p className="text-gray-500 font-medium">
+                  Mã OTP gồm 6 chữ số đã được gửi đến
+                  <br />
+                  <span className="font-bold text-[#48a1f3] text-lg mt-1 block">{formData.email}</span>
+                </p>
+              </div>
+
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {errors.general}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-bold text-[#143250] mb-3 text-center uppercase tracking-wider">
+                  Nhập mã OTP
+                </label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) =>
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  className="w-full text-center text-4xl font-black tracking-[0.5em] px-4 py-4 bg-[#fbfbfb] border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-[#48a1f3]/10 focus:border-[#48a1f3] outline-none transition-all shadow-inner text-[#143250]"
+                  placeholder="------"
+                />
+                {errors.otp && (
+                  <p className="text-red-500 text-sm mt-3 text-center font-medium">
+                    {errors.otp}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || otp.length !== 6}
+                className="w-full flex items-center justify-center py-4 px-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-[#10b981] to-[#059669] hover:from-[#059669] hover:to-[#10b981] shadow-lg shadow-[#10b981]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Đang xử lý..." : "Xác nhận & Hoàn tất"}
+              </button>
+
+              <div className="text-center pt-2">
+                {countdown > 0 ? (
+                  <p className="text-sm text-gray-500 font-medium">
+                    Gửi lại mã sau{" "}
+                    <span className="font-bold text-[#f99b1c]">
+                      {countdown}s
+                    </span>
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="text-sm text-[#48a1f3] hover:text-[#3da3f5] font-bold transition"
+                  >
+                    Gửi lại mã OTP
+                  </button>
+                )}
+                <p className="mt-6 text-sm text-gray-500 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="text-gray-400 hover:text-[#143250] transition-colors"
+                  >
+                    &larr; Quay lại sửa email
+                  </button>
+                </p>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

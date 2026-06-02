@@ -9,6 +9,7 @@ export class EmailService {
   private templateId: string | undefined;
   private doctorTemplateId: string | undefined;
   private publicKey: string | undefined;
+  private frontendUrl: string;
 
   constructor(
     private configService: ConfigService,
@@ -20,6 +21,7 @@ export class EmailService {
     // Nếu chưa cấu hình template riêng cho bác sĩ thì tạm dùng template OTP
     this.doctorTemplateId = this.configService.get<string>('EMAILJS_DOCTOR_TEMPLATE_ID') || this.templateId;
     this.publicKey = this.configService.get<string>('EMAILJS_PUBLIC_KEY');
+    this.frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
   }
 
   async sendOtpEmail(email: string, otp: string) {
@@ -58,8 +60,10 @@ export class EmailService {
       user_id: this.publicKey,
       template_params: {
         to_email: email,
-        otp: passw, // Tạm dùng biến otp trong template cũ để chứa mật khẩu
+        message: 'Tài khoản Bác sĩ của bạn đã được khởi tạo thành công. Vui lòng sử dụng thông tin dưới đây để đăng nhập vào hệ thống. Vui lòng không cung cấp mật khẩu này cho bất kì ai khác hoặc bạn có thể thay đổi mật khẩu sau khi đăng nhập.',
+        password: passw,
         name: name,
+        login_url: `${this.frontendUrl}/login`,
       },
     };
 
@@ -86,8 +90,10 @@ export class EmailService {
       user_id: this.publicKey,
       template_params: {
         to_email: email,
-        otp: `Chúc mừng bạn đã được chấp thuận liên kết với Bệnh viện ${hospitalName}.`, // Dùng biến otp tạm
+        message: `Chúc mừng bạn đã được chấp thuận liên kết với Bệnh viện ${hospitalName}. Bạn đã có thể bắt đầu tiếp nhận lịch khám.`,
+        password: '',
         name: name,
+        login_url: `${this.frontendUrl}/login`,
       },
     };
 
@@ -113,8 +119,10 @@ export class EmailService {
       user_id: this.publicKey,
       template_params: {
         to_email: email,
-        otp: `Bệnh viện ${hospitalName} đã hủy liên kết với bạn. Lý do: ${reason}`, // Dùng biến otp tạm
+        message: `Bệnh viện ${hospitalName} đã hủy liên kết với bạn.\nLý do: ${reason}`,
+        password: '',
         name: name,
+        login_url: `${this.frontendUrl}/login`,
       },
     };
 
@@ -140,8 +148,10 @@ export class EmailService {
       user_id: this.publicKey,
       template_params: {
         to_email: email,
-        otp: `Đơn đăng ký của bạn đã bị từ chối. Lý do: ${reason}`, // Dùng tạm trường otp để thông báo
+        message: `Rất tiếc, đơn đăng ký của bạn đã bị từ chối.\nLý do: ${reason}`,
+        password: '',
         name: name,
+        login_url: `${this.frontendUrl}/login`,
       },
     };
 
