@@ -160,7 +160,8 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             // Giới hạn 5 kết quả để tiết kiệm token
             toolResult = hospitals.slice(0, 5).map(h => ({ id: h.id, name: h.name, city: h.city }));
           } else if (functionName === 'get_doctors') {
-            const allDoctors = await this.doctorsService.findAll(args.hospitalId);
+            const doctorsResponse = await this.doctorsService.findAll(args.hospitalId);
+            const allDoctors = doctorsResponse.data || [];
             let filteredDoctors = allDoctors;
             if (args.specialty) {
               const term = args.specialty.toLowerCase();

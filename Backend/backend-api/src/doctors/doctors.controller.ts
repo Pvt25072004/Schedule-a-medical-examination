@@ -53,12 +53,18 @@ export class DoctorsController {
     @Query('categoryId') categoryId?: string,
     @Query('date') date?: string,
     @Query('time') time?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 100;
     return this.doctorsService.findAll(
       hospitalId ? +hospitalId : undefined,
       categoryId ? +categoryId : undefined,
       date,
       time,
+      pageNumber,
+      limitNumber,
     );
   }
 
