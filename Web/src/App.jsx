@@ -21,7 +21,7 @@ import DoctorListPage from "./pages/DoctorListPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
+
 import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 import BannerPage from "./pages/BannerPage";
 import FanpagePage from "./pages/FanpagePage";
@@ -194,14 +194,7 @@ const AppRoutes = () => {
             )
           }
         />
-        <Route
-          path={PAGES.ADMIN_DASHBOARD}
-          element={
-            <RoleProtectedRoute roles={["admin"]}>
-              <AdminDashboardPage navigate={navigateTo} />
-            </RoleProtectedRoute>
-          }
-        />
+
         <Route
           path={PAGES.DOCTOR_DASHBOARD}
           element={

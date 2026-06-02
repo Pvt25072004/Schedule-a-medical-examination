@@ -74,9 +74,7 @@ const LoginPage = ({ navigate }) => {
 
       setTimeout(() => {
         const role = (loggedInUser?.role || "").toLowerCase();
-        if (role === USER_ROLES.ADMIN) {
-          navigate(PAGES.ADMIN_DASHBOARD);
-        } else if (role === USER_ROLES.DOCTOR) {
+        if (role === USER_ROLES.DOCTOR) {
           navigate(PAGES.DOCTOR_DASHBOARD);
         } else {
           navigate(PAGES.WELCOME);
@@ -100,9 +98,7 @@ const LoginPage = ({ navigate }) => {
       setShowSuccess(true);
       setTimeout(() => {
         const role = (loggedInUser?.role || "").toLowerCase();
-        if (role === USER_ROLES.ADMIN) {
-          navigate(PAGES.ADMIN_DASHBOARD);
-        } else if (role === USER_ROLES.DOCTOR) {
+        if (role === USER_ROLES.DOCTOR) {
           navigate(PAGES.DOCTOR_DASHBOARD);
         } else {
           navigate(PAGES.WELCOME);

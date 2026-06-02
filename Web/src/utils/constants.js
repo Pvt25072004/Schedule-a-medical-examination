@@ -11,7 +11,7 @@ export const PAGES = {
   SETTINGS: "/settings",
   PROFILE: "/profile",
   YOUR_PAGE: "/your-page",
-  ADMIN_DASHBOARD: "/admin",
+
   DOCTOR_DASHBOARD: "/doctor",
   BANNER_MANAGEMENT: "/admin/banners",
   DOCTORS: "/doctors",

@@ -16,7 +16,6 @@ const Header = () => {
   const hideOnRoutes = [
     PAGES.LOGIN,
     PAGES.REGISTER,
-    PAGES.ADMIN_DASHBOARD,
   ];
 
   if (hideOnRoutes.includes(location.pathname)) {
