@@ -27,7 +27,7 @@ const handleResponse = async (response, defaultErrorMessage) => {
 };
 
 export const getSchedulesByDoctor = async (doctorId) => {
-  const response = await fetch(`${SCHEDULES_ENDPOINT}?doctorId=${doctorId}`, {
+  const response = await fetch(`${SCHEDULES_ENDPOINT}/doctor/${doctorId}`, {
     headers: {
       ...getAuthHeaders(),
     },

@@ -153,8 +153,6 @@ const WelcomePage = ({ navigate }) => {
   }, [showAlert]);
 
   useEffect(() => {
-    fetchAppointments();
-
     const loadData = async () => {
       try {
         const [docs, cats, bannerData, packagesData] = await Promise.all([
@@ -172,7 +170,7 @@ const WelcomePage = ({ navigate }) => {
       }
     };
     loadData();
-  }, [fetchAppointments]);
+  }, []);
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
