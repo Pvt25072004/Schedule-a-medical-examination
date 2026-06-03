@@ -22,12 +22,12 @@ const handleResponse = async (response, defaultErrorMessage) => {
           ? errorBody.message
           : errorBody.message.join?.(", ");
     }
-  } catch {}
+  } catch { }
   throw new Error(message);
 };
 
 export const getSchedulesByDoctor = async (doctorId) => {
-  const response = await fetch(`${SCHEDULES_ENDPOINT}?doctorId=${doctorId}`, {
+  const response = await fetch(`${SCHEDULES_ENDPOINT}/doctor/${doctorId}`, {
     headers: {
       ...getAuthHeaders(),
     },

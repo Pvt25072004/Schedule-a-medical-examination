@@ -32,7 +32,7 @@ export class DoctorsController {
   constructor(
     private readonly doctorsService: DoctorsService,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -44,7 +44,7 @@ export class DoctorsController {
     }
     return this.doctorsService.findByEmail(user.email);
   }
-  
+
   @Get('top-rated') // GET /doctors/top-rated
   findTopRated() {
     return this.doctorsService.findTopRated();
@@ -185,7 +185,7 @@ export class DoctorsController {
   @Patch('applications/:id/status')
   async updateApplicationStatus(@Param('id') id: string, @Body() dto: UpdateApplicationStatusDto, @Req() req: any) {
     const user = req.user as { role?: string; hospital_id?: number } | undefined;
-    
+
     // Nếu là admin_hospital, phải đảm bảo application này thuộc về bệnh viện của họ
     if (user?.role === 'admin_hospital') {
       // Vì không lấy được hospitalId trực tiếp từ request path, ta có thể dựa vào service để check,
@@ -194,7 +194,7 @@ export class DoctorsController {
       // Tạm thời truyền thêm user để service check nếu cần thiết, hoặc cứ gọi service.
       // Ở đây ta gọi service và giả định service sẽ xử lý đúng, hoặc ta check trước:
     }
-    
+
     return this.doctorsService.updateApplicationStatus(+id, dto, user?.role === 'admin_hospital' ? user.hospital_id : undefined);
   }
 }

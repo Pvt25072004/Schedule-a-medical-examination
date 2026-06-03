@@ -153,7 +153,6 @@ const WelcomePage = ({ navigate }) => {
   }, [showAlert]);
 
   useEffect(() => {
-    fetchAppointments();
 
     const loadData = async () => {
       try {
@@ -172,7 +171,7 @@ const WelcomePage = ({ navigate }) => {
       }
     };
     loadData();
-  }, [fetchAppointments]);
+  }, []);
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;

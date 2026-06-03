@@ -69,7 +69,7 @@ const DoctorDashboardPage = ({ navigate }) => {
   // === DATA STATES ===
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
-  
+
   const [doctorProfile, setDoctorProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({
     name: "",
@@ -87,21 +87,21 @@ const DoctorDashboardPage = ({ navigate }) => {
   });
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  
+
   const [hospitals, setHospitals] = useState([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  
+
   const [doctorAppointments, setDoctorAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
-  
+
   const [doctorPayments, setDoctorPayments] = useState([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
-  
+
   const [doctorReviews, setDoctorReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
-  
+
   const [applications, setApplications] = useState([]);
   const [loadingApplications, setLoadingApplications] = useState(false);
 
@@ -229,7 +229,7 @@ const DoctorDashboardPage = ({ navigate }) => {
   useEffect(() => {
     if (!doctorProfile?.id) return;
     void loadSchedules(doctorProfile.id);
-    
+
     (async () => {
       try {
         setLoadingAppointments(true);
@@ -278,11 +278,11 @@ const DoctorDashboardPage = ({ navigate }) => {
   const affiliations = useMemo(() => {
     return Array.isArray(doctorProfile?.hospitals)
       ? doctorProfile.hospitals.map((h) => ({
-          id: h.id,
-          hospital: h.name,
-          role: "Bác sĩ",
-          since: "",
-        }))
+        id: h.id,
+        hospital: h.name,
+        role: "Bác sĩ",
+        since: "",
+      }))
       : [];
   }, [doctorProfile?.hospitals]);
 
@@ -455,11 +455,11 @@ const DoctorDashboardPage = ({ navigate }) => {
                   <div>
                     <h3 className="font-bold text-slate-800">{apt.user?.full_name || "Bệnh nhân"}</h3>
                     <p className="text-sm font-medium text-[#48a1f3] mt-1">{formatDateVN(apt.appointment_date)} · {apt.appointment_time?.slice(0, 5)}</p>
-                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><MapPin className="w-3 h-3"/> {apt.hospital?.name}</p>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> {apt.hospital?.name}</p>
                   </div>
                   <div>
-                     {apt.status === "confirmed" && <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">Đã xác nhận</span>}
-                     {apt.status === "pending" && <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">Chờ duyệt</span>}
+                    {apt.status === "confirmed" && <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">Đã xác nhận</span>}
+                    {apt.status === "pending" && <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">Chờ duyệt</span>}
                   </div>
                 </div>
               ))
@@ -487,8 +487,8 @@ const DoctorDashboardPage = ({ navigate }) => {
               doctorReviews.slice(0, 3).map((rev) => (
                 <div key={rev.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="flex items-center justify-between mb-2">
-                     <p className="font-bold text-slate-800 text-sm">{rev.user?.full_name || "Bệnh nhân"}</p>
-                     <p className="text-xs text-amber-500 font-bold">⭐ {rev.rating}/5</p>
+                    <p className="font-bold text-slate-800 text-sm">{rev.user?.full_name || "Bệnh nhân"}</p>
+                    <p className="text-xs text-amber-500 font-bold">⭐ {rev.rating}/5</p>
                   </div>
                   <p className="text-sm text-slate-600 italic line-clamp-2">"{rev.comment}"</p>
                 </div>
@@ -543,7 +543,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                 if (!doctorProfile?.id) return;
                 if (!scheduleForm.hospital_id) return alert("Vui lòng chọn bệnh viện");
                 if (!scheduleForm.work_date) return alert("Vui lòng chọn ngày làm việc");
-                
+
                 try {
                   const payload = {
                     doctor_id: doctorProfile.id,
@@ -648,7 +648,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                     {formatDateVN(entry.work_date)}
                   </p>
                   <p className="text-sm font-medium text-slate-500 mt-1 flex items-center gap-2">
-                    <Users className="w-4 h-4"/> Tối đa {entry.max_patients ?? 10} bệnh nhân
+                    <Users className="w-4 h-4" /> Tối đa {entry.max_patients ?? 10} bệnh nhân
                   </p>
                 </div>
               </div>
@@ -682,29 +682,29 @@ const DoctorDashboardPage = ({ navigate }) => {
         <div className="space-y-4">
           {loadingAppointments && <p className="text-sm text-slate-500 animate-pulse py-4">Đang tải lịch hẹn...</p>}
           {!loadingAppointments && doctorAppointments.length === 0 && (
-             <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-               <Calendar className="w-12 h-12 mb-3 opacity-30" />
-               <p className="text-sm font-medium">Không có lịch hẹn nào.</p>
-             </div>
+            <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <Calendar className="w-12 h-12 mb-3 opacity-30" />
+              <p className="text-sm font-medium">Không có lịch hẹn nào.</p>
+            </div>
           )}
           {doctorAppointments.map((apt) => (
             <div key={apt.id} className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
-                 <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
-                    {(apt.user?.full_name || "BN").split(" ").map(p => p[0]).join("")}
-                 </div>
-                 <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-lg text-slate-900">{apt.user?.full_name || "Bệnh nhân"}</h3>
-                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">#{apt.id}</span>
-                    </div>
-                    <p className="text-sm font-medium text-[#48a1f3] mb-2 flex items-center gap-1">
-                      <Calendar className="w-4 h-4"/> {formatDateVN(apt.appointment_date)} lúc {apt.appointment_time?.slice(0, 5)}
-                    </p>
-                    <p className="text-sm text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 italic">
-                      <span className="font-semibold not-italic text-slate-700">Lý do:</span> {apt.symptoms || "Không có thông tin"}
-                    </p>
-                 </div>
+                <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
+                  {(apt.user?.full_name || "BN").split(" ").map(p => p[0]).join("")}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-lg text-slate-900">{apt.user?.full_name || "Bệnh nhân"}</h3>
+                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">#{apt.id}</span>
+                  </div>
+                  <p className="text-sm font-medium text-[#48a1f3] mb-2 flex items-center gap-1">
+                    <Calendar className="w-4 h-4" /> {formatDateVN(apt.appointment_date)} lúc {apt.appointment_time?.slice(0, 5)}
+                  </p>
+                  <p className="text-sm text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 italic">
+                    <span className="font-semibold not-italic text-slate-700">Lý do:</span> {apt.symptoms || "Không có thông tin"}
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-col items-end gap-3 min-w-[140px]">
@@ -744,7 +744,7 @@ const DoctorDashboardPage = ({ navigate }) => {
 
         <div className="mb-8">
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-[#48a1f3]"/> Đang làm việc tại
+            <Building2 className="w-4 h-4 text-[#48a1f3]" /> Đang làm việc tại
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {affiliations.length === 0 && <p className="text-sm text-slate-500 italic">Chưa liên kết bệnh viện nào.</p>}
@@ -777,8 +777,8 @@ const DoctorDashboardPage = ({ navigate }) => {
                 <div>
                   <p className="font-bold text-slate-800 flex items-center gap-2">
                     {app.hospital?.name}
-                    {app.type === "leave" ? 
-                      <span className="text-[10px] uppercase font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-md">Xin nghỉ</span> : 
+                    {app.type === "leave" ?
+                      <span className="text-[10px] uppercase font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-md">Xin nghỉ</span> :
                       <span className="text-[10px] uppercase font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-md">Ứng tuyển</span>
                     }
                   </p>
@@ -808,28 +808,28 @@ const DoctorDashboardPage = ({ navigate }) => {
         </div>
 
         <form onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              const payload = { ...profileForm };
-              if (!payload.password) {
-                delete payload.password;
-                delete payload.old_password;
-              }
-              if (payload.experience_years === "") {
-                delete payload.experience_years;
-              }
-              if (payload.category_id === "") {
-                delete payload.category_id;
-              }
-
-              const updated = await updateMyDoctorProfile(payload);
-              setDoctorProfile(updated);
-              setProfileForm((prev) => ({ ...prev, password: "", old_password: "" }));
-              alert("Cập nhật hồ sơ thành công");
-            } catch (err) {
-              alert(err.message || "Không thể cập nhật hồ sơ");
+          e.preventDefault();
+          try {
+            const payload = { ...profileForm };
+            if (!payload.password) {
+              delete payload.password;
+              delete payload.old_password;
             }
-          }}
+            if (payload.experience_years === "") {
+              delete payload.experience_years;
+            }
+            if (payload.category_id === "") {
+              delete payload.category_id;
+            }
+
+            const updated = await updateMyDoctorProfile(payload);
+            setDoctorProfile(updated);
+            setProfileForm((prev) => ({ ...prev, password: "", old_password: "" }));
+            alert("Cập nhật hồ sơ thành công");
+          } catch (err) {
+            alert(err.message || "Không thể cập nhật hồ sơ");
+          }
+        }}
         >
           <div className="flex flex-col md:flex-row gap-10">
             {/* Avatar Section */}
@@ -849,14 +849,14 @@ const DoctorDashboardPage = ({ navigate }) => {
                   <Camera className="w-8 h-8 mb-1" />
                   <span className="text-xs font-bold">Đổi ảnh</span>
                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (!file) return;
-                      try {
-                        setUploadingAvatar(true);
-                        const result = await uploadDoctorAvatar(file);
-                        setProfileForm((prev) => ({ ...prev, avatar_url: result.image_url, avatar_public_id: result.image_public_id }));
-                      } catch (err) { alert(err.message || "Lỗi tải ảnh"); } finally { setUploadingAvatar(false); }
-                    }}
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    try {
+                      setUploadingAvatar(true);
+                      const result = await uploadDoctorAvatar(file);
+                      setProfileForm((prev) => ({ ...prev, avatar_url: result.image_url, avatar_public_id: result.image_public_id }));
+                    } catch (err) { alert(err.message || "Lỗi tải ảnh"); } finally { setUploadingAvatar(false); }
+                  }}
                   />
                 </label>
               </div>
@@ -935,11 +935,11 @@ const DoctorDashboardPage = ({ navigate }) => {
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none transition-all font-medium"
                 />
               </div>
-//               <div className="">
-//                 {affiliations.length === 0 && applications.filter(req => req.status !== 'approved').length === 0 && (
-//                   <p className="text-sm text-slate-500 text-center py-4">Chưa có liên kết bệnh viện nào.</p>
-//                 )}
-//               </div>
+              <div className="">
+                {affiliations.length === 0 && applications.filter(req => req.status !== 'approved').length === 0 && (
+                  <p className="text-sm text-slate-500 text-center py-4">Chưa có liên kết bệnh viện nào.</p>
+                )}
+              </div>
 
               <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
                 <h3 className="text-sm font-bold text-slate-800 mb-4">Đổi Mật Khẩu (Không bắt buộc)</h3>
@@ -967,9 +967,9 @@ const DoctorDashboardPage = ({ navigate }) => {
             </div>
           </div>
           <div className="mt-8 flex justify-end">
-             <Button type="submit" variant="primary" className="px-8" disabled={loadingProfile}>
-               {loadingProfile ? "Đang lưu..." : "Lưu thay đổi"}
-             </Button>
+            <Button type="submit" variant="primary" className="px-8" disabled={loadingProfile}>
+              {loadingProfile ? "Đang lưu..." : "Lưu thay đổi"}
+            </Button>
           </div>
         </form>
       </Card>
@@ -985,7 +985,7 @@ const DoctorDashboardPage = ({ navigate }) => {
             <p className="text-sm text-slate-500 font-medium">Tất cả nhận xét sau khi khám xong</p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-xl border border-amber-100 text-amber-600 font-black text-lg">
-             <Star className="w-5 h-5 fill-amber-500 text-amber-500"/> 4.9 <span className="text-sm font-medium text-amber-600/70 ml-1">/ 5.0</span>
+            <Star className="w-5 h-5 fill-amber-500 text-amber-500" /> 4.9 <span className="text-sm font-medium text-amber-600/70 ml-1">/ 5.0</span>
           </div>
         </div>
         <div className="space-y-4">
@@ -1003,7 +1003,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                 </div>
                 <div className="flex gap-1 mb-2">
                   {[...Array(5)].map((_, i) => (
-                     <Star key={i} className={`w-4 h-4 ${i < rev.rating ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"}`}/>
+                    <Star key={i} className={`w-4 h-4 ${i < rev.rating ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"}`} />
                   ))}
                 </div>
                 <p className="text-sm text-slate-700">{rev.comment}</p>
@@ -1018,7 +1018,7 @@ const DoctorDashboardPage = ({ navigate }) => {
   const handleExportPayments = () => {
     const completedPayments = doctorPayments.filter((p) => p.payment_status === "completed");
     if (completedPayments.length === 0) return alert("Không có dữ liệu để xuất");
-    
+
     const headers = ["Mã GD", "Bệnh nhân", "Ngày thanh toán", "Số tiền (VND)", "Phương thức"];
     const rows = completedPayments.map((p) => [
       `"${p.id}"`,
@@ -1027,7 +1027,7 @@ const DoctorDashboardPage = ({ navigate }) => {
       `"${p.amount}"`,
       `"${p.payment_method}"`
     ]);
-    
+
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -1040,7 +1040,7 @@ const DoctorDashboardPage = ({ navigate }) => {
 
   const renderPayments = () => {
     const completedPayments = doctorPayments.filter((p) => p.payment_status === "completed");
-    
+
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Card>
@@ -1099,108 +1099,107 @@ const DoctorDashboardPage = ({ navigate }) => {
       {/* Mobile Header (Only visible on small screens) */}
       <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="flex items-center gap-3">
-           <img src={logo} alt="Logo" className="w-10 h-10 rounded-lg object-cover" />
-           <span className="font-black text-[#143250] text-xl">STL Clinic</span>
+          <img src={logo} alt="Logo" className="w-10 h-10 rounded-lg object-cover" />
+          <span className="font-black text-[#143250] text-xl">STL Clinic</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 bg-slate-50 rounded-lg text-slate-600">
-           {isMobileMenuOpen ? <X className="w-6 h-6"/> : <Menu className="w-6 h-6"/>}
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
       {/* Sidebar Navigation */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
-         <div className="p-6 md:p-8 flex items-center gap-4 hidden md:flex border-b border-slate-100">
-            <div className="w-12 h-12 rounded-2xl bg-white shadow-md flex items-center justify-center overflow-hidden border border-slate-100 shrink-0">
-              <img src={logo} alt="STL Clinic" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h1 className="font-black text-[#143250] text-xl tracking-tight">STL Clinic</h1>
-              <p className="text-xs font-bold text-[#48a1f3] uppercase tracking-wider">Doctor Portal</p>
-            </div>
-         </div>
+        <div className="p-6 md:p-8 flex items-center gap-4 hidden md:flex border-b border-slate-100">
+          <div className="w-12 h-12 rounded-2xl bg-white shadow-md flex items-center justify-center overflow-hidden border border-slate-100 shrink-0">
+            <img src={logo} alt="STL Clinic" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <h1 className="font-black text-[#143250] text-xl tracking-tight">STL Clinic</h1>
+            <p className="text-xs font-bold text-[#48a1f3] uppercase tracking-wider">Doctor Portal</p>
+          </div>
+        </div>
 
-         <div className="p-6 flex items-center gap-4 mb-2">
-            <div className="w-12 h-12 rounded-full bg-slate-100 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
-               {profileForm.avatar_url ? (
-                 <img src={profileForm.avatar_url} alt="Avt" className="w-full h-full object-cover" />
-               ) : (
-                 <UserCircle className="w-8 h-8 text-slate-400" />
-               )}
-            </div>
-            <div className="flex-1 overflow-hidden">
-               <p className="text-xs text-slate-500 font-medium">Xin chào bác sĩ,</p>
-               <p className="text-sm font-bold text-slate-900 truncate">{doctorProfile?.name || user?.fullName || "Bác sĩ"}</p>
-            </div>
-         </div>
+        <div className="p-6 flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 rounded-full bg-slate-100 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+            {profileForm.avatar_url ? (
+              <img src={profileForm.avatar_url} alt="Avt" className="w-full h-full object-cover" />
+            ) : (
+              <UserCircle className="w-8 h-8 text-slate-400" />
+            )}
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-xs text-slate-500 font-medium">Xin chào bác sĩ,</p>
+            <p className="text-sm font-bold text-slate-900 truncate">{doctorProfile?.name || user?.fullName || "Bác sĩ"}</p>
+          </div>
+        </div>
 
-         <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-6">
-           {TAB_ITEMS.map((tab) => {
-             const Icon = tab.icon;
-             const isActive = activeTab === tab.id;
-             return (
-               <button
-                 key={tab.id}
-                 onClick={() => { setActiveTab(tab.id); setIsMobileMenuOpen(false); }}
-                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                   isActive 
-                    ? "bg-[#48a1f3] text-white shadow-md shadow-[#48a1f3]/30" 
-                    : "text-slate-600 hover:bg-slate-50 hover:text-[#143250]"
-                 }`}
-               >
-                 <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-400"}`} />
-                 {tab.label}
-               </button>
-             );
-           })}
-         </nav>
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-6">
+          {TAB_ITEMS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setIsMobileMenuOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${isActive
+                  ? "bg-[#48a1f3] text-white shadow-md shadow-[#48a1f3]/30"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-[#143250]"
+                  }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-400"}`} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
 
-         <div className="p-4 border-t border-slate-100">
-            <button
-              onClick={() => navigate(PAGES.HOME)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors mb-2"
-            >
-              <ArrowLeft className="w-5 h-5 text-slate-400" />
-              Về trang Bệnh nhân
-            </button>
-            <button
-              onClick={() => { logout(); navigate(PAGES.WELCOME); }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
-            >
-              <LogOut className="w-5 h-5 text-red-400" />
-              Đăng xuất
-            </button>
-         </div>
+        <div className="p-4 border-t border-slate-100">
+          <button
+            onClick={() => navigate(PAGES.HOME)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors mb-2"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-400" />
+            Về trang Bệnh nhân
+          </button>
+          <button
+            onClick={() => { logout(); navigate(PAGES.WELCOME); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <LogOut className="w-5 h-5 text-red-400" />
+            Đăng xuất
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Top Header */}
         <header className="hidden md:flex items-center justify-between px-8 py-6 bg-white border-b border-slate-200 sticky top-0 z-30">
-           <h2 className="text-2xl font-black text-[#143250]">
-             {TAB_ITEMS.find(t => t.id === activeTab)?.label}
-           </h2>
-           <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-slate-50 rounded-full border border-slate-100 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition">
-                <HeartPulse className="w-5 h-5 text-[#48a1f3]" />
-                <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse border-2 border-white box-content"></span>
-             </div>
-             <Button variant="primary" className="bg-gradient-to-r from-[#143250] to-[#1e4a77] !font-bold" onClick={() => handleQuickCreateSchedule()}>
-               + Tạo Lịch Mới
-             </Button>
-           </div>
+          <h2 className="text-2xl font-black text-[#143250]">
+            {TAB_ITEMS.find(t => t.id === activeTab)?.label}
+          </h2>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-slate-50 rounded-full border border-slate-100 flex items-center justify-center relative cursor-pointer hover:bg-slate-100 transition">
+              <HeartPulse className="w-5 h-5 text-[#48a1f3]" />
+              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse border-2 border-white box-content"></span>
+            </div>
+            <Button variant="primary" className="bg-gradient-to-r from-[#143250] to-[#1e4a77] !font-bold" onClick={() => handleQuickCreateSchedule()}>
+              + Tạo Lịch Mới
+            </Button>
+          </div>
         </header>
 
         {/* Tab Content Area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
-           <div className="max-w-6xl mx-auto w-full">
-              {activeTab === TABS.OVERVIEW && renderOverview()}
-              {activeTab === TABS.SCHEDULES && renderSchedules()}
-              {activeTab === TABS.APPOINTMENTS && renderAppointments()}
-              {activeTab === TABS.AFFILIATIONS && renderAffiliations()}
-              {activeTab === TABS.PROFILE && renderProfile()}
-              {activeTab === TABS.REVIEWS && renderReviews()}
-              {activeTab === TABS.PAYMENTS && renderPayments()}
-           </div>
+          <div className="max-w-6xl mx-auto w-full">
+            {activeTab === TABS.OVERVIEW && renderOverview()}
+            {activeTab === TABS.SCHEDULES && renderSchedules()}
+            {activeTab === TABS.APPOINTMENTS && renderAppointments()}
+            {activeTab === TABS.AFFILIATIONS && renderAffiliations()}
+            {activeTab === TABS.PROFILE && renderProfile()}
+            {activeTab === TABS.REVIEWS && renderReviews()}
+            {activeTab === TABS.PAYMENTS && renderPayments()}
+          </div>
         </div>
       </main>
 
@@ -1248,7 +1247,7 @@ const DoctorDashboardPage = ({ navigate }) => {
         <div className="fixed inset-0 bg-[#143250]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
           <div className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95">
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
-               <AlertTriangle className="w-8 h-8"/>
+              <AlertTriangle className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-black text-[#143250] mb-2">Xin nghỉ việc</h3>
             <p className="text-sm font-medium text-slate-500 mb-6">
