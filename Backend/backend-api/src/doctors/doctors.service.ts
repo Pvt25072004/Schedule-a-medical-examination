@@ -430,7 +430,7 @@ export class DoctorsService {
   async getDoctorApplications(email: string): Promise<DoctorApplication[]> {
     const doctor = await this.findByEmail(email);
     if (!doctor) {
-      throw new NotFoundException('Doctor not found');
+      return [];
     }
     return this.applicationsRepository.find({
       where: { doctor: { id: doctor.id } },

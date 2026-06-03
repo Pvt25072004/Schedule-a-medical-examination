@@ -21,6 +21,9 @@ export class Category {
   @Column({ length: 120, unique: true })
   slug: string;
 
+  @Column({ nullable: true })
+  image_url: string;
+
   @Column({ default: true })
   is_active: boolean;
 

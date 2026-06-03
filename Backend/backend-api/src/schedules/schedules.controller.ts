@@ -47,6 +47,11 @@ export class SchedulesController {
     return this.schedulesService.update(+id, updateScheduleDto);
   }
 
+  @Patch(':id/approve')
+  approve(@Param('id') id: string) {
+    return this.schedulesService.approve(+id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.schedulesService.remove(+id);

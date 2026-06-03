@@ -80,9 +80,14 @@ export class PaymentsController {
     return this.paymentsService.findByAppointment(+appointmentId);
   }
 
+  @Get('dashboard-stats')
+  getDashboardStats() {
+    return this.paymentsService.getDashboardStats();
+  }
+
   @Get()
-  findAll() {
-    return this.paymentsService.findAll();
+  findAll(@Query() query: any) {
+    return this.paymentsService.findAll(query);
   }
 
   @Get('doctor/:doctorId')

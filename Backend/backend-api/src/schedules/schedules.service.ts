@@ -33,7 +33,18 @@ export class SchedulesService {
       );
     }
 
-    const schedule = this.schedulesRepository.create(dto);
+    const schedule = this.schedulesRepository.create({
+      ...dto,
+      is_available: false, // Force false until approved
+      approval_status: 'pending', // Force pending
+    });
+    return this.schedulesRepository.save(schedule);
+  }
+
+  async approve(id: number): Promise<Schedule> {
+    const schedule = await this.findOne(id);
+    schedule.is_available = true;
+    schedule.approval_status = 'approved';
     return this.schedulesRepository.save(schedule);
   }
 
