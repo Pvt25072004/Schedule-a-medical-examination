@@ -16,6 +16,7 @@ const Header = () => {
   const hideOnRoutes = [
     PAGES.LOGIN,
     PAGES.REGISTER,
+    PAGES.DOCTOR_DASHBOARD,
   ];
 
   if (hideOnRoutes.includes(location.pathname)) {
@@ -200,6 +201,14 @@ const Header = () => {
                     >
                       Bảng điều khiển
                     </button>
+                    {user?.role === 'doctor' && (
+                      <button
+                        onClick={() => navigate(PAGES.DOCTOR_DASHBOARD)}
+                        className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 font-medium border-b border-gray-100"
+                      >
+                        Chuyển sang Bác sĩ
+                      </button>
+                    )}
                     <button
                       onClick={() => navigate(PAGES.APPOINTMENTS)}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

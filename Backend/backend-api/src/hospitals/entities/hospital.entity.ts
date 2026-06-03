@@ -14,7 +14,8 @@ import {
 } from 'typeorm';
 import { Banner } from 'src/banner/entities/banner.entity';
 import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
-import { OneToOne } from 'typeorm';
+import { OneToOne, ManyToOne, JoinColumn } from 'typeorm';
+import { City } from 'src/cities/entities/city.entity';
 
 @Entity('hospitals')
 export class Hospital {
@@ -27,8 +28,9 @@ export class Hospital {
   @Column({ type: 'text' })
   address: string;
 
-  @Column({ length: 100, nullable: true })
-  city: string;
+  @ManyToOne(() => City)
+  @JoinColumn({ name: 'city_id' })
+  city: City;
 
   @Column({ length: 20 })
   phone: string;
@@ -38,6 +40,9 @@ export class Hospital {
 
   @Column({ length: 100, nullable: true })
   main_specialty: string;
+
+  @Column({ length: 50, nullable: true })
+  hospital_type: string;
 
   @Column({ default: true })
   is_active: boolean;

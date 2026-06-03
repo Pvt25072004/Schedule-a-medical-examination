@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PAGES } from "../utils/constants";
 import {
@@ -7,10 +7,12 @@ import {
   submitHospitalRegistration,
 } from "../services/hospital.registration.api";
 import { uploadUserImage } from "../services/api";
+import { getCities } from "../services/cities.api";
+import { getCategories } from "../services/admin.categories.api";
 import {
   Building2, CheckCircle2, ChevronRight, FileCheck, Mail, ShieldCheck,
   Phone, MapPin, Clock, ArrowRight, Activity, Users, Calendar, Shield,
-  UploadCloud, PlayCircle
+  UploadCloud, PlayCircle, X
 } from "lucide-react";
 
 export default function HospitalRegistrationPage() {
@@ -19,6 +21,11 @@ export default function HospitalRegistrationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registrationId, setRegistrationId] = useState(null);
+
+  const [cities, setCities] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [specialtySearch, setSpecialtySearch] = useState("");
+  const [showSpecialtyDropdown, setShowSpecialtyDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     admin_email: "",
@@ -35,7 +42,7 @@ export default function HospitalRegistrationPage() {
     logo_url: "",
 
     address: "",
-    province: "",
+    city_id: "",
     district: "",
     ward: "",
     hotline: "",
@@ -47,10 +54,25 @@ export default function HospitalRegistrationPage() {
     quality_certificate_url: "",
 
     doctor_count: "",
-    main_specialty: "",
+    specialties: [],
 
     accepts_online_payment: true,
   });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [citiesData, categoriesData] = await Promise.all([
+          getCities(),
+          getCategories()
+        ]);
+        setCities(citiesData || []);
+        setCategories(categoriesData || []);
+      } catch (err) {
+        console.error("Failed to load cities/categories", err);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -121,6 +143,7 @@ export default function HospitalRegistrationPage() {
       setError("");
       await submitHospitalRegistration(registrationId, {
         ...formData,
+        city_id: Number(formData.city_id) || undefined,
         founded_year: Number(formData.founded_year) || 2000,
         doctor_count: Number(formData.doctor_count) || 1,
       });
@@ -556,9 +579,74 @@ export default function HospitalRegistrationPage() {
                         <input type="text" name="business_license_number" value={formData.business_license_number} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#48a1f3] outline-none bg-[#fbfbfb]" />
                       </div>
 
-                      <div className="sm:col-span-2">
+                      <div className="sm:col-span-1">
+                        <label className="block text-[14px] font-bold text-gray-700 mb-1.5">Tỉnh/Thành phố <span className="text-red-500">*</span></label>
+                        <select name="city_id" value={formData.city_id} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#48a1f3] outline-none bg-[#fbfbfb] appearance-none">
+                          <option value="">Chọn Tỉnh/Thành phố</option>
+                          {cities.map((city) => (
+                            <option key={city.id} value={city.id}>{city.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-1">
                         <label className="block text-[14px] font-bold text-gray-700 mb-1.5">Địa chỉ cụ thể <span className="text-red-500">*</span></label>
                         <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#48a1f3] outline-none bg-[#fbfbfb]" placeholder="Số nhà, đường, phường, quận..." />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[14px] font-bold text-gray-700 mb-1.5">Chuyên khoa khám <span className="text-red-500">*</span></label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={specialtySearch}
+                            onChange={(e) => {
+                              setSpecialtySearch(e.target.value);
+                              setShowSpecialtyDropdown(true);
+                            }}
+                            onFocus={() => setShowSpecialtyDropdown(true)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#48a1f3] outline-none bg-[#fbfbfb]"
+                            placeholder="Tìm kiếm chuyên khoa (VD: Nhi khoa, Nội tổng quát...)"
+                          />
+                          {showSpecialtyDropdown && specialtySearch && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                              {categories
+                                .filter(c => c.name.toLowerCase().includes(specialtySearch.toLowerCase()) && !formData.specialties.includes(c.id.toString()))
+                                .map(c => (
+                                  <div
+                                    key={c.id}
+                                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-700"
+                                    onClick={() => {
+                                      setFormData(prev => ({ ...prev, specialties: [...prev.specialties, c.id.toString()] }));
+                                      setSpecialtySearch("");
+                                      setShowSpecialtyDropdown(false);
+                                    }}
+                                  >
+                                    {c.name}
+                                  </div>
+                                ))}
+                                {categories.filter(c => c.name.toLowerCase().includes(specialtySearch.toLowerCase()) && !formData.specialties.includes(c.id.toString())).length === 0 && (
+                                  <div className="px-4 py-2 text-gray-400 text-sm">Không tìm thấy chuyên khoa phù hợp</div>
+                                )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {formData.specialties.map(specId => {
+                            const category = categories.find(c => c.id.toString() === specId);
+                            if (!category) return null;
+                            return (
+                              <div key={specId} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-100">
+                                {category.name}
+                                <button type="button" onClick={() => {
+                                  setFormData(prev => ({ ...prev, specialties: prev.specialties.filter(id => id !== specId) }));
+                                }} className="hover:bg-blue-200 rounded-full p-0.5 transition-colors">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       <div>
@@ -570,7 +658,7 @@ export default function HospitalRegistrationPage() {
                     <div className="flex justify-end pt-6 mt-4 border-t border-gray-100">
                       <button
                         onClick={() => {
-                          if (!formData.hospital_name || !formData.address || !formData.business_license_number || !formData.hotline) {
+                          if (!formData.hospital_name || !formData.address || !formData.business_license_number || !formData.hotline || !formData.city_id || formData.specialties.length === 0) {
                             setError("Vui lòng điền đủ các trường bắt buộc (*)");
                             return;
                           }

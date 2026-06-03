@@ -45,7 +45,7 @@ export class SubmitHospitalRegistrationDto {
   @IsOptional() @IsString() logo_url?: string;
 
   @IsOptional() @IsString() address?: string;
-  @IsOptional() @IsString() province?: string;
+  @IsOptional() @IsNumber() city_id?: number;
   @IsOptional() @IsString() district?: string;
   @IsOptional() @IsString() ward?: string;
   @IsOptional() @IsString() address_proof_url?: string;
@@ -59,7 +59,7 @@ export class SubmitHospitalRegistrationDto {
   @IsOptional() @IsString() health_department_doc_url?: string;
 
   @IsOptional() @IsNumber() doctor_count?: number;
-  @IsOptional() @IsString() main_specialty?: string;
+  @IsOptional() specialties?: any; // can be an array of strings or IDs, will be stringified or stored as is
   @IsOptional() @IsString() key_doctors_list?: string;
 
   @IsOptional() @IsNumber() platform_fee?: number;

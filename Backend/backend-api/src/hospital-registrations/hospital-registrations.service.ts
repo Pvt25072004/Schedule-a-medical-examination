@@ -97,6 +97,9 @@ export class HospitalRegistrationsService {
     }
 
     Object.assign(registration, dto);
+    if (Array.isArray(registration.specialties)) {
+      registration.specialties = JSON.stringify(registration.specialties);
+    }
     registration.status = HospitalRegistrationStatus.PENDING;
 
     return this.repo.save(registration);
@@ -123,13 +126,25 @@ export class HospitalRegistrationsService {
     // Post-approval hooks
     if (dto.status === HospitalRegistrationStatus.APPROVED) {
       // 1. Create Hospital
+      let parsedCategoryIds = [];
+      try {
+        if (registration.specialties) {
+          const parsed = JSON.parse(registration.specialties);
+          // If frontend sends array of IDs, filter numbers
+          parsedCategoryIds = parsed.map(Number).filter((n: any) => !isNaN(n));
+        }
+      } catch (e) {
+        // ignore
+      }
+
       const newHospital = await this.hospitalsService.create({
         name: registration.hospital_name || 'TBA',
-        address: `${registration.address}, ${registration.ward}, ${registration.district}, ${registration.province}`,
+        address: `${registration.address}, ${registration.ward}, ${registration.district}`,
         phone: registration.hotline || 'N/A',
         email: registration.contact_email || registration.admin_email,
-        main_specialty: registration.main_specialty || '',
-        city: registration.province || '',
+        hospital_type: registration.hospital_type || '',
+        city_id: registration.city_id,
+        categoryIds: parsedCategoryIds,
       });
 
       // 2. Create User (Admin Hospital)

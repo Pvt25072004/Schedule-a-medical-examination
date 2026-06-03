@@ -54,8 +54,8 @@ export class HospitalRegistration {
   @Column({ length: 255, nullable: true })
   address: string;
 
-  @Column({ length: 100, nullable: true })
-  province: string;
+  @Column({ nullable: true })
+  city_id: number;
 
   @Column({ length: 100, nullable: true })
   district: string;
@@ -92,8 +92,8 @@ export class HospitalRegistration {
   @Column({ nullable: true })
   doctor_count: number;
 
-  @Column({ length: 255, nullable: true })
-  main_specialty: string;
+  @Column({ type: 'text', nullable: true })
+  specialties: string;
 
   @Column({ type: 'text', nullable: true })
   key_doctors_list: string;
