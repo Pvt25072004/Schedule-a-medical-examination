@@ -36,10 +36,12 @@ import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 60 seconds
-      limit: 100, // Tăng limit lên 100 request/phút để không chặn Web Admin tải data
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -100,4 +102,4 @@ import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

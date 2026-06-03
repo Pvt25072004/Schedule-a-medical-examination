@@ -101,7 +101,7 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email, role: user.role, hospital_id: user.hospital_id };
     const access_token = this.jwtService.sign(payload);
 
     // Xóa OTP khỏi cache
@@ -153,7 +153,7 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email, role: user.role, hospital_id: user.hospital_id };
     const access_token = this.jwtService.sign(payload);
 
     // Return user without password
@@ -379,7 +379,7 @@ export class AuthService {
         }
         
         // Trả về token
-        const payload = { sub: existingUser.id, email: existingUser.email, role: existingUser.role };
+        const payload = { sub: existingUser.id, email: existingUser.email, role: existingUser.role, hospital_id: existingUser.hospital_id };
         return {
           user: this.sanitizeUser(existingUser),
           access_token: this.jwtService.sign(payload),
@@ -404,7 +404,7 @@ export class AuthService {
     }
 
     // Trả về token
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email, role: user.role, hospital_id: user.hospital_id };
     return {
       user: this.sanitizeUser(user),
       access_token: this.jwtService.sign(payload),

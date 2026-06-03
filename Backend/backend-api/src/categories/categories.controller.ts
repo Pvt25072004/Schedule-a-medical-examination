@@ -5,7 +5,6 @@ import {
   Get,
   Param,
   Patch,
-  Patch,
   Post,
   UseInterceptors,
   UploadedFile,

@@ -229,22 +229,29 @@ export class PaymentsService {
     }
   }
 
-  async getDashboardStats(): Promise<any> {
-    // Tổng doanh thu (payment_status = 'completed')
-    const totalRevenueResult = await this.paymentsRepository.createQueryBuilder('payment')
+  async getDashboardStats(user?: any): Promise<any> {
+    const qbRevenue = this.paymentsRepository.createQueryBuilder('payment')
+      .leftJoin('payment.appointment', 'appointment')
       .select('SUM(payment.amount)', 'total')
-      .where('payment.payment_status = :status', { status: 'completed' })
-      .getRawOne();
+      .where('payment.payment_status = :status', { status: 'completed' });
+    if (user?.role === 'admin_hospital') {
+      qbRevenue.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
+    const totalRevenueResult = await qbRevenue.getRawOne();
     
     // Doanh thu tháng này
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
-    const monthlyRevenueResult = await this.paymentsRepository.createQueryBuilder('payment')
+    const qbMonthly = this.paymentsRepository.createQueryBuilder('payment')
+      .leftJoin('payment.appointment', 'appointment')
       .select('SUM(payment.amount)', 'total')
       .where('payment.payment_status = :status', { status: 'completed' })
-      .andWhere('payment.created_at >= :startOfMonth', { startOfMonth })
-      .getRawOne();
+      .andWhere('payment.created_at >= :startOfMonth', { startOfMonth });
+    if (user?.role === 'admin_hospital') {
+      qbMonthly.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
+    const monthlyRevenueResult = await qbMonthly.getRawOne();
 
     // Lấy doanh thu theo từng tháng (6 tháng gần nhất) cho biểu đồ
     const sixMonthsAgo = new Date();
@@ -252,14 +259,18 @@ export class PaymentsService {
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
     
-    const revenueByMonthRaw = await this.paymentsRepository.createQueryBuilder('payment')
+    const qbChart = this.paymentsRepository.createQueryBuilder('payment')
+      .leftJoin('payment.appointment', 'appointment')
       .select('MONTH(payment.created_at) AS month, YEAR(payment.created_at) AS year, SUM(payment.amount) AS total')
       .where('payment.payment_status = :status', { status: 'completed' })
       .andWhere('payment.created_at >= :sixMonthsAgo', { sixMonthsAgo })
       .groupBy('YEAR(payment.created_at), MONTH(payment.created_at)')
       .orderBy('YEAR(payment.created_at)', 'ASC')
-      .addOrderBy('MONTH(payment.created_at)', 'ASC')
-      .getRawMany();
+      .addOrderBy('MONTH(payment.created_at)', 'ASC');
+    if (user?.role === 'admin_hospital') {
+      qbChart.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
+    const revenueByMonthRaw = await qbChart.getRawMany();
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const revenueChart = revenueByMonthRaw.map(row => ({
@@ -268,7 +279,12 @@ export class PaymentsService {
     }));
 
     // Số cuộc hẹn mới
-    const totalAppointments = await this.appointmentsRepository.count();
+    let totalAppointments = 0;
+    if (user?.role === 'admin_hospital') {
+      totalAppointments = await this.appointmentsRepository.count({ where: { hospital_id: user.hospital_id } });
+    } else {
+      totalAppointments = await this.appointmentsRepository.count();
+    }
     
     return {
       totalRevenue: Number(totalRevenueResult.total) || 0,
@@ -278,7 +294,7 @@ export class PaymentsService {
     };
   }
 
-  async findAll(query: any = {}): Promise<any> {
+  async findAll(query: any = {}, user?: any): Promise<any> {
     const page = parseInt(query.page) || 1;
     const limit = parseInt(query.limit) || 20;
     const skip = (page - 1) * limit;
@@ -288,6 +304,10 @@ export class PaymentsService {
       .leftJoinAndSelect('appointment.user', 'user')
       .leftJoinAndSelect('appointment.doctor', 'doctor')
       .orderBy('payment.created_at', 'DESC');
+
+    if (user?.role === 'admin_hospital') {
+      qb.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
 
     if (query.startDate) {
       qb.andWhere('payment.created_at >= :startDate', { startDate: new Date(query.startDate) });

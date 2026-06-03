@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Doctor } from './doctor.entity';
@@ -451,7 +452,7 @@ export class DoctorsService {
     });
   }
 
-  async updateApplicationStatus(id: number, dto: UpdateApplicationStatusDto): Promise<DoctorApplication> {
+  async updateApplicationStatus(id: number, dto: UpdateApplicationStatusDto, adminHospitalId?: number): Promise<DoctorApplication> {
     const application = await this.applicationsRepository.findOne({
       where: { id },
       relations: ['doctor', 'doctor.hospitals', 'doctor.user', 'hospital'],
@@ -459,6 +460,10 @@ export class DoctorsService {
 
     if (!application) {
       throw new NotFoundException('Application not found');
+    }
+
+    if (adminHospitalId && application.hospital.id !== adminHospitalId) {
+      throw new ForbiddenException('Bạn không có quyền thao tác với đơn ứng tuyển của bệnh viện khác');
     }
 
     if (application.status !== 'pending') {
