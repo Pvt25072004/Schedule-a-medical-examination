@@ -10,7 +10,13 @@ import {
   UploadedFile,
   BadRequestException,
   Query,
+  UseGuards,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -26,6 +32,8 @@ export class UsersController {
   ) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -36,10 +44,15 @@ export class UsersController {
   }
 
   @Get('/:id')
-  findOne(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string, @Req() req: any) {
+    if (req.user.role !== 'admin' && req.user.id !== +id) {
+      throw new ForbiddenException('Bạn không có quyền xem thông tin người dùng khác');
+    }
     return this.usersService.findOne(+id);
   }
   @Post('upload')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -66,16 +79,24 @@ export class UsersController {
   }
 
   @Post('/')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Patch('/:id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  @UseGuards(JwtAuthGuard)
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: any) {
+    if (req.user.role !== 'admin' && req.user.id !== +id) {
+      throw new ForbiddenException('Bạn không có quyền cập nhật người dùng khác');
+    }
     return this.usersService.update(+id, updateUserDto);
   }
 
   @Delete('/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }

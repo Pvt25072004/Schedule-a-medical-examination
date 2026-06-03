@@ -19,7 +19,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 import logo from "../assets/LOGOmain.jpg";
 
-const FACEBOOK_APP_ID = "963479733091448";
+const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
 
 const LoginPage = ({ navigate }) => {
   const { login, loginWithSocial } = useAuth();

@@ -14,7 +14,6 @@ export const PAGES = {
   YOUR_PAGE: "/your-page",
 
   DOCTOR_DASHBOARD: "/doctor",
-  BANNER_MANAGEMENT: "/admin/banners",
   DOCTORS: "/doctors",
   FANPAGE: "/fanpage",
   FANPAGE_DETAIL: "/fanpage/:id",
@@ -95,43 +94,6 @@ export const SPECIALTIES = [
     name: "Mắt",
     icon: "👁️",
     description: "Khám và điều trị các bệnh về mắt",
-  },
-];
-
-// Doctors
-export const DOCTORS = [
-  {
-    id: 1,
-    name: "BS. Nguyễn Văn An",
-    specialty: "Tim mạch",
-    avatar: "👨‍⚕️",
-    rating: 4.8,
-    reviews: 256,
-    experience: 15,
-    hospital: "Bệnh viện Đa khoa Quốc tế",
-    price: 500000,
-  },
-  {
-    id: 2,
-    name: "BS. Trần Thị Bình",
-    specialty: "Nội khoa",
-    avatar: "👩‍⚕️",
-    rating: 4.9,
-    reviews: 189,
-    experience: 12,
-    hospital: "Phòng khám Đa khoa Medpro",
-    price: 350000,
-  },
-  {
-    id: 3,
-    name: "BS. Lê Hoàng Cường",
-    specialty: "Nha khoa",
-    avatar: "👨‍⚕️",
-    rating: 4.7,
-    reviews: 143,
-    experience: 10,
-    hospital: "Nha khoa Paris",
-    price: 300000,
   },
 ];
 

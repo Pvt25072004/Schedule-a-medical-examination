@@ -31,4 +31,8 @@ export class CreateScheduleDto {
   @IsOptional()
   @IsBoolean()
   is_available?: boolean;
+
+  @IsOptional()
+  @IsString()
+  approval_status?: string;
 }

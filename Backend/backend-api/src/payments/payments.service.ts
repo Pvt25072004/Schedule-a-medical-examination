@@ -229,8 +229,112 @@ export class PaymentsService {
     }
   }
 
-  findAll(): Promise<Payment[]> {
-    return this.paymentsRepository.find();
+  async getDashboardStats(user?: any): Promise<any> {
+    const qbRevenue = this.paymentsRepository.createQueryBuilder('payment')
+      .leftJoin('payment.appointment', 'appointment')
+      .select('SUM(payment.amount)', 'total')
+      .where('payment.payment_status = :status', { status: 'completed' });
+    if (user?.role === 'admin_hospital') {
+      qbRevenue.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
+    const totalRevenueResult = await qbRevenue.getRawOne();
+    
+    // Doanh thu tháng này
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const qbMonthly = this.paymentsRepository.createQueryBuilder('payment')
+      .leftJoin('payment.appointment', 'appointment')
+      .select('SUM(payment.amount)', 'total')
+      .where('payment.payment_status = :status', { status: 'completed' })
+      .andWhere('payment.created_at >= :startOfMonth', { startOfMonth });
+    if (user?.role === 'admin_hospital') {
+      qbMonthly.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
+    const monthlyRevenueResult = await qbMonthly.getRawOne();
+
+    // Lấy doanh thu theo từng tháng (6 tháng gần nhất) cho biểu đồ
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+    
+    const qbChart = this.paymentsRepository.createQueryBuilder('payment')
+      .leftJoin('payment.appointment', 'appointment')
+      .select('MONTH(payment.created_at) AS month, YEAR(payment.created_at) AS year, SUM(payment.amount) AS total')
+      .where('payment.payment_status = :status', { status: 'completed' })
+      .andWhere('payment.created_at >= :sixMonthsAgo', { sixMonthsAgo })
+      .groupBy('YEAR(payment.created_at), MONTH(payment.created_at)')
+      .orderBy('YEAR(payment.created_at)', 'ASC')
+      .addOrderBy('MONTH(payment.created_at)', 'ASC');
+    if (user?.role === 'admin_hospital') {
+      qbChart.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
+    const revenueByMonthRaw = await qbChart.getRawMany();
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const revenueChart = revenueByMonthRaw.map(row => ({
+      name: `${monthNames[row.month - 1]}`,
+      total: Number(row.total) || 0
+    }));
+
+    // Số cuộc hẹn mới
+    let totalAppointments = 0;
+    if (user?.role === 'admin_hospital') {
+      totalAppointments = await this.appointmentsRepository.count({ where: { hospital_id: user.hospital_id } });
+    } else {
+      totalAppointments = await this.appointmentsRepository.count();
+    }
+    
+    return {
+      totalRevenue: Number(totalRevenueResult.total) || 0,
+      monthlyRevenue: Number(monthlyRevenueResult.total) || 0,
+      revenueChart,
+      totalAppointments
+    };
+  }
+
+  async findAll(query: any = {}, user?: any): Promise<any> {
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const qb = this.paymentsRepository.createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.appointment', 'appointment')
+      .leftJoinAndSelect('appointment.user', 'user')
+      .leftJoinAndSelect('appointment.doctor', 'doctor')
+      .orderBy('payment.created_at', 'DESC');
+
+    if (user?.role === 'admin_hospital') {
+      qb.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+    }
+
+    if (query.startDate) {
+      qb.andWhere('payment.created_at >= :startDate', { startDate: new Date(query.startDate) });
+    }
+    if (query.endDate) {
+      const endDate = new Date(query.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      qb.andWhere('payment.created_at <= :endDate', { endDate });
+    }
+    if (query.search) {
+      qb.andWhere('(user.full_name LIKE :search OR payment.transaction_id LIKE :search OR CAST(appointment.id AS CHAR) LIKE :search)', { search: `%${query.search}%` });
+    }
+
+    if (query.page) {
+      qb.skip(skip).take(limit);
+      const [data, total] = await qb.getManyAndCount();
+      return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      };
+    } else {
+      // Return all if no pagination params (for backwards compatibility if needed)
+      return qb.getMany();
+    }
   }
 
   async findOne(id: number): Promise<Payment> {

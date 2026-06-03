@@ -31,8 +31,15 @@ export class Schedule {
   @Column({ default: 10 })
   max_patients: number;
 
-  @Column({ default: true })
+  @Column({ default: false })
   is_available: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending',
+  })
+  approval_status: string;
 
   @CreateDateColumn()
   created_at: Date;

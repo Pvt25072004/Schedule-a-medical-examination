@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, Logger, ForbiddenException } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -41,8 +41,8 @@ export class AppointmentsService {
     console.log('PAYLOAD:', JSON.stringify(createAppointmentDto, null, 2));
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-    // Bắt đầu Transaction với cấp độ cách ly SERIALIZABLE để chống Race Condition tuyệt đối
-    await queryRunner.startTransaction('SERIALIZABLE');
+    // Bắt đầu Transaction với cơ chế khoá dòng (Pessimistic Lock)
+    await queryRunner.startTransaction();
 
     try {
       let schedule: Schedule | null = null;
@@ -50,12 +50,15 @@ export class AppointmentsService {
       const appointmentTime = createAppointmentDto.appointment_time;
 
       if (createAppointmentDto.schedule_id) {
-        schedule = await queryRunner.manager.findOne(Schedule, {
-          where: { id: createAppointmentDto.schedule_id },
-        });
+        schedule = await queryRunner.manager
+          .createQueryBuilder(Schedule, 'schedule')
+          .setLock('pessimistic_write')
+          .where('schedule.id = :id', { id: createAppointmentDto.schedule_id })
+          .getOne();
       } else {
         schedule = await queryRunner.manager
           .createQueryBuilder(Schedule, 'schedule')
+          .setLock('pessimistic_write')
           .where('schedule.doctor_id = :doctorId', {
             doctorId: createAppointmentDto.doctor_id,
           })
@@ -199,8 +202,21 @@ export class AppointmentsService {
     }
   }
 
-  async findAll(): Promise<Appointment[]> {
-    return await this.appointmentsRepository.find();
+  async findAll(user?: any): Promise<Appointment[]> {
+    if (user?.role === 'admin_hospital') {
+      if (!user.hospital_id) {
+        throw new ForbiddenException('Tài khoản admin cơ sở không có thông tin bệnh viện');
+      }
+      return await this.appointmentsRepository.find({
+        where: { hospital_id: user.hospital_id },
+        relations: ['user', 'doctor', 'hospital', 'payment'],
+        order: { created_at: 'DESC' }
+      });
+    }
+    return await this.appointmentsRepository.find({
+      relations: ['user', 'doctor', 'hospital', 'payment'],
+      order: { created_at: 'DESC' }
+    });
   }
 
   findOne(id: number) {
@@ -213,14 +229,27 @@ export class AppointmentsService {
   async update(
     id: number,
     updateAppointmentDto: UpdateAppointmentDto,
+    user?: any,
   ): Promise<Appointment> {
     const appointment = (await this.findOne(id)) as Appointment;
+    if (!appointment) throw new BadRequestException('Không tìm thấy lịch hẹn');
+    
+    if (user?.role === 'admin_hospital' && appointment.hospital_id !== user.hospital_id) {
+      throw new ForbiddenException('Bạn không có quyền sửa lịch hẹn của cơ sở khác');
+    }
+
     Object.assign(appointment, updateAppointmentDto);
     return this.appointmentsRepository.save(appointment);
   }
 
-  async remove(id: number) {
+  async remove(id: number, user?: any) {
     const appointment = (await this.findOne(id)) as Appointment;
+    if (!appointment) throw new BadRequestException('Không tìm thấy lịch hẹn');
+
+    if (user?.role === 'admin_hospital' && appointment.hospital_id !== user.hospital_id) {
+      throw new ForbiddenException('Bạn không có quyền xóa lịch hẹn của cơ sở khác');
+    }
+
     return this.appointmentsRepository.remove(appointment);
   }
 
@@ -254,11 +283,17 @@ export class AppointmentsService {
     id: number,
     status: string,
     reason?: string,
+    user?: any,
   ): Promise<Appointment> {
     const appointment = await this.findOne(id);
     if (!appointment) {
       throw new Error(`Appointment #${id} not found`);
     }
+
+    if (user?.role === 'admin_hospital' && appointment.hospital_id !== user.hospital_id) {
+      throw new ForbiddenException('Bạn không có quyền thay đổi trạng thái lịch hẹn của cơ sở khác');
+    }
+
     appointment.status = status;
     if (status === 'rejected') {
       appointment.cancel_reason = reason || null;

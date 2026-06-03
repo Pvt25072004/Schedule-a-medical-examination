@@ -46,4 +46,12 @@ export class CreateHospitalDto {
   @IsArray()
   @IsInt({ each: true })
   categoryIds?: number[];
+
+  @IsOptional()
+  @IsString()
+  logo_url?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

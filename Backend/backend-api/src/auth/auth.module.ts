@@ -1,5 +1,4 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { HttpModule } from '@nestjs/axios';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -35,10 +34,6 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     AuthService,
     EmailService,
     JwtStrategy,
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
   ],
   exports: [AuthService],
 })

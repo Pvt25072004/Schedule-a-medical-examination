@@ -9,6 +9,10 @@ export class CreateCategoryDto {
   @IsOptional()
   slug?: string;
 
+  @IsString()
+  @IsOptional()
+  image_url?: string;
+
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;

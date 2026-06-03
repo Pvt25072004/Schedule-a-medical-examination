@@ -30,7 +30,6 @@ import {
   getCategoryIcon,
 } from "../utils/helpers";
 import { getActiveHospitalBanners } from "../services/admin.hospital.banner.api";
-import BannerPage from "./BannerPage";
 import { getCategories } from "../services/admin.categories.api";
 
 const HomePage = ({ navigate }) => {
@@ -321,10 +320,14 @@ const HomePage = ({ navigate }) => {
                       })
                     }
                   >
-                    <div className="w-14 h-14 mx-auto bg-white group-hover:bg-gradient-to-br group-hover:from-[#48a1f3] group-hover:to-[#3da3f5] rounded-xl flex items-center justify-center mb-3 transition-all duration-300 shadow-sm group-hover:shadow-md">
-                      <span className="text-3xl group-hover:scale-110 transition-transform duration-300 filter group-hover:brightness-0 group-hover:invert">
-                        {specialty.icon || getCategoryIcon(specialty.name)}
-                      </span>
+                    <div className="w-14 h-14 mx-auto bg-white group-hover:bg-gradient-to-br group-hover:from-[#48a1f3] group-hover:to-[#3da3f5] rounded-xl flex items-center justify-center mb-3 transition-all duration-300 shadow-sm group-hover:shadow-md overflow-hidden">
+                      {specialty.image_url ? (
+                        <img src={specialty.image_url} alt={specialty.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 mix-blend-multiply group-hover:mix-blend-normal group-hover:brightness-0 group-hover:invert" />
+                      ) : (
+                        <span className="text-3xl group-hover:scale-110 transition-transform duration-300 filter group-hover:brightness-0 group-hover:invert">
+                          {getCategoryIcon(specialty.name)}
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-bold text-[#143250] text-sm group-hover:text-[#48a1f3] transition-colors line-clamp-2">
                       {specialty.name}

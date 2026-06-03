@@ -601,7 +601,7 @@ const WelcomePage = ({ navigate }) => {
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 font-medium bg-gray-50 w-fit px-3 py-1.5 rounded-lg">
                       <span className="flex items-center gap-1 text-yellow-500">
-                        ⭐ {doctor.averageRating || "4.8"}
+                        ⭐ {Number(doctor.rating || 5).toFixed(1)}
                       </span>
                       <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                       <span>{doctor.experience || 5} năm KN</span>
@@ -795,10 +795,14 @@ const WelcomePage = ({ navigate }) => {
                 className="group relative bg-white rounded-3xl p-6 text-center cursor-pointer border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transform hover:-translate-y-2 transition-all duration-300"
                 onClick={() => navigate(PAGES.DOCTORS, { state: { specialty: specialty.name } })}
               >
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-[#48a1f3] group-hover:to-[#3da3f5] rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 shadow-inner group-hover:shadow-[#48a1f3]/40">
-                  <span className="text-3xl group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-0 group-hover:invert">
-                    {specialty.icon || getCategoryIcon(specialty.name)}
-                  </span>
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-[#48a1f3] group-hover:to-[#3da3f5] rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 shadow-inner group-hover:shadow-[#48a1f3]/40 overflow-hidden">
+                  {specialty.image_url ? (
+                    <img src={specialty.image_url} alt={specialty.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 mix-blend-multiply group-hover:mix-blend-normal group-hover:brightness-0 group-hover:invert" />
+                  ) : (
+                    <span className="text-3xl group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-0 group-hover:invert">
+                      {getCategoryIcon(specialty.name)}
+                    </span>
+                  )}
                 </div>
                 <h3 className="font-bold text-[#143250] group-hover:text-[#48a1f3] transition-colors">
                   {specialty.name}
