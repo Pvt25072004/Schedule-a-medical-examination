@@ -935,11 +935,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none transition-all font-medium"
                 />
               </div>
-              <div className="">
-                {affiliations.length === 0 && applications.filter(req => req.status !== 'approved').length === 0 && (
-                  <p className="text-sm text-slate-500 text-center py-4">Chưa có liên kết bệnh viện nào.</p>
-                )}
-              </div>
+
 
               <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
                 <h3 className="text-sm font-bold text-slate-800 mb-4">Đổi Mật Khẩu (Không bắt buộc)</h3>
