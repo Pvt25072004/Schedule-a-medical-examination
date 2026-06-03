@@ -16,8 +16,11 @@ export class HospitalsService {
   ) {}
 
   async create(dto: CreateHospitalDto): Promise<Hospital> {
-    const { categoryIds, ...rest } = dto;
-    const hospital = this.hospitalsRepository.create(rest as Partial<Hospital>);
+    const { categoryIds, city_id, ...rest } = dto;
+    const hospital = this.hospitalsRepository.create({
+      ...rest,
+      ...(city_id && { city: { id: city_id } as any })
+    } as Partial<Hospital>);
 
     if (categoryIds?.length) {
       hospital.categories = await this.categoriesRepository.find({
@@ -31,11 +34,11 @@ export class HospitalsService {
   findAll(city?: string): Promise<Hospital[]> {
     const whereClause: any = {};
     if (city) {
-      whereClause.city = Like(`%${city}%`);
+      whereClause.city = { name: Like(`%${city}%`) };
     }
     return this.hospitalsRepository.find({
       where: whereClause,
-      relations: ['categories'],
+      relations: ['categories', 'city'],
       order: { created_at: 'DESC' },
     });
   }
@@ -43,7 +46,7 @@ export class HospitalsService {
   async findOne(id: number): Promise<Hospital> {
     const hospital = await this.hospitalsRepository.findOne({
       where: { id },
-      relations: ['categories'],
+      relations: ['categories', 'city'],
     });
 
     if (!hospital) {
@@ -54,9 +57,12 @@ export class HospitalsService {
   }
 
   async update(id: number, dto: UpdateHospitalDto): Promise<Hospital> {
-    const { categoryIds, ...rest } = dto;
+    const { categoryIds, city_id, ...rest } = dto;
     const hospital = await this.findOne(id);
     Object.assign(hospital, rest);
+    if (city_id) {
+      hospital.city = { id: city_id } as any;
+    }
 
     if (categoryIds) {
       hospital.categories = categoryIds.length

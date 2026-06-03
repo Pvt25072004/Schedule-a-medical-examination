@@ -17,9 +17,8 @@ export class CreateHospitalDto {
   address: string;
 
   @IsOptional()
-  @IsString()
-  @Length(0, 100)
-  city?: string;
+  @IsInt()
+  city_id?: number;
 
   @IsString()
   @Length(6, 20)
@@ -33,6 +32,11 @@ export class CreateHospitalDto {
   @IsString()
   @Length(0, 100)
   main_specialty?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 50)
+  hospital_type?: string;
 
   @IsOptional()
   @IsBoolean()

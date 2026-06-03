@@ -87,6 +87,7 @@ export class AppointmentsService {
 
       // -- NEW: Xử lý Service Package & duration --
       let durationMinutes = 30; // default
+      let servicePackagePrice: number | null = null;
       if (createAppointmentDto.service_package_id) {
         const servicePackage = await queryRunner.manager.findOneBy(ServicePackage, { id: createAppointmentDto.service_package_id });
         if (!servicePackage) {
@@ -96,6 +97,7 @@ export class AppointmentsService {
           throw new BadRequestException('Gói khám này hiện đang tạm ngưng!');
         }
         durationMinutes = servicePackage.duration_minutes || 30;
+        servicePackagePrice = Number(servicePackage.fixed_price) || 0;
       }
 
       const [h, m] = appointmentTime.split(':').map(Number);
@@ -157,9 +159,9 @@ export class AppointmentsService {
       const appointment = queryRunner.manager.create(Appointment, {
         ...createAppointmentDto,
         end_time: endTime,
-        doctor_fee_snapshot: pricing.doctorFeeSnapshot,
-        hospital_fee_snapshot: pricing.hospitalFeeSnapshot,
-        total_fee: pricing.totalFee,
+        doctor_fee_snapshot: servicePackagePrice !== null ? 0 : pricing.doctorFeeSnapshot,
+        hospital_fee_snapshot: servicePackagePrice !== null ? 0 : pricing.hospitalFeeSnapshot,
+        total_fee: servicePackagePrice !== null ? servicePackagePrice : pricing.totalFee,
         doctor_name_snapshot: pricing.doctorNameSnapshot,
         hospital_name_snapshot: pricing.hospitalNameSnapshot,
         currency_snapshot: pricing.currencySnapshot,

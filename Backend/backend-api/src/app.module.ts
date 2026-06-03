@@ -32,6 +32,7 @@ import { HospitalRegistrationsModule } from './hospital-registrations/hospital-r
 import { AiModule } from './ai/ai.module';
 import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-hospital-requests.module';
 import { ServicePackagesModule } from './service-packages/service-packages.module';
+import { CitiesModule } from './cities/cities.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 
 @Module({
@@ -90,6 +91,7 @@ import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
     AiModule,
     DoctorHospitalRequestsModule,
     ServicePackagesModule,
+    CitiesModule,
     LeaveRequestsModule,
   ],
   controllers: [AppController, EmailController],
