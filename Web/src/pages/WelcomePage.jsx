@@ -601,7 +601,7 @@ const WelcomePage = ({ navigate }) => {
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 font-medium bg-gray-50 w-fit px-3 py-1.5 rounded-lg">
                       <span className="flex items-center gap-1 text-yellow-500">
-                        ⭐ {doctor.averageRating || "4.8"}
+                        ⭐ {Number(doctor.rating || 5).toFixed(1)}
                       </span>
                       <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                       <span>{doctor.experience || 5} năm KN</span>

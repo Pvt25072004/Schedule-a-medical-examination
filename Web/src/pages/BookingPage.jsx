@@ -25,7 +25,6 @@ import ProgressBar from "../components/common/ProgressBar";
 import { PAGES, TIME_SLOTS } from "../utils/constants";
 import { formatDate, formatCurrency } from "../utils/helpers";
 import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
-import { getAllReviews } from "../services/reviews.api";
 
 const BookingPage = ({ navigate }) => {
   const { addAppointment, isSlotAvailable } = useAppointments();
@@ -37,8 +36,6 @@ const BookingPage = ({ navigate }) => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
-  const [reviews, setReviews] = useState([]);
-  const [loadingReviews, setLoadingReviews] = useState(false);
   const [schedules, setSchedules] = useState([]);
   const [step, setStep] = useState(1); // 1: Date/Time, 2: Confirm
   const [searchQuery, setSearchQuery] = useState("");
@@ -65,39 +62,13 @@ const BookingPage = ({ navigate }) => {
     }
   }, [formData.doctorId, formData.date]);
 
-  // Tính số sao trung bình cho mỗi doctor từ reviews
-  const doctorRatingsMap = useMemo(() => {
-    const map = new Map();
-    reviews.forEach((review) => {
-      const doctorId = review.doctor_id || review.doctor?.id;
-      const rating = review.rating;
-      if (doctorId && rating != null) {
-        if (!map.has(doctorId)) {
-          map.set(doctorId, { total: 0, count: 0 });
-        }
-        const data = map.get(doctorId);
-        data.total += Number(rating);
-        data.count += 1;
-      }
-    });
-    // Tính trung bình
-    const result = new Map();
-    map.forEach((data, doctorId) => {
-      result.set(doctorId, (data.total / data.count).toFixed(1));
-    });
-    return result;
-  }, [reviews]);
-
-  // Merge averageRating vào doctors
   const doctorsWithRatings = useMemo(() => {
     return doctors.map((doctor) => ({
       ...doctor,
-      averageRating: doctorRatingsMap.get(doctor.id) || "0.0",
-      totalReviews: reviews.filter(
-        (r) => (r.doctor_id || r.doctor?.id) === doctor.id,
-      ).length,
+      averageRating: Number(doctor.rating || 5).toFixed(1),
+      totalReviews: doctor.review_count || 0,
     }));
-  }, [doctors, doctorRatingsMap, reviews]);
+  }, [doctors]);
 
   const selectedDoctor = doctorsWithRatings.find(
     (d) => String(d.id) === String(formData.doctorId)
@@ -139,20 +110,7 @@ const BookingPage = ({ navigate }) => {
         setLoadingDoctors(false);
       }
     };
-    const loadReviews = async () => {
-      try {
-        setLoadingReviews(true);
-        const data = await getAllReviews();
-        setReviews(Array.isArray(data) ? data : (data?.data || []));
-      } catch (e) {
-        console.error("Load reviews for booking error:", e);
-        setReviews([]);
-      } finally {
-        setLoadingReviews(false);
-      }
-    };
     void loadDoctors();
-    void loadReviews();
   }, []);
 
   const handleChange = (field, value) => {

@@ -58,7 +58,7 @@ export class DoctorsService {
     return Array.from(topRatedPerCategory.values());
   }
 
-  async findAll(hospitalId?: number, categoryId?: number, date?: string, time?: string, page: number = 1, limit: number = 100): Promise<{ data: Doctor[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(hospitalId?: number, categoryId?: number, status?: string, date?: string, time?: string, page: number = 1, limit: number = 100): Promise<{ data: Doctor[]; total: number; page: number; limit: number; totalPages: number }> {
     const query = this.doctorsRepository.createQueryBuilder('doctor')
       .leftJoinAndSelect('doctor.category', 'category')
       .leftJoinAndSelect('doctor.hospitals', 'hospital')
@@ -71,6 +71,10 @@ export class DoctorsService {
 
     if (categoryId) {
       query.andWhere('category.id = :categoryId', { categoryId });
+    }
+
+    if (status) {
+      query.andWhere('doctor.verification_status = :status', { status });
     }
 
     if (date && time) {

@@ -27,7 +27,7 @@ const handleResponse = async (response, defaultErrorMessage) => {
 };
 
 export const getDoctors = async () => {
-  const response = await fetch(DOCTORS_ENDPOINT, {
+  const response = await fetch(`${DOCTORS_ENDPOINT}?status=active`, {
     headers: {
       ...getAuthHeaders(),
     },

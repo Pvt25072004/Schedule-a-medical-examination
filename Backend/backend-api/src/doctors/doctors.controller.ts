@@ -51,6 +51,7 @@ export class DoctorsController {
   findAll(
     @Query('hospitalId') hospitalId?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('status') status?: string,
     @Query('date') date?: string,
     @Query('time') time?: string,
     @Query('page') page?: string,
@@ -61,6 +62,7 @@ export class DoctorsController {
     return this.doctorsService.findAll(
       hospitalId ? +hospitalId : undefined,
       categoryId ? +categoryId : undefined,
+      status,
       date,
       time,
       pageNumber,

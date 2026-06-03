@@ -7,7 +7,11 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { HospitalsService } from './hospitals.service';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { UpdateHospitalDto } from './dto/update-hospital.dto';
@@ -18,6 +22,8 @@ export class HospitalsController {
 
   // Admin: tạo bệnh viện mới
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   create(@Body() dto: CreateHospitalDto) {
     return this.hospitalsService.create(dto);
   }
@@ -35,12 +41,16 @@ export class HospitalsController {
 
   // Admin: cập nhật thông tin bệnh viện
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   update(@Param('id') id: string, @Body() dto: UpdateHospitalDto) {
     return this.hospitalsService.update(+id, dto);
   }
 
   // Admin: xóa bệnh viện
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.hospitalsService.remove(+id);
   }
