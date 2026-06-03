@@ -38,7 +38,7 @@ const HomePage = ({ navigate }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [banners, setBanners] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
-  const upcomingAppointments = getUpcomingAppointments().slice(0, 3);
+  const upcomingAppointments = getUpcomingAppointments().slice(0, 4);
   const stats = getStatistics();
   const randomTip = HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)];
 

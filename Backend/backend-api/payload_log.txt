@@ -33,3 +33,5 @@
 2026-06-01T16:36:16.377Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":280,"appointment_date":"2026-06-09","appointment_time":"11:30","examination_type":"offline","symptoms":"ưgwg"}
 2026-06-01T16:52:24.779Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":280,"appointment_date":"2026-06-09","appointment_time":"12:00","examination_type":"offline","symptoms":"gưgsg"}
 2026-06-01T16:52:27.558Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":280,"appointment_date":"2026-06-09","appointment_time":"12:00","examination_type":"offline","symptoms":"gưgsg"}
+2026-06-03T17:05:59.250Z PAYLOAD: {"user_id":8,"doctor_id":9,"hospital_id":1,"schedule_id":13,"appointment_date":"2026-06-04","appointment_time":"09:00","examination_type":"offline","symptoms":"ll"}
+2026-06-03T17:06:15.471Z PAYLOAD: {"user_id":8,"doctor_id":9,"hospital_id":1,"schedule_id":13,"appointment_date":"2026-06-04","appointment_time":"09:30","examination_type":"offline","symptoms":"ll"}

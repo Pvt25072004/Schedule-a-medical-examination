@@ -142,7 +142,7 @@ const BookingPage = ({ navigate }) => {
       setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
       const daySchedules = (schedulesData || []).filter((s) => {
         const workDate = formatLocalDate(s.work_date);
-        return workDate === date;
+        return workDate === date && s.is_available === true;
       });
 
       const slotsSet = new Set();
@@ -241,7 +241,8 @@ const BookingPage = ({ navigate }) => {
         return (
           schDate === workDate &&
           appointmentTime >= start &&
-          appointmentTime < end
+          appointmentTime < end &&
+          sch.is_available === true
         );
       });
 

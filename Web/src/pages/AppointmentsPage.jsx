@@ -44,9 +44,13 @@ const AppointmentsPage = ({ navigate }) => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [activeTab, setActiveTab] = useState("upcoming");
 
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("date_desc");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const filterRef = useRef(null);
 
   useEffect(() => {
@@ -96,8 +100,19 @@ const AppointmentsPage = ({ navigate }) => {
     (apt) => apt.status === "pending" || apt.status === "confirmed" || apt.status === "awaiting_payment"
   );
 
-  const historyAppointments = filteredAppointments.filter(
+  const historyAppointmentsAll = filteredAppointments.filter(
     (apt) => apt.status === "completed" || apt.status === "cancelled" || apt.status === APPOINTMENT_STATUS.REJECTED
+  );
+
+  const historyAppointmentsFiltered = historyAppointmentsAll.filter((apt) => {
+    if (statusFilter === "all") return true;
+    return apt.status === statusFilter;
+  });
+
+  const totalPages = Math.ceil(historyAppointmentsFiltered.length / itemsPerPage);
+  const historyAppointments = historyAppointmentsFiltered.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const handleCancelAppointment = async () => {
@@ -342,8 +357,10 @@ const AppointmentsPage = ({ navigate }) => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <button
               onClick={() => navigate(PAGES.HOME)}
-              className="flex items-center gap-2 text-gray-800 hover:text-blue-600 transition flex-shrink-0"
+              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition flex-shrink-0 bg-white border border-gray-200 px-4 py-2.5 rounded-full shadow-sm hover:shadow-md hover:border-blue-200"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              <span className="font-semibold text-sm">Quay lại Bảng điều khiển</span>
             </button>
 
             {/* Search Bar & Filter */}
@@ -379,6 +396,13 @@ const AppointmentsPage = ({ navigate }) => {
                       <button onClick={() => setSortBy("price_desc")} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === 'price_desc' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Giá tiền (Cao đến thấp)</button>
                       <button onClick={() => setSortBy("price_asc")} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === 'price_asc' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Giá tiền (Thấp đến cao)</button>
                     </div>
+                    <h3 className="font-bold text-gray-900 mb-3 text-sm mt-4 border-t border-gray-100 pt-3">Lọc trạng thái lịch sử</h3>
+                    <div className="space-y-2">
+                      <button onClick={() => { setStatusFilter("all"); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${statusFilter === 'all' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Tất cả</button>
+                      <button onClick={() => { setStatusFilter("completed"); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${statusFilter === 'completed' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Đã hoàn thành</button>
+                      <button onClick={() => { setStatusFilter("cancelled"); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${statusFilter === 'cancelled' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Đã hủy</button>
+                      <button onClick={() => { setStatusFilter("rejected"); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${statusFilter === 'rejected' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>Bị từ chối</button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -397,61 +421,101 @@ const AppointmentsPage = ({ navigate }) => {
         </div>
       </header>
 
-      {/* Main Content - 2 Columns (2/3 and 1/3) */}
+      {/* Tabs */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 relative z-10">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab("upcoming")}
+            className={`py-3 px-6 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "upcoming"
+                ? "border-blue-600 text-blue-600 bg-blue-50/50"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Lịch hẹn sắp tới
+              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                {upcomingAppointments.length}
+              </span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`py-3 px-6 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "history"
+                ? "border-blue-600 text-blue-600 bg-blue-50/50"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Lịch sử khám
+              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                {historyAppointmentsAll.length}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <div className="grid lg:grid-cols-3 gap-8">
-
-          {/* Left Column: Upcoming Appointments (2/3) */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Clock className="w-6 h-6 text-blue-600" />
-                Lịch hẹn sắp tới
-              </h2>
-              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                {upcomingAppointments.length} lịch
-              </span>
+        <div className="max-w-4xl mx-auto">
+          {activeTab === "upcoming" && (
+            <div className="animate-fade-in">
+              {upcomingAppointments.length === 0 ? (
+                <Card className="text-center py-12 bg-white/80 backdrop-blur">
+                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 mb-4">Bạn không có lịch hẹn nào sắp tới</p>
+                  <Button variant="primary" onClick={() => navigate(PAGES.DOCTORS)}>
+                    Đặt lịch khám ngay
+                  </Button>
+                </Card>
+              ) : (
+                <div>
+                  {upcomingAppointments.map(apt => renderAppointmentCard(apt, false))}
+                </div>
+              )}
             </div>
+          )}
 
-            {upcomingAppointments.length === 0 ? (
-              <Card className="text-center py-12 bg-white/80 backdrop-blur">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 mb-4">Bạn không có lịch hẹn nào sắp tới</p>
-                <Button variant="primary" onClick={() => navigate(PAGES.DOCTORS)}>
-                  Đặt lịch khám ngay
-                </Button>
-              </Card>
-            ) : (
-              <div>
-                {upcomingAppointments.map(apt => renderAppointmentCard(apt, false))}
-              </div>
-            )}
-          </div>
-
-          {/* Right Column: History (1/3) */}
-          <div className="lg:col-span-1">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Shield className="w-6 h-6 text-gray-600" />
-                Lịch sử khám
-              </h2>
-              <span className="bg-gray-200 text-gray-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                {historyAppointments.length} lịch
-              </span>
+          {activeTab === "history" && (
+            <div className="animate-fade-in">
+              {historyAppointments.length === 0 ? (
+                <Card className="text-center py-12 bg-white/80 backdrop-blur border-dashed border-2">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Không tìm thấy lịch sử khám bệnh nào</p>
+                </Card>
+              ) : (
+                <div>
+                  {historyAppointments.map(apt => renderAppointmentCard(apt, true))}
+                  
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-4 mt-8 pt-6 border-t border-gray-100">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                      >
+                        Trang trước
+                      </button>
+                      <span className="text-sm font-medium text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                      >
+                        Trang sau
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-
-            {historyAppointments.length === 0 ? (
-              <Card className="text-center py-12 bg-white/80 backdrop-blur border-dashed border-2">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Chưa có lịch sử khám bệnh nào</p>
-              </Card>
-            ) : (
-              <div>
-                {historyAppointments.map(apt => renderAppointmentCard(apt, true))}
-              </div>
-            )}
-          </div>
-
+          )}
         </div>
       </main>
 

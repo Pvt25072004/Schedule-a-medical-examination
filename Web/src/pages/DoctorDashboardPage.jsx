@@ -523,7 +523,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                 </p>
               </div>
             ) : (
-              doctorAppointments.slice(0, 3).map((apt) => (
+              doctorAppointments.slice(0, 4).map((apt) => (
                 <div
                   key={apt.id}
                   className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-start justify-between gap-4"

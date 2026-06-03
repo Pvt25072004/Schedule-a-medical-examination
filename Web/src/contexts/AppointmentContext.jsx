@@ -123,11 +123,16 @@ export const AppointmentProvider = ({ children }) => {
 
   const getUpcomingAppointments = () => {
     return appointments
-      .filter((apt) => apt.status !== APPOINTMENT_STATUS.CANCELLED)
+      .filter(
+        (apt) =>
+          apt.status === APPOINTMENT_STATUS.PENDING ||
+          apt.status === APPOINTMENT_STATUS.CONFIRMED ||
+          apt.status === "awaiting_payment"
+      )
       .sort(
         (a, b) =>
-          new Date(`${b.date}T${b.time || "00:00"}`) -
-          new Date(`${a.date}T${a.time || "00:00"}`)
+          new Date(`${a.date}T${a.time || "00:00"}`) -
+          new Date(`${b.date}T${b.time || "00:00"}`)
       );
   };
 
