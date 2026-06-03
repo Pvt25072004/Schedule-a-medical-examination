@@ -14,6 +14,12 @@ export class NotificationsController {
     return this.notificationsService.create(dto);
   }
 
+  @Get('/system')
+  @ApiOperation({ summary: 'Lấy danh sách thông báo hệ thống (Broadcast)' })
+  findSystem() {
+    return this.notificationsService.findAllSystem();
+  }
+
   @Get('/user/:userId')
   @ApiOperation({ summary: 'Lấy danh sách thông báo của user (bao gồm thông báo hệ thống) có phân trang' })
   findByUser(

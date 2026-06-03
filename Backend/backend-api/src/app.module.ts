@@ -32,13 +32,16 @@ import { HospitalRegistrationsModule } from './hospital-registrations/hospital-r
 import { AiModule } from './ai/ai.module';
 import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-hospital-requests.module';
 import { ServicePackagesModule } from './service-packages/service-packages.module';
+import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 60 seconds
-      limit: 100, // Tăng limit lên 100 request/phút để không chặn Web Admin tải data
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -87,6 +90,7 @@ import { ServicePackagesModule } from './service-packages/service-packages.modul
     AiModule,
     DoctorHospitalRequestsModule,
     ServicePackagesModule,
+    LeaveRequestsModule,
   ],
   controllers: [AppController, EmailController],
   providers: [
@@ -98,4 +102,4 @@ import { ServicePackagesModule } from './service-packages/service-packages.modul
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

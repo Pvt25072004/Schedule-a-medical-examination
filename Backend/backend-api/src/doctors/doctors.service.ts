@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Doctor } from './doctor.entity';
@@ -58,7 +59,7 @@ export class DoctorsService {
     return Array.from(topRatedPerCategory.values());
   }
 
-  async findAll(hospitalId?: number, categoryId?: number, date?: string, time?: string, page: number = 1, limit: number = 100): Promise<{ data: Doctor[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(hospitalId?: number, categoryId?: number, status?: string, date?: string, time?: string, page: number = 1, limit: number = 100): Promise<{ data: Doctor[]; total: number; page: number; limit: number; totalPages: number }> {
     const query = this.doctorsRepository.createQueryBuilder('doctor')
       .leftJoinAndSelect('doctor.category', 'category')
       .leftJoinAndSelect('doctor.hospitals', 'hospital')
@@ -71,6 +72,10 @@ export class DoctorsService {
 
     if (categoryId) {
       query.andWhere('category.id = :categoryId', { categoryId });
+    }
+
+    if (status) {
+      query.andWhere('doctor.verification_status = :status', { status });
     }
 
     if (date && time) {
@@ -430,7 +435,7 @@ export class DoctorsService {
   async getDoctorApplications(email: string): Promise<DoctorApplication[]> {
     const doctor = await this.findByEmail(email);
     if (!doctor) {
-      throw new NotFoundException('Doctor not found');
+      return [];
     }
     return this.applicationsRepository.find({
       where: { doctor: { id: doctor.id } },
@@ -447,7 +452,7 @@ export class DoctorsService {
     });
   }
 
-  async updateApplicationStatus(id: number, dto: UpdateApplicationStatusDto): Promise<DoctorApplication> {
+  async updateApplicationStatus(id: number, dto: UpdateApplicationStatusDto, adminHospitalId?: number): Promise<DoctorApplication> {
     const application = await this.applicationsRepository.findOne({
       where: { id },
       relations: ['doctor', 'doctor.hospitals', 'doctor.user', 'hospital'],
@@ -455,6 +460,10 @@ export class DoctorsService {
 
     if (!application) {
       throw new NotFoundException('Application not found');
+    }
+
+    if (adminHospitalId && application.hospital.id !== adminHospitalId) {
+      throw new ForbiddenException('Bạn không có quyền thao tác với đơn ứng tuyển của bệnh viện khác');
     }
 
     if (application.status !== 'pending') {

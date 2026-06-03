@@ -42,6 +42,12 @@ export class Hospital {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ nullable: true })
+  logo_url: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
   @Column({
     type: 'decimal',
     precision: 12,

@@ -16,7 +16,6 @@ export class NotificationsService {
     return await this.notificationsRepository.save(notification);
   }
 
-  // Lấy danh sách thông báo cho 1 user (gồm cả thông báo hệ thống toàn bộ user_id IS NULL) có phân trang
   async findByUser(userId: number, page: number = 1, limit: number = 20): Promise<Notification[]> {
     const skip = (page - 1) * limit;
     return await this.notificationsRepository.find({
@@ -27,6 +26,13 @@ export class NotificationsService {
       order: { created_at: 'DESC' },
       take: limit,
       skip: skip,
+    });
+  }
+
+  async findAllSystem(): Promise<Notification[]> {
+    return await this.notificationsRepository.find({
+      where: { user_id: null as any },
+      order: { created_at: 'DESC' },
     });
   }
 

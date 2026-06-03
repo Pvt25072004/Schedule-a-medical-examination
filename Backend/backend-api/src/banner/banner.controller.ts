@@ -11,7 +11,11 @@ import {
   UploadedFile,
   UseInterceptors,
   Req,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { BannerService } from './banner.service';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
@@ -28,6 +32,8 @@ export class BannerController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   create(@Body() createBannerDto: CreateBannerDto) {
     return this.bannerService.create(createBannerDto);
   }
@@ -48,6 +54,8 @@ export class BannerController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateBannerDto: UpdateBannerDto,
@@ -56,10 +64,14 @@ export class BannerController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.bannerService.remove(id);
   }
   @Post('upload')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),

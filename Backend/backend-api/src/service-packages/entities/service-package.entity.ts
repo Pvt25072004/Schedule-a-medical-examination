@@ -45,6 +45,9 @@ export class ServicePackage {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ nullable: true })
+  image_url: string;
+
   @Column({ default: false })
   requires_fasting: boolean;
 

@@ -5,7 +5,6 @@ import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { PAGES } from "../utils/constants";
 import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
-import { getAllReviews } from "../services/reviews.api";
 import { getHospitals } from "../services/admin.hospitals.api";
 import { getCategories } from "../services/admin.categories.api";
 import { formatCurrency, normalizeForSearch } from "../utils/helpers";
@@ -14,7 +13,6 @@ const DoctorListPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [doctors, setDoctors] = useState([]);
-  const [reviews, setReviews] = useState([]);
   const [hospitalsList, setHospitalsList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,9 +41,8 @@ const DoctorListPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [docsData, revsData, hospsData, catsData] = await Promise.all([
+        const [docsData, hospsData, catsData] = await Promise.all([
           getDoctorsApi(),
-          getAllReviews(),
           getHospitals(),
           getCategories(),
         ]);
@@ -60,7 +57,6 @@ const DoctorListPage = () => {
         }));
         
         setDoctors(normalized);
-        setReviews(Array.isArray(revsData) ? revsData : (revsData?.data || []));
         setHospitalsList(Array.isArray(hospsData) ? hospsData : (hospsData?.data || []));
         setCategoriesList(Array.isArray(catsData) ? catsData : (catsData?.data || []));
       } catch (error) {
@@ -78,44 +74,12 @@ const DoctorListPage = () => {
     }
   }, [location.state?.specialty]);
 
-  const doctorRatingsMap = useMemo(() => {
-    const map = new Map();
-    reviews.forEach((review) => {
-      const doctorId = review.doctor_id || review.doctor?.id;
-      const rating = review.rating;
-      if (doctorId && rating != null) {
-        if (!map.has(doctorId)) {
-          map.set(doctorId, { total: 0, count: 0 });
-        }
-        const data = map.get(doctorId);
-        data.total += Number(rating);
-        data.count += 1;
-      }
-    });
-    
-    const result = new Map();
-    map.forEach((data, doctorId) => {
-      result.set(doctorId, {
-        rating: (data.total / data.count).toFixed(1),
-        count: data.count
-      });
-    });
-    return result;
-  }, [reviews]);
-
-  const doctorsWithRatings = useMemo(() => {
-    return doctors.map((doctor) => {
-      const ratingInfo = doctorRatingsMap.get(doctor.id) || { rating: "0.0", count: 0 };
-      return {
-        ...doctor,
-        averageRating: parseFloat(ratingInfo.rating),
-        totalReviews: ratingInfo.count,
-      };
-    });
-  }, [doctors, doctorRatingsMap]);
-
   const filteredAndSortedDoctors = useMemo(() => {
-    let result = [...doctorsWithRatings];
+    let result = doctors.map((doctor) => ({
+      ...doctor,
+      averageRating: Number(doctor.rating || 5).toFixed(1),
+      totalReviews: doctor.review_count || 0,
+    }));
 
     // Search filter
     if (searchQuery) {
@@ -160,7 +124,7 @@ const DoctorListPage = () => {
     });
 
     return result;
-  }, [doctorsWithRatings, searchQuery, selectedSpecialty, selectedHospital, minPrice, maxPrice, isPopularOnly, sortBy]);
+  }, [doctors, searchQuery, selectedSpecialty, selectedHospital, minPrice, maxPrice, isPopularOnly, sortBy]);
 
 
 

@@ -23,7 +23,6 @@ import { createPaymentDemo, createVnpayUrl, createPayosUrl } from "../services/p
 import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
 import { getHospitals } from "../services/admin.hospitals.api";
 import { getCategories } from "../services/admin.categories.api";
-import { getAllReviews } from "../services/reviews.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
@@ -52,7 +51,6 @@ const BookingFlowPage = ({ navigate }) => {
   const [hospitals, setHospitals] = useState([]);
   const [categories, setCategories] = useState([]);
   const [doctors, setDoctors] = useState([]);
-  const [reviews, setReviews] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,11 +65,10 @@ const BookingFlowPage = ({ navigate }) => {
     const fetchInitialData = async () => {
       try {
         setLoadingData(true);
-        const [hospData, catData, docData, revData] = await Promise.all([
+        const [hospData, catData, docData] = await Promise.all([
           getHospitals(),
           getCategories(),
-          getDoctorsApi(),
-          getAllReviews()
+          getDoctorsApi()
         ]);
         
         setHospitals(Array.isArray(hospData) ? hospData : []);
@@ -86,7 +83,6 @@ const BookingFlowPage = ({ navigate }) => {
           consultationFee: d.consultation_fee || d.consultationFee || d.price || 500000,
         }));
         setDoctors(normalized);
-        setReviews(Array.isArray(revData) ? revData : []);
       } catch (err) {
         console.error("Error loading booking flow data:", err);
       } finally {
@@ -130,38 +126,13 @@ const BookingFlowPage = ({ navigate }) => {
     }
   }, [loadingData, location.state, doctors, hospitals]);
 
-  const doctorRatingsMap = useMemo(() => {
-    const map = new Map();
-    reviews.forEach((review) => {
-      const doctorId = review.doctor_id || review.doctor?.id;
-      const rating = review.rating;
-      if (doctorId && rating != null) {
-        if (!map.has(doctorId)) map.set(doctorId, { total: 0, count: 0 });
-        const data = map.get(doctorId);
-        data.total += Number(rating);
-        data.count += 1;
-      }
-    });
-    const result = new Map();
-    map.forEach((data, doctorId) => {
-      result.set(doctorId, {
-        rating: (data.total / data.count).toFixed(1),
-        count: data.count
-      });
-    });
-    return result;
-  }, [reviews]);
-
   const doctorsWithRatings = useMemo(() => {
-    return doctors.map((doctor) => {
-      const ratingInfo = doctorRatingsMap.get(doctor.id) || { rating: "0.0", count: 0 };
-      return {
-        ...doctor,
-        averageRating: parseFloat(ratingInfo.rating),
-        totalReviews: ratingInfo.count,
-      };
-    });
-  }, [doctors, doctorRatingsMap]);
+    return doctors.map((doctor) => ({
+      ...doctor,
+      averageRating: Number(doctor.rating || 5).toFixed(1),
+      totalReviews: doctor.review_count || 0,
+    }));
+  }, [doctors]);
 
   // Filters based on previous steps
   const filteredHospitals = useMemo(() => {

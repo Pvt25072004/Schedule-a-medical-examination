@@ -8,7 +8,12 @@ import {
   Delete,
   Query,
   BadRequestException,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -71,28 +76,33 @@ export class AppointmentsController {
     type: Appointment, // Cho Swagger biết dữ liệu trả về là Entity Appointment
   })
   @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ.' })
+  @UseGuards(JwtAuthGuard)
   create(@Body() createAppointmentDto: CreateAppointmentDto) {
     return this.appointmentsService.create(createAppointmentDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
   @ApiOperation({ summary: 'Lấy danh sách tất cả lịch hẹn' })
   @ApiResponse({
     status: 200,
     description: 'Danh sách lịch hẹn.',
     type: [Appointment], // Trả về mảng []
   })
-  findAll() {
-    return this.appointmentsService.findAll();
+  findAll(@Req() req: any) {
+    return this.appointmentsService.findAll(req.user);
   }
 
   @Get('/user/:userId')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Lấy danh sách lịch hẹn theo bệnh nhân' })
   findByUser(@Param('userId') userId: string) {
     return this.appointmentsService.findByUser(+userId);
   }
 
   @Get('/doctor/:doctorId')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Lấy danh sách lịch hẹn theo bác sĩ' })
   findByDoctor(
     @Param('doctorId') doctorId: string,
@@ -102,6 +112,7 @@ export class AppointmentsController {
   }
 
   @Get('/:id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Lấy chi tiết một lịch hẹn' })
   @ApiParam({
     name: 'id',
@@ -127,32 +138,41 @@ export class AppointmentsController {
     type: Appointment,
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy lịch hẹn.' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
   update(
     @Param('id') id: string,
     @Body() updateAppointmentDto: UpdateAppointmentDto,
+    @Req() req: any,
   ) {
-    return this.appointmentsService.update(+id, updateAppointmentDto);
+    return this.appointmentsService.update(+id, updateAppointmentDto, req.user);
   }
 
   @Patch('/:id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
   @ApiOperation({ summary: 'Cập nhật trạng thái lịch hẹn (bác sĩ / hệ thống)' })
   updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateAppointmentStatusDto,
+    @Req() req: any,
   ) {
     return this.appointmentsService.updateStatus(
       +id,
       updateStatusDto.status,
       updateStatusDto.reason,
+      req.user,
     );
   }
 
   @Delete('/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
   @ApiOperation({ summary: 'Xóa lịch hẹn' })
   @ApiParam({ name: 'id', example: 1 })
   @ApiResponse({ status: 200, description: 'Xóa thành công.' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy lịch hẹn.' })
-  remove(@Param('id') id: string) {
-    return this.appointmentsService.remove(+id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.appointmentsService.remove(+id, req.user);
   }
 }

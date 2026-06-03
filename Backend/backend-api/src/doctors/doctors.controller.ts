@@ -19,8 +19,11 @@ import { UpdateDoctorProfileDto } from './dto/update-doctor-profile.dto';
 import { CreateDoctorApplicationDto } from './dto/create-doctor-application.dto';
 import { RegisterGuestDoctorDto } from './dto/register-guest.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ForbiddenException } from '@nestjs/common';
 import { memoryStorage } from 'multer';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
@@ -51,6 +54,7 @@ export class DoctorsController {
   findAll(
     @Query('hospitalId') hospitalId?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('status') status?: string,
     @Query('date') date?: string,
     @Query('time') time?: string,
     @Query('page') page?: string,
@@ -61,6 +65,7 @@ export class DoctorsController {
     return this.doctorsService.findAll(
       hospitalId ? +hospitalId : undefined,
       categoryId ? +categoryId : undefined,
+      status,
       date,
       time,
       pageNumber,
@@ -164,17 +169,33 @@ export class DoctorsController {
     return this.doctorsService.getDoctorApplications(user.email);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
   @Get('hospitals/:hospitalId/applications')
-  getHospitalApplications(@Param('hospitalId') hospitalId: string) {
-    // Lý tưởng nhất là check quyền của Admin Hospital ở đây
+  getHospitalApplications(@Param('hospitalId') hospitalId: string, @Req() req: any) {
+    const user = req.user as { role?: string; hospital_id?: number } | undefined;
+    if (user?.role === 'admin_hospital' && String(user.hospital_id) !== hospitalId) {
+      throw new ForbiddenException('Bạn chỉ được xem danh sách ứng tuyển của bệnh viện mình quản lý');
+    }
     return this.doctorsService.getHospitalApplications(+hospitalId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
   @Patch('applications/:id/status')
-  updateApplicationStatus(@Param('id') id: string, @Body() dto: UpdateApplicationStatusDto) {
-    return this.doctorsService.updateApplicationStatus(+id, dto);
+  async updateApplicationStatus(@Param('id') id: string, @Body() dto: UpdateApplicationStatusDto, @Req() req: any) {
+    const user = req.user as { role?: string; hospital_id?: number } | undefined;
+    
+    // Nếu là admin_hospital, phải đảm bảo application này thuộc về bệnh viện của họ
+    if (user?.role === 'admin_hospital') {
+      // Vì không lấy được hospitalId trực tiếp từ request path, ta có thể dựa vào service để check,
+      // hoặc ở đây ta tạm tin tưởng service sẽ filter, nhưng an toàn nhất là kiểm tra.
+      // Để đơn giản, service có thể cần check `user.hospital_id` khi update.
+      // Tạm thời truyền thêm user để service check nếu cần thiết, hoặc cứ gọi service.
+      // Ở đây ta gọi service và giả định service sẽ xử lý đúng, hoặc ta check trước:
+    }
+    
+    return this.doctorsService.updateApplicationStatus(+id, dto, user?.role === 'admin_hospital' ? user.hospital_id : undefined);
   }
 }
 

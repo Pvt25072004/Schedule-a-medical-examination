@@ -24,7 +24,6 @@ import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
 
 import DoctorDashboardPage from "./pages/DoctorDashboardPage";
-import BannerPage from "./pages/BannerPage";
 import FanpagePage from "./pages/FanpagePage";
 import FanpageDetailPage from "./pages/FanpageDetailPage";
 import NewsPage from "./pages/NewsPage";
@@ -97,16 +96,6 @@ const AppRoutes = () => {
           element={
             isAuthenticated ? (
               <HomePage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
-          }
-        />
-        <Route
-          path={PAGES.BANNER_MANAGEMENT}
-          element={
-            isAuthenticated ? (
-              <BannerPage navigate={navigateTo} />
             ) : (
               <Navigate to={PAGES.WELCOME} replace />
             )

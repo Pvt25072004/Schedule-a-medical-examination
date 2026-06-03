@@ -164,6 +164,10 @@ const DoctorDashboardPage = ({ navigate }) => {
 
   const loadApplications = async () => {
     try {
+      if (!doctorProfile?.id) {
+        setApplications([]);
+        return;
+      }
       setLoadingApplications(true);
       const data = await getMyDoctorApplications();
       setApplications(Array.isArray(data) ? data : []);
@@ -178,9 +182,14 @@ const DoctorDashboardPage = ({ navigate }) => {
     void loadProfile();
     void loadHospitals();
     void loadCategories();
-    void loadApplications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  useEffect(() => {
+    if (doctorProfile?.id) {
+      void loadApplications();
+    }
+  }, [doctorProfile?.id]);
 
   useEffect(() => {
     if (!doctorProfile?.id) return;
@@ -1225,7 +1234,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                 </Card>
               ))}
 
-              {affiliations.length === 0 && myRequests.filter(req => req.status !== 'approved').length === 0 && (
+              {affiliations.length === 0 && applications.filter(req => req.status !== 'approved').length === 0 && (
                 <p className="text-sm text-slate-500 text-center py-4">Chưa có liên kết bệnh viện nào.</p>
               )}
             </div>

@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -8,11 +11,13 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   create(@Body() createPaymentDto: CreatePaymentDto) {
     return this.paymentsService.create(createPaymentDto);
   }
 
   @Post('vnpay/create-url')
+  @UseGuards(JwtAuthGuard)
   async createVnpayUrl(@Req() req: any, @Body() body: { appointment_id: number; amount: number; orderInfo: string }) {
     // Để tích hợp dễ dàng, tạo record Payment trước
     const createDto: CreatePaymentDto = {
@@ -50,6 +55,7 @@ export class PaymentsController {
   }
 
   @Post('payos/create-url')
+  @UseGuards(JwtAuthGuard)
   async createPayosUrl(@Req() req: any, @Body() body: { appointment_id: number; amount: number; orderInfo: string }) {
     const createDto: CreatePaymentDto = {
       appointment_id: body.appointment_id,
@@ -80,9 +86,18 @@ export class PaymentsController {
     return this.paymentsService.findByAppointment(+appointmentId);
   }
 
+  @Get('dashboard-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
+  getDashboardStats(@Req() req: any) {
+    return this.paymentsService.getDashboardStats(req.user);
+  }
+
   @Get()
-  findAll() {
-    return this.paymentsService.findAll();
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
+  findAll(@Query() query: any, @Req() req: any) {
+    return this.paymentsService.findAll(query, req.user);
   }
 
   @Get('doctor/:doctorId')
