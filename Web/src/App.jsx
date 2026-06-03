@@ -226,8 +226,7 @@ const AppRoutes = () => {
   );
 };
 
-const GOOGLE_CLIENT_ID =
-  "359909618045-mvoc5piuvt19siurfk0bf8226sqicqb6.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const App = () => {
   return (
