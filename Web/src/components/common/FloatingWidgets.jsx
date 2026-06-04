@@ -207,6 +207,7 @@ const FloatingWidgets = () => {
       // Build conversations messages context
       const apiMessages = [];
       messages.slice(-6).forEach(msg => {
+        if (msg.id === 1 || msg.id === 2) return; // Skip default greetings
         apiMessages.push({
           role: msg.sender === 'user' ? 'user' : 'assistant',
           content: msg.text

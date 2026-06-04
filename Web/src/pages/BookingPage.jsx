@@ -46,6 +46,13 @@ const BookingPage = ({ navigate }) => {
     time: "",
     type: "",
     notes: "",
+    bookingFor: "self",
+    patientName: "",
+    patientPhone: "",
+    patientGender: "Nam",
+    patientDob: "",
+    patientAddress: "",
+    relationship: "",
   });
   const [paymentMethod, setPaymentMethod] = useState("vnpay");
   const [errors, setErrors] = useState({});
@@ -185,6 +192,12 @@ const BookingPage = ({ navigate }) => {
     if (!formData.date) newErrors.date = "Vui lòng chọn ngày";
     if (!formData.time) newErrors.time = "Vui lòng chọn giờ";
     if (!formData.type) newErrors.type = "Vui lòng nhập lý do khám";
+    if (formData.bookingFor === 'other') {
+      if (!formData.patientName) newErrors.patientName = "Vui lòng nhập họ tên người bệnh";
+      if (!formData.patientPhone) newErrors.patientPhone = "Vui lòng nhập số điện thoại";
+      if (!formData.patientDob) newErrors.patientDob = "Vui lòng chọn ngày sinh";
+      if (!formData.relationship) newErrors.relationship = "Vui lòng chọn mối quan hệ";
+    }
     return newErrors;
   };
 
@@ -268,11 +281,19 @@ const BookingPage = ({ navigate }) => {
         appointment_date: workDate,
         appointment_time: formData.time,
         examination_type: "offline",
-        symptoms: formData.type,
-        payment_method: paymentMethod,
+        symptoms: formData.type + (formData.notes ? ` - ${formData.notes}` : ""),
       };
 
-      console.log("PAYLOAD:", payload);
+      if (formData.bookingFor === "other") {
+        payload.patient_name = formData.patientName;
+        payload.patient_phone = formData.patientPhone;
+        payload.patient_gender = formData.patientGender;
+        payload.patient_dob = formData.patientDob;
+        payload.patient_address = formData.patientAddress;
+        payload.relationship = formData.relationship;
+      } else {
+        payload.relationship = "Bản thân";
+      }
 
       const created = await apiCreateAppointment(payload);
 
@@ -335,8 +356,8 @@ const BookingPage = ({ navigate }) => {
 
       alert(
         error?.response?.data?.message ||
-          error.message ||
-          "Không thể tạo lịch hẹn",
+        error.message ||
+        "Không thể tạo lịch hẹn",
       );
     } finally {
       setIsLoading(false);
@@ -377,15 +398,15 @@ const BookingPage = ({ navigate }) => {
             <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
               <div className="space-y-4 text-sm">
                 <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                  <span className="text-gray-500 font-medium flex items-center gap-2"><User className="w-4 h-4 text-gray-400"/> Bác sĩ</span>
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><User className="w-4 h-4 text-gray-400" /> Bác sĩ</span>
                   <span className="font-bold text-gray-900">{selectedDoctor?.name}</span>
                 </div>
                 <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                  <span className="text-gray-500 font-medium flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400"/> Ngày khám</span>
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400" /> Ngày khám</span>
                   <span className="font-bold text-gray-900">{formatDate(formData.date)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 font-medium flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400"/> Giờ khám</span>
+                  <span className="text-gray-500 font-medium flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400" /> Giờ khám</span>
                   <span className="font-bold text-gray-900">{formData.time}</span>
                 </div>
               </div>
@@ -416,12 +437,12 @@ const BookingPage = ({ navigate }) => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Steps */}
-        <ProgressBar 
-          steps={steps} 
-          currentStep={step} 
+        <ProgressBar
+          steps={steps}
+          currentStep={step}
           onStepClick={(n) => {
             if (n < step) setStep(n);
-          }} 
+          }}
         />
 
         {/* Step 1: Date & Time */}
@@ -437,7 +458,7 @@ const BookingPage = ({ navigate }) => {
                 <div className="relative overflow-hidden p-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl mb-8 shadow-lg text-white">
                   <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
                   <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-blue-400 opacity-20 rounded-full blur-xl"></div>
-                  
+
                   <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
                     <div className="w-24 h-24 sm:w-28 sm:h-28 bg-white/20 p-1 rounded-2xl flex-shrink-0 backdrop-blur-sm">
                       <div className="w-full h-full bg-white rounded-xl flex items-center justify-center text-4xl overflow-hidden shadow-inner">
@@ -448,7 +469,7 @@ const BookingPage = ({ navigate }) => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex-1 text-center sm:text-left">
                       <div className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold backdrop-blur-md mb-2">
                         Bác sĩ Phụ trách
@@ -459,7 +480,7 @@ const BookingPage = ({ navigate }) => {
                       <p className="text-blue-100 font-medium mb-4 flex items-center justify-center sm:justify-start gap-2">
                         <Award className="w-4 h-4" /> {selectedDoctor.specialty}
                       </p>
-                      
+
                       {Array.isArray(selectedDoctor.hospitals) && selectedDoctor.hospitals.length > 0 && (
                         <div className="inline-flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl backdrop-blur-md text-sm w-full sm:w-auto">
                           <MapPin className="w-4 h-4 text-blue-200 flex-shrink-0" />
@@ -498,7 +519,7 @@ const BookingPage = ({ navigate }) => {
                       const available = formData.date
                         ? backendAvailableTimes.includes(time)
                         : true;
-                      
+
                       const isSelected = formData.time === time;
 
                       return (
@@ -508,13 +529,12 @@ const BookingPage = ({ navigate }) => {
                             available && handleChange("time", time)
                           }
                           disabled={!available}
-                          className={`relative py-3 px-2 rounded-xl border-2 transition-all font-semibold text-sm flex flex-col items-center justify-center gap-1 ${
-                            isSelected
-                              ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200 transform scale-105 z-10"
-                              : available
-                                ? "bg-white border-gray-200 text-gray-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
-                                : "bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed opacity-60"
-                          }`}
+                          className={`relative py-3 px-2 rounded-xl border-2 transition-all font-semibold text-sm flex flex-col items-center justify-center gap-1 ${isSelected
+                            ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200 transform scale-105 z-10"
+                            : available
+                              ? "bg-white border-gray-200 text-gray-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                              : "bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed opacity-60"
+                            }`}
                         >
                           <span className="text-base">{time}</span>
                           {!available && (
@@ -530,9 +550,9 @@ const BookingPage = ({ navigate }) => {
                     })
                   ) : (
                     <div className="col-span-full py-12 px-4 bg-gray-50 text-center border-2 border-dashed border-gray-200 rounded-2xl">
-                       <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                       <h3 className="text-lg font-bold text-gray-700 mb-1">Chưa có lịch khám</h3>
-                       <p className="text-gray-500">Bác sĩ chưa có lịch làm việc trong ngày này. Vui lòng chọn một ngày khác.</p>
+                      <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <h3 className="text-lg font-bold text-gray-700 mb-1">Chưa có lịch khám</h3>
+                      <p className="text-gray-500">Bác sĩ chưa có lịch làm việc trong ngày này. Vui lòng chọn một ngày khác.</p>
                     </div>
                   )}
                 </div>
@@ -576,6 +596,52 @@ const BookingPage = ({ navigate }) => {
               </h2>
 
               <div className="space-y-6">
+
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 border-t border-gray-200 pt-6">Thông tin người khám</h3>
+
+                  <div className="mb-6 flex gap-4 border-b border-gray-200 pb-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="bookingFor" value="self" checked={formData.bookingFor === 'self'} onChange={() => handleChange("bookingFor", "self")} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                      <span className="font-medium text-gray-700">Đặt cho bản thân</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="bookingFor" value="other" checked={formData.bookingFor === 'other'} onChange={() => handleChange("bookingFor", "other")} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                      <span className="font-medium text-gray-700">Đặt cho người thân</span>
+                    </label>
+                  </div>
+
+                  {formData.bookingFor === "other" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-100 animate-fade-in">
+                      <Input label="Họ và tên người bệnh *" value={formData.patientName} onChange={(e) => handleChange("patientName", e.target.value)} error={errors.patientName} />
+                      <Input label="Số điện thoại *" value={formData.patientPhone} onChange={(e) => handleChange("patientPhone", e.target.value)} error={errors.patientPhone} />
+                      <div className="flex flex-col">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Giới tính *</label>
+                        <select value={formData.patientGender} onChange={(e) => handleChange("patientGender", e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                          <option value="Nam">Nam</option>
+                          <option value="Nữ">Nữ</option>
+                          <option value="Khác">Khác</option>
+                        </select>
+                      </div>
+                      <Input type="date" label="Ngày sinh *" value={formData.patientDob} onChange={(e) => handleChange("patientDob", e.target.value)} error={errors.patientDob} max={new Date().toISOString().slice(0, 10)} />
+                      <Input label="Địa chỉ" value={formData.patientAddress} onChange={(e) => handleChange("patientAddress", e.target.value)} />
+                      <div className="flex flex-col">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Mối quan hệ *</label>
+                        <select value={formData.relationship} onChange={(e) => handleChange("relationship", e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                          <option value="">-- Chọn mối quan hệ --</option>
+                          <option value="Vợ/Chồng">Vợ/Chồng</option>
+                          <option value="Con">Con</option>
+                          <option value="Bố/Mẹ">Bố/Mẹ</option>
+                          <option value="Anh/Chị/Em">Anh/Chị/Em</option>
+                          <option value="Ông/Bà">Ông/Bà</option>
+                          <option value="Khác">Khác</option>
+                        </select>
+                        {errors.relationship && <p className="text-red-600 text-sm mt-1">{errors.relationship}</p>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <Input
                   label="Lý do khám bệnh"
                   placeholder="Ví dụ: Đau đầu, khám tổng quát..."
@@ -609,11 +675,11 @@ const BookingPage = ({ navigate }) => {
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
                     {/* Decorative receipt edge */}
                     <div className="absolute top-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSI4Ij48cGF0aCBkPSJNMCAwTDEwIDhsMTAtOFYwaC0yMHoiIGZpbGw9IiNmM2Y0ZjYiLz48L3N2Zz4=')] bg-repeat-x"></div>
-                    
+
                     <div className="p-6 sm:p-8 pt-10">
                       <div className="flex items-center gap-4 mb-8 pb-8 border-b border-dashed border-gray-200">
                         <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl shadow-inner">
-                           {selectedDoctor?.avatar_url ? (
+                          {selectedDoctor?.avatar_url ? (
                             <img src={selectedDoctor.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                           ) : (
                             selectedDoctor?.avatar || "👨‍⚕️"
@@ -670,17 +736,16 @@ const BookingPage = ({ navigate }) => {
                       </div>
 
                       <div className="flex items-center justify-between border-b border-dashed border-gray-200 pb-6 mb-6">
-                         <span className="text-gray-500 font-medium">Phí khám dự kiến</span>
-                         <span className="text-2xl font-bold text-blue-600">{formatCurrency(totalPrice)}</span>
+                        <span className="text-gray-500 font-medium">Phí khám dự kiến</span>
+                        <span className="text-2xl font-bold text-blue-600">{formatCurrency(totalPrice)}</span>
                       </div>
 
                       <h4 className="font-bold text-gray-900 mb-4">Phương thức thanh toán</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button
                           onClick={() => setPaymentMethod("vnpay")}
-                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
-                            paymentMethod === "vnpay" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
-                          }`}
+                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${paymentMethod === "vnpay" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                            }`}
                         >
                           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">VNP</div>
                           <div className="flex-1">
@@ -692,9 +757,8 @@ const BookingPage = ({ navigate }) => {
 
                         <button
                           onClick={() => setPaymentMethod("payos")}
-                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
-                            paymentMethod === "payos" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
-                          }`}
+                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${paymentMethod === "payos" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
+                            }`}
                         >
                           <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">QR</div>
                           <div className="flex-1">
