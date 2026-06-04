@@ -92,8 +92,14 @@ export class AppointmentsController {
     description: 'Danh sách lịch hẹn.',
     type: [Appointment], // Trả về mảng []
   })
-  findAll(@Req() req: any) {
-    return this.appointmentsService.findAll(req.user);
+  findAll(
+    @Req() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 100;
+    return this.appointmentsService.findAll(req.user, pageNumber, limitNumber);
   }
 
   @Get('/user/:userId')

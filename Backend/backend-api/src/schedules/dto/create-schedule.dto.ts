@@ -22,6 +22,10 @@ export class CreateScheduleDto {
   @IsDateString()
   work_date: string; // ISO date string (yyyy-mm-dd)
 
+  @IsOptional()
+  @IsDateString()
+  end_date?: string; // Optional end date for bulk creation
+
   @IsString()
   start_time: string; // HH:mm:ss
 

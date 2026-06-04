@@ -217,21 +217,32 @@ export class AppointmentsService {
     }
   }
 
-  async findAll(user?: any): Promise<Appointment[]> {
+  async findAll(user?: any, page: number = 1, limit: number = 100): Promise<{ data: Appointment[]; total: number; page: number; limit: number; totalPages: number }> {
+    const qb = this.appointmentsRepository.createQueryBuilder('appointment')
+      .leftJoinAndSelect('appointment.user', 'user')
+      .leftJoinAndSelect('appointment.doctor', 'doctor')
+      .leftJoinAndSelect('doctor.user', 'doctorUser') // also fetch doctor's user entity for full name
+      .leftJoinAndSelect('appointment.hospital', 'hospital')
+      .leftJoinAndSelect('appointment.payment', 'payment')
+      .orderBy('appointment.created_at', 'DESC');
+
     if (user?.role === 'admin_hospital') {
       if (!user.hospital_id) {
         throw new ForbiddenException('Tài khoản admin cơ sở không có thông tin bệnh viện');
       }
-      return await this.appointmentsRepository.find({
-        where: { hospital_id: user.hospital_id },
-        relations: ['user', 'doctor', 'hospital', 'payment'],
-        order: { created_at: 'DESC' }
-      });
+      qb.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
     }
-    return await this.appointmentsRepository.find({
-      relations: ['user', 'doctor', 'hospital', 'payment'],
-      order: { created_at: 'DESC' }
-    });
+
+    qb.skip((page - 1) * limit).take(limit);
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number) {

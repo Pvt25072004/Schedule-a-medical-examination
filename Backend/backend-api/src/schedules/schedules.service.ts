@@ -20,11 +20,17 @@ export class SchedulesService {
       throw new ForbiddenException('Bạn không có quyền tạo lịch cho bệnh viện khác');
     }
 
-    const workDate = String(dto.work_date).slice(0, 10);
+    const startDate = new Date(dto.work_date);
+    const endDate = dto.end_date ? new Date(dto.end_date) : new Date(dto.work_date);
+
+    if (endDate < startDate) {
+      throw new BadRequestException('Ngày kết thúc không được nhỏ hơn ngày bắt đầu');
+    }
+
+    let doctorsToProcess: Doctor[] = [];
 
     if (dto.apply_to_all_doctors) {
-      // Find all active doctors in this hospital
-      const doctors = await this.doctorsRepository
+      doctorsToProcess = await this.doctorsRepository
         .createQueryBuilder('doctor')
         .innerJoin('doctor.hospitals', 'hospital')
         .leftJoinAndSelect('doctor.user', 'user')
@@ -32,34 +38,53 @@ export class SchedulesService {
         .andWhere('doctor.verification_status = :status', { status: 'active' })
         .getMany();
 
-      if (doctors.length === 0) {
+      if (doctorsToProcess.length === 0) {
         throw new BadRequestException('Không có bác sĩ nào đang hoạt động tại cơ sở này.');
       }
+    } else {
+      if (!dto.doctor_id) {
+        throw new BadRequestException('Vui lòng cung cấp doctor_id hoặc chọn apply_to_all_doctors');
+      }
+      const doctor = await this.doctorsRepository.findOne({
+        where: { id: dto.doctor_id },
+        relations: ['user']
+      });
+      if (!doctor) {
+        throw new BadRequestException('Không tìm thấy bác sĩ');
+      }
+      doctorsToProcess.push(doctor);
+    }
 
-      let successCount = 0;
-      const failed: any[] = [];
+    let successCount = 0;
+    const failed: any[] = [];
 
-      for (const doctor of doctors) {
-        // Check for conflicts across ALL hospitals for this doctor
+    // Loop through each date
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const workDateStr = currentDate.toISOString().slice(0, 10);
+
+      for (const doctor of doctorsToProcess) {
         const conflicting = await this.schedulesRepository
           .createQueryBuilder('s')
           .where('s.doctor_id = :doctorId', { doctorId: doctor.id })
-          .andWhere('DATE(s.work_date) = :workDate', { workDate })
+          .andWhere('DATE(s.work_date) = :workDate', { workDate: workDateStr })
           .andWhere('s.start_time < :endTime', { endTime: dto.end_time })
           .andWhere('s.end_time > :startTime', { startTime: dto.start_time })
           .getOne();
 
         if (conflicting) {
           failed.push({
+            date: workDateStr,
             doctor_id: doctor.id,
             doctor_name: doctor.user?.full_name || 'Không rõ',
-            reason: `Trùng lịch làm việc từ ${conflicting.start_time} – ${conflicting.end_time} tại cơ sở #${conflicting.hospital_id}`,
+            reason: `Trùng lịch từ ${conflicting.start_time} – ${conflicting.end_time}`,
           });
           continue;
         }
 
         const schedule = this.schedulesRepository.create({
           ...dto,
+          work_date: workDateStr, // overwrite work_date with current date in loop
           doctor_id: doctor.id,
           is_available: false,
           approval_status: 'pending',
@@ -68,41 +93,15 @@ export class SchedulesService {
         successCount++;
       }
 
-      return {
-        message: `Đã tạo lịch thành công cho ${successCount} bác sĩ.`,
-        success_count: successCount,
-        failed,
-      };
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Normal single doctor creation
-    if (!dto.doctor_id) {
-      throw new BadRequestException('Vui lòng cung cấp doctor_id hoặc chọn apply_to_all_doctors');
-    }
-
-    const conflicting = await this.schedulesRepository
-      .createQueryBuilder('s')
-      .where('s.doctor_id = :doctorId', { doctorId: dto.doctor_id })
-      .andWhere('DATE(s.work_date) = :workDate', { workDate })
-      .andWhere('s.start_time < :endTime', { endTime: dto.end_time })
-      .andWhere('s.end_time > :startTime', { startTime: dto.start_time })
-      .getOne();
-
-    if (conflicting) {
-      throw new BadRequestException(
-        `Bác sĩ đã có lịch làm việc trùng giờ vào ngày ${workDate} ` +
-        `(${conflicting.start_time} – ${conflicting.end_time}) ` +
-        `tại bệnh viện #${conflicting.hospital_id}. ` +
-        `Vui lòng chọn khung giờ khác hoặc ngày khác!`,
-      );
-    }
-
-    const schedule = this.schedulesRepository.create({
-      ...dto,
-      is_available: false, // Force false until approved
-      approval_status: 'pending', // Force pending
-    });
-    return this.schedulesRepository.save(schedule);
+    return {
+      message: `Đã tạo thành công ${successCount} ca làm việc.`,
+      success_count: successCount,
+      failed_count: failed.length,
+      failed,
+    };
   }
 
   async approve(id: number, user?: any): Promise<Schedule> {
