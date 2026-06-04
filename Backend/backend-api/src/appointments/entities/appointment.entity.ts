@@ -88,6 +88,18 @@ export class Appointment {
   @Column({ type: 'text', nullable: true })
   cancel_reason: string | null;
 
+  @ApiProperty({
+    example: 'none',
+    enum: ['none', 'requested', 'completed'],
+    description: 'Trạng thái hoàn tiền (nếu lịch hẹn bị hủy)',
+  })
+  @Column({
+    type: 'enum',
+    enum: ['none', 'requested', 'completed'],
+    default: 'none',
+  })
+  refund_status: string;
+
   // --- Snapshot Fields ---
   @Column({
     type: 'decimal',

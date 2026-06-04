@@ -95,4 +95,13 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString()
   symptoms?: string;
+
+  // --- PAYMENT METHOD (Optional) ---
+  @ApiPropertyOptional({
+    example: 'cash',
+    description: 'Phương thức thanh toán (cash, vnpay, payos)',
+  })
+  @IsOptional()
+  @IsString()
+  payment_method?: string;
 }

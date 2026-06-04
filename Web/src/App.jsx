@@ -22,6 +22,7 @@ import DoctorListPage from "./pages/DoctorListPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
+import MedicalRecordsPage from "./pages/MedicalRecordsPage";
 
 import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 import FanpagePage from "./pages/FanpagePage";
@@ -35,7 +36,7 @@ import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
 import FloatingWidgets from "./components/common/FloatingWidgets";
 
-import { PAGES } from "./utils/constants";
+import { PAGES, USER_ROLES } from "./utils/constants";
 import "./index.css";
 
 const AppRoutes = () => {
@@ -168,6 +169,14 @@ const AppRoutes = () => {
         <Route
           path={PAGES.HOSPITAL_REGISTRATION}
           element={<HospitalRegistrationPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.MEDICAL_RECORDS}
+          element={
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
+              <MedicalRecordsPage navigate={navigateTo} />
+            </RoleProtectedRoute>
+          }
         />
         <Route
           path={PAGES.APPOINTMENTS}

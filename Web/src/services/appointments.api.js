@@ -37,6 +37,16 @@ export const getAppointments = async () => {
   return handleResponse(response, "Không thể tải danh sách lịch hẹn");
 };
 
+export const getAvailableTimes = async (doctorId, date) => {
+  const url = `${APPOINTMENTS_ENDPOINT}/available-times?doctorId=${doctorId}&date=${date}`;
+  const response = await fetch(url, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+  return handleResponse(response, "Không thể tải danh sách khung giờ trống");
+};
+
 export const getAppointmentsByUser = async (userId) => {
   const response = await fetch(`${APPOINTMENTS_ENDPOINT}/user/${userId}`, {
     headers: {
@@ -113,4 +123,26 @@ export const getAvailableDoctorsForPackage = async (packageId, date, time) => {
     },
   });
   return handleResponse(response, "Không thể tải danh sách bác sĩ rảnh cho gói");
+};
+
+export const requestRefund = async (appointmentId) => {
+  const response = await fetch(`${APPOINTMENTS_ENDPOINT}/${appointmentId}/request-refund`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+  return handleResponse(response, "Không thể gửi yêu cầu hoàn tiền");
+};
+
+export const rescheduleAppointment = async (appointmentId, payload) => {
+  const response = await fetch(`${APPOINTMENTS_ENDPOINT}/${appointmentId}/reschedule`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, "Không thể dời lịch khám");
 };

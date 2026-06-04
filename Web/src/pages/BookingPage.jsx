@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
-import { createAppointment as apiCreateAppointment } from "../services/appointments.api";
+import { createAppointment as apiCreateAppointment, getAvailableTimes } from "../services/appointments.api";
 import { getSchedulesByDoctor } from "../services/doctor.schedules.api";
-import { createPaymentDemo, createVnpayUrl, createPayosUrl } from "../services/payments.api";
+import { createVnpayUrl, createPayosUrl } from "../services/payments.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
@@ -33,6 +33,7 @@ const BookingPage = ({ navigate }) => {
   const initialDoctorId = location.state?.doctorId || "";
 
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [backendAvailableTimes, setBackendAvailableTimes] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
@@ -138,8 +139,12 @@ const BookingPage = ({ navigate }) => {
     if (!doctorId || !date) return;
     try {
       setLoadingSlots(true);
-      const schedulesData = await getSchedulesByDoctor(doctorId);
+      const [schedulesData, availableTimesData] = await Promise.all([
+        getSchedulesByDoctor(doctorId),
+        getAvailableTimes(doctorId, date)
+      ]);
       setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
+      setBackendAvailableTimes(Array.isArray(availableTimesData) ? availableTimesData : []);
       const daySchedules = (schedulesData || []).filter((s) => {
         const workDate = formatLocalDate(s.work_date);
         return workDate === date && s.is_available === true;
@@ -264,6 +269,7 @@ const BookingPage = ({ navigate }) => {
         appointment_time: formData.time,
         examination_type: "offline",
         symptoms: formData.type,
+        payment_method: paymentMethod,
       };
 
       console.log("PAYLOAD:", payload);
@@ -285,7 +291,8 @@ const BookingPage = ({ navigate }) => {
           }
         } catch (err) {
           console.warn("VNPAY URL creation failed:", err);
-          alert("Không thể tạo URL thanh toán VNPAY, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+          alert("Không thể tạo URL thanh toán VNPAY, vui lòng thử lại sau.");
+          return;
         }
       }
 
@@ -302,19 +309,9 @@ const BookingPage = ({ navigate }) => {
           }
         } catch (err) {
           console.warn("PayOS URL creation failed:", err);
-          alert("Không thể tạo URL thanh toán PayOS, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+          alert("Không thể tạo URL thanh toán PayOS, vui lòng thử lại sau.");
+          return;
         }
-      }
-
-      try {
-        await createPaymentDemo({
-          appointment_id: created?.id,
-          amount: totalPrice,
-          base_fee: totalPrice,
-          payment_method: "cash",
-        });
-      } catch (err) {
-        console.warn("Demo payment failed:", err);
       }
 
       addAppointment({
@@ -499,11 +496,7 @@ const BookingPage = ({ navigate }) => {
                   {availableSlots.length > 0 ? (
                     availableSlots.map((time) => {
                       const available = formData.date
-                        ? isSlotAvailable(
-                            formData.doctorId,
-                            formData.date,
-                            time,
-                          )
+                        ? backendAvailableTimes.includes(time)
                         : true;
                       
                       const isSelected = formData.time === time;
@@ -709,22 +702,6 @@ const BookingPage = ({ navigate }) => {
                             <p className="text-sm text-gray-500">Qua cổng PayOS</p>
                           </div>
                           {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
-                        </button>
-
-                        <button
-                          onClick={() => setPaymentMethod("cash")}
-                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
-                            paymentMethod === "cash" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
-                          }`}
-                        >
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                            <FileText className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1">
-                            <p className={`font-bold ${paymentMethod === "cash" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán tại quầy</p>
-                            <p className="text-sm text-gray-500">Tiền mặt / Chuyển khoản</p>
-                          </div>
-                          {paymentMethod === "cash" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
                         </button>
                       </div>
                     </div>

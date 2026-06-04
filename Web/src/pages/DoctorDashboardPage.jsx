@@ -50,6 +50,10 @@ import {
 } from "../services/doctor.appointments.api";
 import { getPaymentsByDoctor } from "../services/doctor.payments.api";
 import { getReviewsByDoctor } from "../services/reviews.api";
+import {
+  createMedicalRecord,
+  getMedicalRecordByAppointment,
+} from "../services/medical-records.api";
 
 const TABS = {
   OVERVIEW: "overview",
@@ -95,6 +99,7 @@ const DoctorDashboardPage = ({ navigate }) => {
 
   const [doctorAppointments, setDoctorAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [appointmentFilter, setAppointmentFilter] = useState("confirmed");
 
   const [doctorPayments, setDoctorPayments] = useState([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
@@ -130,6 +135,17 @@ const DoctorDashboardPage = ({ navigate }) => {
     cover_letter: "",
   });
   const [submittingLeave, setSubmittingLeave] = useState(false);
+
+  const [showMedicalRecordModal, setShowMedicalRecordModal] = useState(false);
+  const [selectedAppointmentForRecord, setSelectedAppointmentForRecord] = useState(null);
+  const [medicalRecordForm, setMedicalRecordForm] = useState({
+    diagnosis: "",
+    prescription: "",
+    notes: "",
+  });
+  const [submittingMedicalRecord, setSubmittingMedicalRecord] = useState(false);
+  const [viewOnlyMedicalRecord, setViewOnlyMedicalRecord] = useState(false);
+  const [medicalRecordData, setMedicalRecordData] = useState(null);
 
   // === FETCHING LOGIC ===
   const loadProfile = async () => {
@@ -371,21 +387,66 @@ const DoctorDashboardPage = ({ navigate }) => {
     }
   };
 
-  const handleCompleteAppointment = async (appointment) => {
-    const ok = window.confirm(
-      `Xác nhận đã khám xong cho lịch hẹn #${appointment.id}?`,
-    );
-    if (!ok) return;
+  const handleOpenMedicalRecordModal = (appointment) => {
+    setSelectedAppointmentForRecord(appointment);
+    setMedicalRecordForm({
+      diagnosis: "",
+      prescription: "",
+      notes: "",
+    });
+    setViewOnlyMedicalRecord(false);
+    setMedicalRecordData(null);
+    setShowMedicalRecordModal(true);
+  };
+
+  const handleViewMedicalRecordModal = async (appointment) => {
     try {
-      const updated = await updateAppointmentStatus(
-        appointment.id,
-        "completed",
-      );
+      setSelectedAppointmentForRecord(appointment);
+      setViewOnlyMedicalRecord(true);
+      setShowMedicalRecordModal(true);
+      
+      const record = await getMedicalRecordByAppointment(appointment.id);
+      setMedicalRecordData(record);
+      if (record) {
+        setMedicalRecordForm({
+          diagnosis: record.diagnosis || "",
+          prescription: record.prescription || "",
+          notes: record.notes || "",
+        });
+      }
+    } catch (e) {
+      alert("Không thể tải hồ sơ bệnh án: " + (e.message || "Lỗi"));
+      setShowMedicalRecordModal(false);
+    }
+  };
+
+  const handleSubmitMedicalRecord = async (e) => {
+    e.preventDefault();
+    if (!medicalRecordForm.diagnosis) {
+      alert("Vui lòng nhập chẩn đoán");
+      return;
+    }
+    
+    try {
+      setSubmittingMedicalRecord(true);
+      await createMedicalRecord({
+        appointment_id: selectedAppointmentForRecord.id,
+        diagnosis: medicalRecordForm.diagnosis,
+        prescription: medicalRecordForm.prescription,
+        notes: medicalRecordForm.notes,
+      });
+      
+      alert("Đã lưu hồ sơ bệnh án thành công!");
+      setShowMedicalRecordModal(false);
+      
+      // Update local appointment status to 'completed'
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt)),
+        prev.map((apt) => (apt.id === selectedAppointmentForRecord.id ? { ...apt, status: "completed" } : apt)),
       );
     } catch (e) {
-      alert(e.message || "Không thể cập nhật trạng thái lịch hẹn");
+      alert(e.message || "Không thể lưu hồ sơ bệnh án");
+    } finally {
+      setSubmittingMedicalRecord(false);
     }
   };
 
@@ -634,184 +695,14 @@ const DoctorDashboardPage = ({ navigate }) => {
   const renderSchedules = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-[#143250]">
-              Quản lý Lịch làm việc
-            </h2>
-            <p className="text-sm text-slate-500 font-medium">
-              Đăng ký ca làm tại các bệnh viện bạn đã liên kết
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" icon={Share2}>
-              Đồng bộ
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              icon={Plus}
-              onClick={handleQuickCreateSchedule}
-              className="bg-gradient-to-r from-[#48a1f3] to-[#3da3f5]"
-            >
-              Thêm ca làm việc
-            </Button>
-          </div>
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-[#143250]">
+            Quản lý Lịch làm việc
+          </h2>
+          <p className="text-sm text-slate-500 font-medium">
+            Xem ca làm việc tại các bệnh viện bạn đã liên kết (Được quản lý bởi bệnh viện)
+          </p>
         </div>
-
-        {showScheduleForm && (
-          <div className="mb-8 border border-[#48a1f3]/20 rounded-2xl p-6 bg-[#f4f8fb]">
-            <h3 className="text-base font-bold text-[#143250] mb-4">
-              {editingScheduleId
-                ? "Cập nhật ca làm việc"
-                : "Tạo ca làm việc mới"}
-            </h3>
-            <form
-              className="grid gap-4 md:grid-cols-4 items-end"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!doctorProfile?.id) return;
-                if (!scheduleForm.hospital_id)
-                  return alert("Vui lòng chọn bệnh viện");
-                if (!scheduleForm.work_date)
-                  return alert("Vui lòng chọn ngày làm việc");
-
-                try {
-                  const payload = {
-                    doctor_id: doctorProfile.id,
-                    hospital_id: scheduleForm.hospital_id,
-                    work_date: scheduleForm.work_date,
-                    start_time:
-                      scheduleForm.start_time.length === 5
-                        ? `${scheduleForm.start_time}:00`
-                        : scheduleForm.start_time,
-                    end_time:
-                      scheduleForm.end_time.length === 5
-                        ? `${scheduleForm.end_time}:00`
-                        : scheduleForm.end_time,
-                    max_patients: Number(scheduleForm.max_patients) || 10,
-                  };
-                  if (editingScheduleId) {
-                    await updateSchedule(editingScheduleId, payload);
-                  } else {
-                    await createSchedule(payload);
-                  }
-                  setShowScheduleForm(false);
-                  setEditingScheduleId(null);
-                  void loadSchedules(doctorProfile.id);
-                } catch (err) {
-                  alert(err.message || "Không thể lưu ca làm việc");
-                }
-              }}
-            >
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Bệnh viện
-                </label>
-                <select
-                  value={scheduleForm.hospital_id}
-                  onChange={(e) =>
-                    setScheduleForm({
-                      ...scheduleForm,
-                      hospital_id: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
-                >
-                  <option value="">-- Chọn bệnh viện --</option>
-                  {doctorProfile?.hospitals?.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Ngày làm việc
-                </label>
-                <input
-                  type="date"
-                  value={scheduleForm.work_date}
-                  onChange={(e) =>
-                    setScheduleForm({
-                      ...scheduleForm,
-                      work_date: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
-                />
-              </div>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Bắt đầu
-                  </label>
-                  <input
-                    type="time"
-                    value={scheduleForm.start_time}
-                    onChange={(e) =>
-                      setScheduleForm({
-                        ...scheduleForm,
-                        start_time: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Kết thúc
-                  </label>
-                  <input
-                    type="time"
-                    value={scheduleForm.end_time}
-                    onChange={(e) =>
-                      setScheduleForm({
-                        ...scheduleForm,
-                        end_time: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Số bệnh nhân tối đa
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={scheduleForm.max_patients}
-                  onChange={(e) =>
-                    setScheduleForm({
-                      ...scheduleForm,
-                      max_patients: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
-                />
-              </div>
-              <div className="flex gap-2 md:col-span-4 justify-end mt-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setShowScheduleForm(false);
-                    setEditingScheduleId(null);
-                  }}
-                >
-                  Hủy
-                </Button>
-                <Button type="submit" size="sm" variant="primary">
-                  {editingScheduleId ? "Cập nhật" : "Tạo ca làm việc"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
 
         <div className="space-y-4">
           {loadingSchedules && (
@@ -823,7 +714,7 @@ const DoctorDashboardPage = ({ navigate }) => {
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               <Calendar className="w-12 h-12 mb-3 opacity-30" />
               <p className="text-sm font-medium">
-                Chưa có ca làm việc nào. Hãy ấn nút "Thêm ca làm việc".
+                Chưa có ca làm việc nào.
               </p>
             </div>
           )}
@@ -856,23 +747,6 @@ const DoctorDashboardPage = ({ navigate }) => {
                   {entry.start_time?.slice(0, 5)} -{" "}
                   {entry.end_time?.slice(0, 5)}
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleStartEditSchedule(entry)}
-                  >
-                    Sửa
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-red-500 hover:bg-red-50"
-                    onClick={() => handleDeleteSchedule(entry)}
-                  >
-                    Xóa
-                  </Button>
-                </div>
               </div>
             </div>
           ))}
@@ -893,6 +767,38 @@ const DoctorDashboardPage = ({ navigate }) => {
               Xác nhận hoặc từ chối bệnh nhân đặt khám
             </p>
           </div>
+          <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
+            <button
+              onClick={() => setAppointmentFilter("all")}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                appointmentFilter === "all"
+                  ? "bg-white text-[#143250] shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setAppointmentFilter("confirmed")}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                appointmentFilter === "confirmed"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Chờ khám
+            </button>
+            <button
+              onClick={() => setAppointmentFilter("completed")}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                appointmentFilter === "completed"
+                  ? "bg-white text-emerald-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Đã khám xong
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -901,13 +807,16 @@ const DoctorDashboardPage = ({ navigate }) => {
               Đang tải lịch hẹn...
             </p>
           )}
-          {!loadingAppointments && doctorAppointments.length === 0 && (
+          {!loadingAppointments && doctorAppointments.filter(apt => appointmentFilter === "all" || apt.status === appointmentFilter).length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               <Calendar className="w-12 h-12 mb-3 opacity-30" />
               <p className="text-sm font-medium">Không có lịch hẹn nào.</p>
             </div>
           )}
-          {doctorAppointments.map((apt) => (
+          {doctorAppointments.filter(apt => appointmentFilter === "all" || apt.status === appointmentFilter).map((apt) => {
+            const isAwaitingPayment = apt.status === "pending" && apt.payment && (apt.payment.payment_method === "vnpay" || apt.payment.payment_method === "payos") && apt.payment.payment_status === "pending";
+
+            return (
             <div
               key={apt.id}
               className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -943,67 +852,67 @@ const DoctorDashboardPage = ({ navigate }) => {
               </div>
 
               <div className="flex flex-col items-end gap-3 min-w-[140px]">
-                {apt.status === "confirmed" && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold">
-                    <CheckCircle className="w-4 h-4" /> Đã xác nhận
+                {isAwaitingPayment ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">
+                    <Clock className="w-4 h-4" /> Chờ thanh toán
                   </span>
-                )}
-                {apt.status === "completed" && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold">
-                    <CheckCircle className="w-4 h-4" /> Đã khám xong
-                  </span>
-                )}
-                {apt.status === "rejected" && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-xs font-bold">
-                    <AlertTriangle className="w-4 h-4" /> Đã từ chối/hủy
-                  </span>
-                )}
-                {apt.status === "pending" && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-600 text-xs font-bold">
-                    <AlertTriangle className="w-4 h-4" /> Chờ duyệt
-                  </span>
-                )}
-                {apt.status === "cancelled" && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold">
-                    <AlertTriangle className="w-4 h-4" /> Đã hủy
-                  </span>
-                )}
-
-                {(apt.status === "pending" || apt.status === "confirmed") && (
-                  <div className="flex flex-col gap-2 w-full mt-2">
-                    {apt.status === "pending" && (
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        className="w-full justify-center"
-                        onClick={() => handleConfirmAppointment(apt)}
-                      >
-                        Xác nhận lịch
-                      </Button>
-                    )}
+                ) : (
+                  <>
                     {apt.status === "confirmed" && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold">
+                        <CheckCircle className="w-4 h-4" /> Đã xác nhận
+                      </span>
+                    )}
+                    {apt.status === "completed" && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold">
+                        <CheckCircle className="w-4 h-4" /> Đã khám xong
+                      </span>
+                    )}
+                    {apt.status === "rejected" && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-xs font-bold">
+                        <AlertTriangle className="w-4 h-4" /> Đã từ chối/hủy
+                      </span>
+                    )}
+                    {apt.status === "pending" && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-600 text-xs font-bold">
+                        <AlertTriangle className="w-4 h-4" /> Chờ duyệt
+                      </span>
+                    )}
+                    {apt.status === "cancelled" && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold">
+                        <AlertTriangle className="w-4 h-4" /> Đã hủy
+                      </span>
+                    )}
+
+                    {(apt.status === "pending" || apt.status === "confirmed") && (
+                      <div className="flex flex-col gap-2 w-full mt-2">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          className="w-full justify-center bg-blue-600 hover:bg-blue-700"
+                          onClick={() => handleOpenMedicalRecordModal(apt)}
+                        >
+                          Ghi bệnh án & Khám xong
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {apt.status === "completed" && (
                       <Button
                         size="sm"
-                        variant="primary"
-                        className="w-full justify-center bg-blue-600 hover:bg-blue-700"
-                        onClick={() => handleCompleteAppointment(apt)}
+                        variant="ghost"
+                        className="w-full justify-center text-blue-600 hover:bg-blue-50 border border-blue-100 mt-2"
+                        onClick={() => handleViewMedicalRecordModal(apt)}
                       >
-                        Đã khám xong
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Xem bệnh án
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="w-full justify-center text-red-500 hover:bg-red-50 border border-red-100"
-                      onClick={() => handleRejectAppointment(apt)}
-                    >
-                      Từ chối / Hủy
-                    </Button>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </Card>
     </div>
@@ -1886,6 +1795,101 @@ const DoctorDashboardPage = ({ navigate }) => {
                   {submittingLeave ? "Đang gửi..." : "Gửi yêu cầu"}
                 </Button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {showMedicalRecordModal && (
+        <div className="fixed inset-0 bg-[#143250]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
+          <div className="bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full p-8 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-[#143250]">
+                {viewOnlyMedicalRecord ? "Xem Hồ sơ Bệnh án" : "Ghi Hồ sơ Bệnh án"}
+              </h3>
+              <button 
+                onClick={() => setShowMedicalRecordModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {selectedAppointmentForRecord && (
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6">
+                <p className="font-bold text-blue-900 mb-1">
+                  Bệnh nhân: {selectedAppointmentForRecord.user?.full_name || "Không rõ"}
+                </p>
+                <p className="text-sm text-blue-700">
+                  Lý do khám: {selectedAppointmentForRecord.symptoms || "Không có thông tin"}
+                </p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitMedicalRecord}>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Chẩn đoán bệnh <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Nhập kết quả chẩn đoán..."
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
+                    value={medicalRecordForm.diagnosis}
+                    onChange={(e) => setMedicalRecordForm({...medicalRecordForm, diagnosis: e.target.value})}
+                    required
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Đơn thuốc / Hướng dẫn điều trị
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Nhập đơn thuốc hoặc các hướng dẫn..."
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
+                    value={medicalRecordForm.prescription}
+                    onChange={(e) => setMedicalRecordForm({...medicalRecordForm, prescription: e.target.value})}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Ghi chú thêm (Nếu có)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Ghi chú nội bộ..."
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
+                    value={medicalRecordForm.notes}
+                    onChange={(e) => setMedicalRecordForm({...medicalRecordForm, notes: e.target.value})}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                </div>
+              </div>
+              
+              {!viewOnlyMedicalRecord && (
+                <div className="mt-8 flex gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex-1 bg-slate-50"
+                    onClick={() => setShowMedicalRecordModal(false)}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    disabled={submittingMedicalRecord}
+                  >
+                    {submittingMedicalRecord ? "Đang lưu..." : "Hoàn tất Khám"}
+                  </Button>
+                </div>
+              )}
             </form>
           </div>
         </div>

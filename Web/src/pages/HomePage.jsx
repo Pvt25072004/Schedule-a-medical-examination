@@ -68,7 +68,7 @@ const HomePage = ({ navigate }) => {
       icon: FileText,
       label: "Hồ sơ bệnh án",
       color: "orange",
-      page: PAGES.SETTINGS,
+      page: PAGES.MEDICAL_RECORDS,
       gradient: "from-orange-500 to-orange-600",
     },
   ];
@@ -187,7 +187,7 @@ const HomePage = ({ navigate }) => {
             {quickActions.map((action, index) => (
               <div
                 key={index}
-                onClick={() => navigate(action.page)}
+                onClick={action.action ? action.action : () => navigate(action.page)}
                 className="group cursor-pointer bg-white rounded-3xl p-6 text-center border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-300"
               >
                 <div
