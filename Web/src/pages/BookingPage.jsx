@@ -16,7 +16,7 @@ import {
 import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
 import { createAppointment as apiCreateAppointment } from "../services/appointments.api";
-import { getSchedulesByDoctor } from "../services/doctor.schedules.api";
+import { getSchedulesByDoctor, getAvailableTimes } from "../services/doctor.schedules.api";
 import { createPaymentDemo, createVnpayUrl, createPayosUrl } from "../services/payments.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -138,33 +138,13 @@ const BookingPage = ({ navigate }) => {
     if (!doctorId || !date) return;
     try {
       setLoadingSlots(true);
+      // Gọi API Backend để lấy danh sách giờ trống chuẩn xác
+      const slots = await getAvailableTimes(doctorId, date);
+      setAvailableSlots(Array.isArray(slots) ? slots : []);
+
+      // Vẫn fetch schedules để dùng cho bước Confirm (hoặc API create cần)
       const schedulesData = await getSchedulesByDoctor(doctorId);
       setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
-      const daySchedules = (schedulesData || []).filter((s) => {
-        const workDate = formatLocalDate(s.work_date);
-        return workDate === date && s.is_available === true;
-      });
-
-      const slotsSet = new Set();
-      for (const sch of daySchedules) {
-        const start = (sch.start_time || "").slice(0, 5);
-        const end = (sch.end_time || "").slice(0, 5);
-        if (!start || !end) continue;
-        let [h, m] = start.split(":").map(Number);
-        const [endH, endM] = end.split(":").map(Number);
-        while (h < endH || (h === endH && m < endM)) {
-          const hh = String(h).padStart(2, "0");
-          const mm = String(m).padStart(2, "0");
-          slotsSet.add(`${hh}:${mm}`);
-          m += 30;
-          if (m >= 60) {
-            h += 1;
-            m -= 60;
-          }
-        }
-      }
-      const slotsArray = Array.from(slotsSet).sort();
-      setAvailableSlots(slotsArray);
     } catch (err) {
       console.error("Load schedule slots error:", err);
       setAvailableSlots([]);
@@ -466,7 +446,7 @@ const BookingPage = ({ navigate }) => {
                       {Array.isArray(selectedDoctor.hospitals) && selectedDoctor.hospitals.length > 0 && (
                         <div className="inline-flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl backdrop-blur-md text-sm w-full sm:w-auto">
                           <MapPin className="w-4 h-4 text-blue-200 flex-shrink-0" />
-                          <span className="truncate">{selectedDoctor.hospitals[0].name} {selectedDoctor.hospitals[0].city ? `- ${selectedDoctor.hospitals[0].city}` : ''}</span>
+                          <span className="truncate">{selectedDoctor.hospitals[0].name} {selectedDoctor.hospitals[0].city ? `- ${typeof selectedDoctor.hospitals[0].city === 'string' ? selectedDoctor.hospitals[0].city : selectedDoctor.hospitals[0].city?.name}` : ''}</span>
                         </div>
                       )}
                     </div>
@@ -664,7 +644,7 @@ const BookingPage = ({ navigate }) => {
                               <>
                                 <p className="text-lg font-bold text-gray-900">{selectedDoctor.hospitals[0].name}</p>
                                 <p className="text-gray-600 mt-1">{selectedDoctor.hospitals[0].address}</p>
-                                {selectedDoctor.hospitals[0].city && <p className="text-blue-600 font-medium text-sm mt-0.5">{selectedDoctor.hospitals[0].city}</p>}
+                                {selectedDoctor.hospitals[0].city && <p className="text-blue-600 font-medium text-sm mt-0.5">{typeof selectedDoctor.hospitals[0].city === 'string' ? selectedDoctor.hospitals[0].city : selectedDoctor.hospitals[0].city?.name}</p>}
                               </>
                             ) : (
                               <>
@@ -711,21 +691,7 @@ const BookingPage = ({ navigate }) => {
                           {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
                         </button>
 
-                        <button
-                          onClick={() => setPaymentMethod("cash")}
-                          className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
-                            paymentMethod === "cash" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
-                          }`}
-                        >
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                            <FileText className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1">
-                            <p className={`font-bold ${paymentMethod === "cash" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán tại quầy</p>
-                            <p className="text-sm text-gray-500">Tiền mặt / Chuyển khoản</p>
-                          </div>
-                          {paymentMethod === "cash" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
-                        </button>
+
                       </div>
                     </div>
                   </div>

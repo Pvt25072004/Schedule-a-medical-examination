@@ -95,4 +95,35 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString()
   symptoms?: string;
+
+  // --- PATIENT DETAILS (Optional) ---
+  @ApiPropertyOptional({ example: 'Nguyễn Văn A', description: 'Tên bệnh nhân' })
+  @IsOptional()
+  @IsString()
+  patient_name?: string;
+
+  @ApiPropertyOptional({ example: '0987654321', description: 'Số điện thoại bệnh nhân' })
+  @IsOptional()
+  @IsString()
+  patient_phone?: string;
+
+  @ApiPropertyOptional({ example: 'Nam', description: 'Giới tính' })
+  @IsOptional()
+  @IsString()
+  patient_gender?: string;
+
+  @ApiPropertyOptional({ example: '1990-01-01', description: 'Ngày sinh (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  patient_dob?: string;
+
+  @ApiPropertyOptional({ example: 'Hà Nội', description: 'Địa chỉ' })
+  @IsOptional()
+  @IsString()
+  patient_address?: string;
+
+  @ApiPropertyOptional({ example: 'Vợ/Chồng', description: 'Mối quan hệ' })
+  @IsOptional()
+  @IsString()
+  relationship?: string;
 }

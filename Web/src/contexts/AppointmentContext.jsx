@@ -57,6 +57,8 @@ export const AppointmentProvider = ({ children }) => {
           time: rawTime,
           type: apt.symptoms || "",
           status: mappedStatus,
+          patientName: apt.patient_name || null,
+          relationship: apt.relationship || 'Bản thân',
           payment: apt.payment,
           cancelReason: apt.cancel_reason || "",
           hasReview: !!apt.review,

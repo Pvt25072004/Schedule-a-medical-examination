@@ -88,6 +88,31 @@ export class Appointment {
   @Column({ type: 'text', nullable: true })
   cancel_reason: string | null;
 
+  // --- Patient Details for "Booking for someone else" ---
+  @ApiPropertyOptional({ example: 'Nguyễn Văn A', description: 'Tên bệnh nhân thực tế (nếu đặt cho người khác)' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  patient_name: string | null;
+
+  @ApiPropertyOptional({ example: '0987654321', description: 'Số điện thoại bệnh nhân' })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  patient_phone: string | null;
+
+  @ApiPropertyOptional({ example: 'Nam', description: 'Giới tính bệnh nhân' })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  patient_gender: string | null;
+
+  @ApiPropertyOptional({ example: '1990-01-01', description: 'Ngày sinh bệnh nhân' })
+  @Column({ type: 'date', nullable: true })
+  patient_dob: Date | null;
+
+  @ApiPropertyOptional({ example: 'Hà Nội', description: 'Địa chỉ bệnh nhân' })
+  @Column({ type: 'text', nullable: true })
+  patient_address: string | null;
+
+  @ApiPropertyOptional({ example: 'Vợ/Chồng', description: 'Mối quan hệ với chủ tài khoản' })
+  @Column({ type: 'varchar', length: 50, default: 'Bản thân' })
+  relationship: string;
+
   // --- Snapshot Fields ---
   @Column({
     type: 'decimal',
