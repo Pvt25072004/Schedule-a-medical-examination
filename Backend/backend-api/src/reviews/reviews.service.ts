@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from './entities/review.entity';
 import { Doctor } from 'src/doctors/doctor.entity';
+import { Appointment } from 'src/appointments/entities/appointment.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 
@@ -14,6 +15,9 @@ export class ReviewsService {
 
     @InjectRepository(Doctor)
     private readonly doctorsRepository: Repository<Doctor>,
+
+    @InjectRepository(Appointment)
+    private readonly appointmentsRepository: Repository<Appointment>,
   ) {}
 
   async create(dto: CreateReviewDto): Promise<Review> {
@@ -24,6 +28,19 @@ export class ReviewsService {
 
     if (existing) {
       throw new BadRequestException('Lịch hẹn này đã được đánh giá rồi!');
+    }
+
+    // Kiểm tra lịch hẹn có tồn tại và đã hoàn thành chưa
+    const appointment = await this.appointmentsRepository.findOne({
+      where: { id: dto.appointment_id },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Không tìm thấy lịch hẹn');
+    }
+
+    if (appointment.status !== 'completed') {
+      throw new BadRequestException('Chỉ có thể đánh giá sau khi cuộc hẹn đã hoàn thành (khám xong).');
     }
 
     // 1. Tạo bản ghi Đánh giá mới

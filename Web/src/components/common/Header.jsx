@@ -216,6 +216,12 @@ const Header = () => {
                       Lịch hẹn của tôi
                     </button>
                     <button
+                      onClick={() => navigate(PAGES.MEDICAL_RECORDS)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Hồ sơ bệnh án
+                    </button>
+                    <button
                       onClick={() => navigate(PAGES.SETTINGS)}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >

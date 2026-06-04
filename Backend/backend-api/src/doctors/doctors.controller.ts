@@ -52,6 +52,7 @@ export class DoctorsController {
 
   @Get() // GET /doctors
   findAll(
+    @Req() req: any,
     @Query('hospitalId') hospitalId?: string,
     @Query('categoryId') categoryId?: string,
     @Query('status') status?: string,
@@ -60,10 +61,16 @@ export class DoctorsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
+    const user = req.user as { role?: string; hospital_id?: number } | undefined;
+    let finalHospitalId = hospitalId ? +hospitalId : undefined;
+    if (user?.role === 'admin_hospital') {
+      finalHospitalId = user.hospital_id;
+    }
+
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 100;
     return this.doctorsService.findAll(
-      hospitalId ? +hospitalId : undefined,
+      finalHospitalId,
       categoryId ? +categoryId : undefined,
       status,
       date,

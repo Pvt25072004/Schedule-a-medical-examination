@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
@@ -18,6 +19,7 @@ import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
+import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 // 1. Import thư viện Swagger
 import {
   ApiTags,
@@ -101,6 +103,14 @@ export class AppointmentsController {
     return this.appointmentsService.findByUser(+userId);
   }
 
+  @Get('/schedule/:scheduleId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
+  @ApiOperation({ summary: 'Lấy danh sách lịch hẹn thuộc 1 ca trực' })
+  findBySchedule(@Param('scheduleId') scheduleId: string, @Req() req: any) {
+    return this.appointmentsService.findBySchedule(+scheduleId, req.user);
+  }
+
   @Get('/doctor/:doctorId')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Lấy danh sách lịch hẹn theo bác sĩ' })
@@ -150,7 +160,7 @@ export class AppointmentsController {
 
   @Patch('/:id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'admin_hospital')
+  @Roles('admin', 'admin_hospital', 'doctor', 'patient')
   @ApiOperation({ summary: 'Cập nhật trạng thái lịch hẹn (bác sĩ / hệ thống)' })
   updateStatus(
     @Param('id') id: string,
@@ -163,6 +173,26 @@ export class AppointmentsController {
       updateStatusDto.reason,
       req.user,
     );
+  }
+
+  @Post('/:id/request-refund')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('patient')
+  @ApiOperation({ summary: 'Yêu cầu hoàn tiền cho lịch hẹn bị hủy' })
+  requestRefund(@Param('id') id: string, @Req() req: any) {
+    return this.appointmentsService.requestRefund(+id, req.user);
+  }
+
+  @Put('/:id/reschedule')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('patient')
+  @ApiOperation({ summary: 'Dời lịch khám cho lịch hẹn bị hủy' })
+  reschedule(
+    @Param('id') id: string,
+    @Body() rescheduleDto: RescheduleAppointmentDto,
+    @Req() req: any,
+  ) {
+    return this.appointmentsService.reschedule(+id, rescheduleDto, req.user);
   }
 
   @Delete('/:id')

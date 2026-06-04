@@ -33,14 +33,15 @@ export class UsersController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'admin_hospital')
   findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Req() req: any,
   ) {
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 100;
-    return this.usersService.findAll(pageNumber, limitNumber);
+    return this.usersService.findAll(pageNumber, limitNumber, req.user);
   }
 
   @Get('/:id')
