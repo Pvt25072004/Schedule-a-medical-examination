@@ -141,11 +141,11 @@ const FanpageDetailPage = () => {
                     )}
                   </div>
                   <p className="text-gray-500 text-sm md:text-base">
-                    Bệnh viện đa khoa hạng đặc biệt tại {hospital?.city || 'Việt Nam'}
+                    Bệnh viện đa khoa hạng đặc biệt tại {typeof hospital?.city === 'string' ? hospital?.city : hospital?.city?.name || 'Việt Nam'}
                   </p>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-2 text-sm text-gray-500">
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" /> {hospital?.city || 'Việt Nam'}
+                      <MapPin className="w-4 h-4" /> {typeof hospital?.city === 'string' ? hospital?.city : hospital?.city?.name || 'Việt Nam'}
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="w-4 h-4" /> {(fanpage.follower_count || 0).toLocaleString('vi-VN')} người theo dõi

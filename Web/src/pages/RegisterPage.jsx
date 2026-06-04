@@ -16,7 +16,7 @@ import { useAuth } from "../contexts/AuthContext";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import Card from "../components/common/Card";
-import { PAGES, CITIES } from "../utils/constants";
+import { PAGES, REGIONS } from "../utils/constants";
 import {
   validateEmail,
   validatePhone,
@@ -110,7 +110,7 @@ const RegisterPage = ({ navigate }) => {
     }
 
     if (!formData.city) {
-      newErrors.city = "Vui lòng chọn tỉnh/thành phố";
+      newErrors.city = "Vui lòng chọn khu vực";
     }
 
     if (!formData.address) {
@@ -483,7 +483,7 @@ const RegisterPage = ({ navigate }) => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tỉnh/Thành phố <span className="text-red-500">*</span>
+                    Khu vực <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="city"
@@ -494,10 +494,10 @@ const RegisterPage = ({ navigate }) => {
                         : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                       }`}
                   >
-                    <option value="">Chọn tỉnh/thành phố</option>
-                    {CITIES.map((city) => (
-                      <option key={city.value} value={city.value}>
-                        {city.label}
+                    <option value="">Chọn khu vực</option>
+                    {REGIONS.map((region) => (
+                      <option key={region.value} value={region.label}>
+                        {region.label}
                       </option>
                     ))}
                   </select>

@@ -44,18 +44,11 @@ export const USER_ROLES = {
   ADMIN: "admin",
 };
 
-// Cities (value + label để dễ dùng cho select)
-export const CITIES = [
-  { value: "ha-noi", label: "Hà Nội" },
-  { value: "ho-chi-minh", label: "TP. Hồ Chí Minh" },
-  { value: "da-nang", label: "Đà Nẵng" },
-  { value: "hai-phong", label: "Hải Phòng" },
-  { value: "can-tho", label: "Cần Thơ" },
-  { value: "bien-hoa", label: "Biên Hòa" },
-  { value: "nha-trang", label: "Nha Trang" },
-  { value: "hue", label: "Huế" },
-  { value: "buon-ma-thuot", label: "Buôn Ma Thuột" },
-  { value: "vung-tau", label: "Vũng Tàu" },
+// Regions (Miền)
+export const REGIONS = [
+  { value: "mien-bac", label: "Miền Bắc" },
+  { value: "mien-trung", label: "Miền Trung" },
+  { value: "mien-nam", label: "Miền Nam" },
 ];
 
 // Specialties

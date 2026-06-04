@@ -27,7 +27,7 @@ import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import ProgressBar from "../components/common/ProgressBar";
-import { PAGES, CITIES } from "../utils/constants";
+import { PAGES, REGIONS } from "../utils/constants";
 import { formatCurrency, formatDate, removeDiacritics, getCategoryIcon } from "../utils/helpers";
 
 const BookingFlowPage = ({ navigate }) => {
@@ -37,6 +37,7 @@ const BookingFlowPage = ({ navigate }) => {
   
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
+    region: "",
     city: "",
     hospitalId: "",
     specialty: "",
@@ -45,6 +46,13 @@ const BookingFlowPage = ({ navigate }) => {
     time: "",
     type: "",
     notes: "",
+    bookingFor: "self",
+    patientName: "",
+    patientPhone: "",
+    patientGender: "Nam",
+    patientDob: "",
+    patientAddress: "",
+    relationship: "",
   });
   const [paymentMethod, setPaymentMethod] = useState("vnpay");
   
@@ -74,7 +82,7 @@ const BookingFlowPage = ({ navigate }) => {
         setHospitals(Array.isArray(hospData) ? hospData : []);
         setCategories(Array.isArray(catData) ? catData : []);
         
-        const list = Array.isArray(docData) ? docData : [];
+        const list = Array.isArray(docData) ? docData : (docData?.data || []);
         const normalized = list.map((d) => ({
           ...d,
           name: d.name || d.user?.full_name || "Bác sĩ",
@@ -134,10 +142,20 @@ const BookingFlowPage = ({ navigate }) => {
     }));
   }, [doctors]);
 
+  // Lọc danh sách tỉnh dựa trên miền
+  const availableCities = useMemo(() => {
+    if (!formData.region) return [];
+    const citiesInRegion = hospitals
+      .filter(h => h.city && h.city.area === formData.region)
+      .map(h => h.city.name)
+      .filter(Boolean);
+    return [...new Set(citiesInRegion)].sort();
+  }, [hospitals, formData.region]);
+
   // Filters based on previous steps
   const filteredHospitals = useMemo(() => {
     if (!formData.city) return hospitals;
-    return hospitals.filter(h => h.city === formData.city);
+    return hospitals.filter(h => h.city && h.city.name === formData.city);
   }, [hospitals, formData.city]);
 
   const filteredDoctors = useMemo(() => {
@@ -173,7 +191,7 @@ const BookingFlowPage = ({ navigate }) => {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
     
     // Auto advance for some steps
-    if (field === 'city' && step === 1) handleNext(2);
+    // Removed auto-advance for 'city' to allow double-click confirmation
     if (field === 'hospitalId' && step === 2) handleNext(3);
     if (field === 'specialty' && step === 3) handleNext(4);
   };
@@ -233,7 +251,17 @@ const BookingFlowPage = ({ navigate }) => {
     if (step === 4 && !formData.doctorId) return setErrors({ doctorId: "Vui lòng chọn bác sĩ" });
     if (step === 5 && !formData.date) return setErrors({ date: "Vui lòng chọn ngày khám" });
     if (step === 6 && !formData.time) return setErrors({ time: "Vui lòng chọn giờ khám" });
-    if (step === 7 && !formData.type) return setErrors({ type: "Vui lòng nhập lý do khám" });
+    if (step === 7) {
+      if (!formData.type) return setErrors({ type: "Vui lòng nhập lý do khám" });
+      if (formData.bookingFor === 'other') {
+        let errs = {};
+        if (!formData.patientName) errs.patientName = "Vui lòng nhập họ tên người bệnh";
+        if (!formData.patientPhone) errs.patientPhone = "Vui lòng nhập số điện thoại";
+        if (!formData.patientDob) errs.patientDob = "Vui lòng chọn ngày sinh";
+        if (!formData.relationship) errs.relationship = "Vui lòng chọn mối quan hệ";
+        if (Object.keys(errs).length > 0) return setErrors(errs);
+      }
+    }
     
     setStep(nextStepTarget);
     window.scrollTo(0, 0);
@@ -275,6 +303,17 @@ const BookingFlowPage = ({ navigate }) => {
         examination_type: "offline",
         symptoms: formData.type,
       };
+
+      if (formData.bookingFor === "other") {
+        payload.patient_name = formData.patientName;
+        payload.patient_phone = formData.patientPhone;
+        payload.patient_gender = formData.patientGender;
+        payload.patient_dob = formData.patientDob;
+        payload.patient_address = formData.patientAddress;
+        payload.relationship = formData.relationship;
+      } else {
+        payload.relationship = "Bản thân";
+      }
 
       const created = await apiCreateAppointment(payload);
 
@@ -423,17 +462,20 @@ const BookingFlowPage = ({ navigate }) => {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
           
-          {/* STEP 1: City */}
+          {/* STEP 1: Region & City */}
           {step === 1 && (
             <div className="animate-fade-in">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Chọn Tỉnh / Thành phố</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Chọn Khu vực</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {CITIES.map(city => {
-                  const isSelected = formData.city === city.label;
+                {REGIONS.map(region => {
+                  const isSelected = formData.region === region.label;
                   return (
                   <button
-                    key={city.value}
-                    onClick={() => handleChange("city", city.label)}
+                    key={region.value}
+                    onClick={() => { 
+                      setFormData(prev => ({ ...prev, region: region.label, city: "" })); 
+                      if (errors.region) setErrors(prev => ({ ...prev, region: "" }));
+                    }}
                     className={`relative p-5 rounded-2xl border-2 transition-all text-center flex flex-col items-center justify-center gap-3 overflow-hidden ${
                       isSelected
                         ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md transform scale-[1.02]' 
@@ -443,7 +485,7 @@ const BookingFlowPage = ({ navigate }) => {
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
                       <MapPin className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-gray-500'}`} />
                     </div>
-                    <span className="font-semibold text-lg">{city.label}</span>
+                    <span className="font-semibold text-lg">{region.label}</span>
                     
                     {isSelected && (
                       <div className="absolute top-3 right-3 text-blue-600">
@@ -453,7 +495,42 @@ const BookingFlowPage = ({ navigate }) => {
                   </button>
                 )})}
               </div>
-              <div className="mt-6 flex justify-end">
+
+              {formData.region && (
+                <div className="mt-8 animate-fade-in">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6">Chọn Tỉnh / Thành phố</h3>
+                  {availableCities.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {availableCities.map(city => {
+                        const isSelected = formData.city === city;
+                        return (
+                          <button
+                            key={city}
+                            onClick={() => {
+                              if (isSelected) {
+                                handleNext(2);
+                              } else {
+                                handleChange("city", city);
+                              }
+                            }}
+                            className={`px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all ${
+                              isSelected
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {city}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic">Không có cơ sở y tế nào thuộc khu vực này.</p>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-8 flex justify-end border-t border-gray-100 pt-6">
                 <Button variant="primary" disabled={!formData.city} onClick={() => handleNext()}>Tiếp tục <ArrowRight className="w-4 h-4 ml-2"/></Button>
               </div>
             </div>
@@ -687,8 +764,49 @@ const BookingFlowPage = ({ navigate }) => {
           {/* STEP 7: Profile / Symptoms */}
           {step === 7 && (
             <div className="animate-fade-in">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Thông tin khám bệnh</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Thông tin người khám</h3>
               
+              <div className="mb-6 flex gap-4 border-b border-gray-200 pb-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="bookingFor" value="self" checked={formData.bookingFor === 'self'} onChange={() => handleChange("bookingFor", "self")} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                  <span className="font-medium text-gray-700">Đặt cho bản thân</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="bookingFor" value="other" checked={formData.bookingFor === 'other'} onChange={() => handleChange("bookingFor", "other")} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                  <span className="font-medium text-gray-700">Đặt cho người thân</span>
+                </label>
+              </div>
+
+              {formData.bookingFor === "other" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-100 animate-fade-in">
+                  <Input label="Họ và tên người bệnh *" value={formData.patientName} onChange={(e) => handleChange("patientName", e.target.value)} error={errors.patientName} />
+                  <Input label="Số điện thoại *" value={formData.patientPhone} onChange={(e) => handleChange("patientPhone", e.target.value)} error={errors.patientPhone} />
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Giới tính *</label>
+                    <select value={formData.patientGender} onChange={(e) => handleChange("patientGender", e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="Nam">Nam</option>
+                      <option value="Nữ">Nữ</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                  </div>
+                  <Input type="date" label="Ngày sinh *" value={formData.patientDob} onChange={(e) => handleChange("patientDob", e.target.value)} error={errors.patientDob} />
+                  <Input label="Địa chỉ" value={formData.patientAddress} onChange={(e) => handleChange("patientAddress", e.target.value)} />
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Mối quan hệ *</label>
+                    <select value={formData.relationship} onChange={(e) => handleChange("relationship", e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">-- Chọn mối quan hệ --</option>
+                      <option value="Vợ/Chồng">Vợ/Chồng</option>
+                      <option value="Con">Con</option>
+                      <option value="Bố/Mẹ">Bố/Mẹ</option>
+                      <option value="Anh/Chị/Em">Anh/Chị/Em</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                    {errors.relationship && <p className="text-red-500 text-sm mt-1">{errors.relationship}</p>}
+                  </div>
+                </div>
+              )}
+
+              <h3 className="text-xl font-bold text-gray-900 mb-6 pt-4">Lý do khám bệnh</h3>
               <div className="space-y-6">
                 <Input
                   label="Lý do khám bệnh *"
@@ -771,7 +889,7 @@ const BookingFlowPage = ({ navigate }) => {
                         <p className="text-sm text-gray-500 font-medium mb-1">Địa điểm khám</p>
                         <p className="text-lg font-bold text-gray-900">{selectedHospital?.name}</p>
                         <p className="text-gray-600 mt-1">{selectedHospital?.address}</p>
-                        {selectedHospital?.city && <p className="text-blue-600 font-medium text-sm mt-0.5">{selectedHospital.city}</p>}
+                        {selectedHospital?.city && <p className="text-blue-600 font-medium text-sm mt-0.5">{typeof selectedHospital.city === 'string' ? selectedHospital.city : selectedHospital.city?.name}</p>}
                       </div>
                     </div>
                   </div>
@@ -811,21 +929,7 @@ const BookingFlowPage = ({ navigate }) => {
                       {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
                     </button>
 
-                    <button
-                      onClick={() => setPaymentMethod("cash")}
-                      className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all ${
-                        paymentMethod === "cash" ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-blue-300"
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-bold ${paymentMethod === "cash" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán tại quầy</p>
-                        <p className="text-sm text-gray-500">Tiền mặt / Chuyển khoản</p>
-                      </div>
-                      {paymentMethod === "cash" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
-                    </button>
+
                   </div>
                 </div>
               </div>

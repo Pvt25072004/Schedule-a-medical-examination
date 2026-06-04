@@ -377,7 +377,7 @@ const DoctorListPage = () => {
                           <MapPin className="w-5 h-5 text-blue-500" />
                           <span className="font-medium">Nơi công tác</span>
                         </div>
-                        <span className="font-semibold text-right max-w-[50%] truncate" title={`${doctor.hospitals[0].name} ${doctor.hospitals[0].city ? `- ${doctor.hospitals[0].city}` : ''}`}>
+                        <span className="font-semibold text-right max-w-[50%] truncate" title={`${doctor.hospitals[0].name} ${doctor.hospitals[0].city ? `- ${typeof doctor.hospitals[0].city === 'string' ? doctor.hospitals[0].city : doctor.hospitals[0].city?.name}` : ''}`}>
                           {doctor.hospitals[0].name}
                         </span>
                       </div>

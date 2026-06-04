@@ -41,6 +41,13 @@ const PackageBookingFlowPage = () => {
     doctorId: "", // optional
     type: "Khám gói dịch vụ",
     notes: "",
+    bookingFor: "self",
+    patientName: "",
+    patientPhone: "",
+    patientGender: "Nam",
+    patientDob: "",
+    patientAddress: "",
+    relationship: "",
   });
   const [paymentMethod, setPaymentMethod] = useState("vnpay");
   
@@ -134,7 +141,17 @@ const PackageBookingFlowPage = () => {
   const handleNext = (nextStepTarget = step + 1) => {
     if (step === 1 && !formData.date) return setErrors({ date: "Vui lòng chọn ngày khám" });
     if (step === 2 && !formData.time) return setErrors({ time: "Vui lòng chọn giờ khám" });
-    if (step === 4 && !formData.type) return setErrors({ type: "Vui lòng nhập lý do khám" });
+    if (step === 4) {
+      if (!formData.type) return setErrors({ type: "Vui lòng nhập lý do khám" });
+      if (formData.bookingFor === 'other') {
+        let errs = {};
+        if (!formData.patientName) errs.patientName = "Vui lòng nhập họ tên người bệnh";
+        if (!formData.patientPhone) errs.patientPhone = "Vui lòng nhập số điện thoại";
+        if (!formData.patientDob) errs.patientDob = "Vui lòng chọn ngày sinh";
+        if (!formData.relationship) errs.relationship = "Vui lòng chọn mối quan hệ";
+        if (Object.keys(errs).length > 0) return setErrors(errs);
+      }
+    }
     
     setStep(nextStepTarget);
     window.scrollTo(0, 0);
@@ -202,6 +219,17 @@ const PackageBookingFlowPage = () => {
         examination_type: "offline",
         symptoms: formData.type + (formData.notes ? ` - ${formData.notes}` : ""),
       };
+
+      if (formData.bookingFor === "other") {
+        payload.patient_name = formData.patientName;
+        payload.patient_phone = formData.patientPhone;
+        payload.patient_gender = formData.patientGender;
+        payload.patient_dob = formData.patientDob;
+        payload.patient_address = formData.patientAddress;
+        payload.relationship = formData.relationship;
+      } else {
+        payload.relationship = "Bản thân";
+      }
 
       const created = await apiCreateAppointment(payload);
 
@@ -435,8 +463,49 @@ const PackageBookingFlowPage = () => {
           {/* STEP 4: Profile */}
           {step === 4 && (
             <div className="animate-fade-in">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Thông tin bổ sung</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Thông tin người khám</h3>
               
+              <div className="mb-6 flex gap-4 border-b border-gray-200 pb-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="bookingFor" value="self" checked={formData.bookingFor === 'self'} onChange={() => handleChange("bookingFor", "self")} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                  <span className="font-medium text-gray-700">Đặt cho bản thân</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="bookingFor" value="other" checked={formData.bookingFor === 'other'} onChange={() => handleChange("bookingFor", "other")} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                  <span className="font-medium text-gray-700">Đặt cho người thân</span>
+                </label>
+              </div>
+
+              {formData.bookingFor === "other" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-100 animate-fade-in">
+                  <Input label="Họ và tên người bệnh *" value={formData.patientName} onChange={(e) => handleChange("patientName", e.target.value)} error={errors.patientName} />
+                  <Input label="Số điện thoại *" value={formData.patientPhone} onChange={(e) => handleChange("patientPhone", e.target.value)} error={errors.patientPhone} />
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Giới tính *</label>
+                    <select value={formData.patientGender} onChange={(e) => handleChange("patientGender", e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="Nam">Nam</option>
+                      <option value="Nữ">Nữ</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                  </div>
+                  <Input type="date" label="Ngày sinh *" value={formData.patientDob} onChange={(e) => handleChange("patientDob", e.target.value)} error={errors.patientDob} />
+                  <Input label="Địa chỉ" value={formData.patientAddress} onChange={(e) => handleChange("patientAddress", e.target.value)} />
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Mối quan hệ *</label>
+                    <select value={formData.relationship} onChange={(e) => handleChange("relationship", e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">-- Chọn mối quan hệ --</option>
+                      <option value="Vợ/Chồng">Vợ/Chồng</option>
+                      <option value="Con">Con</option>
+                      <option value="Bố/Mẹ">Bố/Mẹ</option>
+                      <option value="Anh/Chị/Em">Anh/Chị/Em</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                    {errors.relationship && <p className="text-red-500 text-sm mt-1">{errors.relationship}</p>}
+                  </div>
+                </div>
+              )}
+
+              <h3 className="text-xl font-bold text-gray-900 mb-6 pt-4">Lý do khám bệnh</h3>
               <div className="space-y-6">
                 <Input
                   label="Tình trạng hiện tại / Lý do đăng ký *"
@@ -545,21 +614,7 @@ const PackageBookingFlowPage = () => {
                     {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
                   </button>
 
-                  <button
-                    onClick={() => setPaymentMethod("cash")}
-                    className={`relative p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all bg-white ${
-                      paymentMethod === "cash" ? "border-blue-600 shadow-sm" : "border-gray-200 hover:border-blue-300"
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <p className={`font-bold ${paymentMethod === "cash" ? "text-blue-800" : "text-gray-900"}`}>Thanh toán tại quầy</p>
-                      <p className="text-sm text-gray-500">Tiền mặt / Chuyển khoản</p>
-                    </div>
-                    {paymentMethod === "cash" && <CheckCircle className="w-6 h-6 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
-                  </button>
+
                 </div>
               </div>
 

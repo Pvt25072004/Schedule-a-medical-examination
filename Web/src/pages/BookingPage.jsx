@@ -463,7 +463,7 @@ const BookingPage = ({ navigate }) => {
                       {Array.isArray(selectedDoctor.hospitals) && selectedDoctor.hospitals.length > 0 && (
                         <div className="inline-flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl backdrop-blur-md text-sm w-full sm:w-auto">
                           <MapPin className="w-4 h-4 text-blue-200 flex-shrink-0" />
-                          <span className="truncate">{selectedDoctor.hospitals[0].name} {selectedDoctor.hospitals[0].city ? `- ${selectedDoctor.hospitals[0].city}` : ''}</span>
+                          <span className="truncate">{selectedDoctor.hospitals[0].name} {selectedDoctor.hospitals[0].city ? `- ${typeof selectedDoctor.hospitals[0].city === 'string' ? selectedDoctor.hospitals[0].city : selectedDoctor.hospitals[0].city?.name}` : ''}</span>
                         </div>
                       )}
                     </div>
@@ -657,7 +657,7 @@ const BookingPage = ({ navigate }) => {
                               <>
                                 <p className="text-lg font-bold text-gray-900">{selectedDoctor.hospitals[0].name}</p>
                                 <p className="text-gray-600 mt-1">{selectedDoctor.hospitals[0].address}</p>
-                                {selectedDoctor.hospitals[0].city && <p className="text-blue-600 font-medium text-sm mt-0.5">{selectedDoctor.hospitals[0].city}</p>}
+                                {selectedDoctor.hospitals[0].city && <p className="text-blue-600 font-medium text-sm mt-0.5">{typeof selectedDoctor.hospitals[0].city === 'string' ? selectedDoctor.hospitals[0].city : selectedDoctor.hospitals[0].city?.name}</p>}
                               </>
                             ) : (
                               <>

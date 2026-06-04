@@ -411,6 +411,16 @@ const AppointmentsPage = ({ navigate }) => {
             </span>
           </div>
 
+          {apt.relationship && apt.relationship !== 'Bản thân' && (
+            <div className="mb-4 bg-purple-50 text-purple-700 p-3 rounded-lg text-sm flex items-start gap-2 border border-purple-100">
+              <User className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <span className="font-semibold block mb-0.5">Người khám bệnh (Người thân):</span>
+                <span>{apt.patientName} ({apt.relationship})</span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded-lg">
             <div className="flex items-center gap-2 text-gray-700">
               <Calendar className="w-4 h-4 text-blue-500" />
