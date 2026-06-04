@@ -126,4 +126,12 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString()
   relationship?: string;
+  // --- PAYMENT METHOD (Optional) ---
+  @ApiPropertyOptional({
+    example: 'cash',
+    description: 'Phương thức thanh toán (cash, vnpay, payos)',
+  })
+  @IsOptional()
+  @IsString()
+  payment_method?: string;
 }

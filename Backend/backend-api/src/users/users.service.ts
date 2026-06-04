@@ -16,12 +16,27 @@ export class UsersService {
     private cloudinaryService: CloudinaryService,
   ) { }
 
-  async findAll(page: number = 1, limit: number = 100): Promise<{ data: User[]; total: number; page: number; limit: number; totalPages: number }> {
-    const [data, total] = await this.usersRepository.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { id: 'DESC' }, // Lấy người dùng mới nhất
-    });
+  async findAll(page: number = 1, limit: number = 100, userCtx?: any): Promise<{ data: User[]; total: number; page: number; limit: number; totalPages: number }> {
+    const qb = this.usersRepository.createQueryBuilder('user')
+      .orderBy('user.id', 'DESC');
+
+    if (userCtx?.role === 'admin_hospital') {
+      if (!userCtx.hospital_id) {
+        return { data: [], total: 0, page, limit, totalPages: 0 };
+      }
+      qb.andWhere(subQuery => {
+        const sq = subQuery.subQuery()
+          .select('1')
+          .from('appointment', 'a')
+          .where('a.user_id = user.id')
+          .andWhere('a.hospital_id = :hospitalId')
+          .getQuery();
+        return `EXISTS ${sq}`;
+      }).setParameter('hospitalId', userCtx.hospital_id);
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+    const [data, total] = await qb.getManyAndCount();
 
     return {
       data,

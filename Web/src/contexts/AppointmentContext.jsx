@@ -71,6 +71,8 @@ export const AppointmentProvider = ({ children }) => {
           hospitalAddress: apt.hospital?.address || "123 Đường ABC, Q.1",
           hospitalCity: apt.hospital?.city || "",
           price: apt.total_fee || 0,
+          refundStatus: apt.refund_status || "none",
+          hospitalId: apt.hospital_id,
         };
       });
       setAppointments(mapped);

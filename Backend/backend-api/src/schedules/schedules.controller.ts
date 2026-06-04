@@ -68,6 +68,13 @@ export class SchedulesController {
     return this.schedulesService.approve(+id, req.user);
   }
 
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'admin_hospital')
+  updateStatus(@Param('id') id: string, @Body() body: { is_available: boolean }, @Req() req: any) {
+    return this.schedulesService.updateStatus(+id, body.is_available, req.user);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'admin_hospital')

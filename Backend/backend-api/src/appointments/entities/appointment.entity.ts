@@ -112,6 +112,17 @@ export class Appointment {
   @ApiPropertyOptional({ example: 'Vợ/Chồng', description: 'Mối quan hệ với chủ tài khoản' })
   @Column({ type: 'varchar', length: 50, default: 'Bản thân' })
   relationship: string;
+  @ApiProperty({
+    example: 'none',
+    enum: ['none', 'requested', 'completed'],
+    description: 'Trạng thái hoàn tiền (nếu lịch hẹn bị hủy)',
+  })
+  @Column({
+    type: 'enum',
+    enum: ['none', 'requested', 'completed'],
+    default: 'none',
+  })
+  refund_status: string;
 
   // --- Snapshot Fields ---
   @Column({

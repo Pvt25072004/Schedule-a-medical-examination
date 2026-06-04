@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -29,7 +30,11 @@ import {
 } from "../utils/helpers";
 import { createReview, updateReview } from "../services/reviews.api";
 import { createVnpayUrl, createPayosUrl } from "../services/payments.api";
-import { CreditCard } from "lucide-react";
+import { getMedicalRecordByAppointment } from "../services/medical-records.api";
+import { requestRefund, rescheduleAppointment, getAvailableTimes } from "../services/appointments.api";
+import { CreditCard, Edit3, RefreshCw, DollarSign, AlertCircle } from "lucide-react";
+import { getDoctors } from "../services/admin.doctors.api";
+import { getSchedulesByDoctor } from "../services/doctor.schedules.api";
 
 const AppointmentsPage = ({ navigate }) => {
   const {
@@ -44,7 +49,8 @@ const AppointmentsPage = ({ navigate }) => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.tab || "upcoming");
 
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("date_desc");
@@ -52,6 +58,12 @@ const AppointmentsPage = ({ navigate }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const filterRef = useRef(null);
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state?.tab]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -68,6 +80,23 @@ const AppointmentsPage = ({ navigate }) => {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewAppointment, setReviewAppointment] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const [showMedicalRecordModal, setShowMedicalRecordModal] = useState(false);
+  const [medicalRecordData, setMedicalRecordData] = useState(null);
+  const [loadingMedicalRecord, setLoadingMedicalRecord] = useState(false);
+
+  // === Refund / Reschedule states ===
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [rsDoctors, setRsDoctors] = useState([]);
+  const [rsSelectedDoctorId, setRsSelectedDoctorId] = useState("");
+  const [rsSchedules, setRsSchedules] = useState([]);
+  const [rsAvailableTimes, setRsAvailableTimes] = useState([]);
+  const [rsLoadingTimes, setRsLoadingTimes] = useState(false);
+  const [rsDate, setRsDate] = useState("");
+  const [rsTime, setRsTime] = useState("");
+  const [rsSelectedScheduleId, setRsSelectedScheduleId] = useState("");
+  const [rsSubmitting, setRsSubmitting] = useState(false);
 
   const sortedAppointments = [...appointments].sort((a, b) => {
     if (sortBy === "date_desc") {
@@ -161,6 +190,24 @@ const AppointmentsPage = ({ navigate }) => {
     setShowReviewModal(true);
   };
 
+  const handleViewMedicalRecord = async (apt) => {
+    try {
+      setLoadingMedicalRecord(true);
+      setShowMedicalRecordModal(true);
+      const res = await getMedicalRecordByAppointment(apt.backendId || apt.id);
+      if (res && (res.id || res.diagnosis || res.prescription)) {
+        setMedicalRecordData(res);
+      } else {
+        setMedicalRecordData(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setMedicalRecordData(null);
+    } finally {
+      setLoadingMedicalRecord(false);
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (!reviewAppointment || !user?.id) {
       alert("Thiếu thông tin để gửi đánh giá");
@@ -185,7 +232,7 @@ const AppointmentsPage = ({ navigate }) => {
         alert("Đã cập nhật đánh giá thành công!");
       } else {
         await createReview(payload);
-        alert("Cảm ơn bạn đã đánh giá bác sĩ!");
+        alert("Ðảm ơn bạn đã đánh giá bác sĩ!");
       }
 
       // Cập nhật lại context hoặc tải lại danh sách
@@ -205,6 +252,120 @@ const AppointmentsPage = ({ navigate }) => {
       alert(e.message || "Không thể gửi đánh giá");
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const handleRequestRefund = async (apt) => {
+    if (!window.confirm("Xác nhận yêu cầu hoàn tiền cho lịch hẹn này?\nBộ phận chăm sóc khách hàng sẽ liên hệ trong vòng 24-48h.")) return;
+    try {
+      await requestRefund(apt.backendId || apt.id);
+      alert("Đã gửi yêu cầu hoàn tiền! Chúng tôi sẽ liên hệ bạn trong vòng 24-48h.");
+      if (refreshAppointments) refreshAppointments();
+    } catch (e) {
+      alert(e.message || "Không thể gửi yêu cầu hoàn tiền");
+    }
+  };
+
+  const openRescheduleModal = async (apt) => {
+    setRescheduleTarget(apt);
+    setRsSelectedDoctorId("");
+    setRsSchedules([]);
+    setRsDate("");
+    setRsTime("");
+    setRsAvailableTimes([]);
+    setRsSelectedScheduleId("");
+    setShowRescheduleModal(true);
+    try {
+      const docs = await getDoctors();
+      setRsDoctors(Array.isArray(docs) ? docs : (docs?.data || []));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRsDoctorChange = async (doctorId) => {
+    setRsSelectedDoctorId(doctorId);
+    setRsSchedules([]);
+    setRsDate("");
+    setRsTime("");
+    setRsAvailableTimes([]);
+    setRsSelectedScheduleId("");
+    if (!doctorId) return;
+    try {
+      const data = await getSchedulesByDoctor(doctorId);
+      setRsSchedules(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRsDateChange = async (date) => {
+    setRsDate(date);
+    setRsTime("");
+    setRsSelectedScheduleId("");
+    setRsAvailableTimes([]);
+    if (!rsSelectedDoctorId || !date) return;
+    try {
+      setRsLoadingTimes(true);
+      const times = await getAvailableTimes(rsSelectedDoctorId, date);
+      setRsAvailableTimes(Array.isArray(times) ? times : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setRsLoadingTimes(false);
+    }
+  };
+
+  const generateRsSlots = () => {
+    if (!rsDate || !rsSchedules.length) return [];
+    const daySchedules = rsSchedules.filter((s) => s.work_date?.slice(0, 10) === rsDate && s.is_available);
+    const slots = [];
+    daySchedules.forEach((sch) => {
+      let [h, m] = sch.start_time.slice(0, 5).split(":").map(Number);
+      const [endH, endM] = sch.end_time.slice(0, 5).split(":").map(Number);
+      const endTotalMins = endH * 60 + endM;
+      while (h * 60 + m < endTotalMins) {
+        const hh = String(h).padStart(2, "0");
+        const mm = String(m).padStart(2, "0");
+        const timeStr = `${hh}:${mm}`;
+        if (rsAvailableTimes.includes(timeStr)) {
+          slots.push({ time: timeStr, scheduleId: sch.id });
+        }
+        m += 30;
+        if (m >= 60) {
+          h += 1;
+          m -= 60;
+        }
+      }
+    });
+    return slots.sort((a, b) => a.time.localeCompare(b.time));
+  };
+
+  const handleSubmitReschedule = async () => {
+    if (!rsSelectedDoctorId || !rsSelectedScheduleId || !rsDate || !rsTime) {
+      alert("Vui lòng chọn đầy đủ bác sĩ, ngày và giờ khám");
+      return;
+    }
+    const selectedSchedule = rsSchedules.find(s => s.id === Number(rsSelectedScheduleId));
+    const selectedDoctor = rsDoctors.find(d => d.id === Number(rsSelectedDoctorId));
+    try {
+      setRsSubmitting(true);
+      await rescheduleAppointment(rescheduleTarget.backendId || rescheduleTarget.id, {
+        schedule_id: Number(rsSelectedScheduleId),
+        doctor_id: Number(rsSelectedDoctorId),
+        hospital_id: selectedSchedule?.hospital_id || rescheduleTarget.hospitalId,
+        appointment_date: rsDate,
+        appointment_time: rsTime,
+        doctor_name_snapshot: selectedDoctor?.name || selectedDoctor?.user?.full_name,
+        hospital_name_snapshot: selectedSchedule?.hospital?.name,
+      });
+      alert("Đã dời lịch thành công! Lịch hẹn đang chờ bệnh viện xác nhận lại.");
+      setShowRescheduleModal(false);
+      if (refreshAppointments) refreshAppointments();
+    } catch (e) {
+      alert(e.message || "Không thể dời lịch");
+    } finally {
+      setRsSubmitting(false);
     }
   };
 
@@ -281,13 +442,43 @@ const AppointmentsPage = ({ navigate }) => {
             )}
           </div>
 
-          {apt.status === "cancelled" && apt.cancelReason && (
-            <div className="mb-4 bg-red-50 text-red-700 p-3 rounded-lg text-sm flex items-start gap-2">
-              <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          {(apt.status === "cancelled" || apt.status === "rejected") && apt.cancelReason && (
+            <div className="mb-3 bg-red-50 border border-red-100 text-red-700 p-3 rounded-lg text-sm flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
               <div>
                 <span className="font-semibold block mb-0.5">Lý do hủy:</span>
                 <span>{apt.cancelReason}</span>
               </div>
+            </div>
+          )}
+
+          {/* Refund / Reschedule options - only show if cancelled/rejected by hospital/doctor AND payment was made */}
+          {(apt.status === "cancelled" || apt.status === "rejected") &&
+            apt.refundStatus !== "requested" && apt.refundStatus !== "completed" && (
+            <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm font-semibold text-amber-800 mb-2">ℹ️ Bạn muốn xử lý thế nào?</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openRescheduleModal(apt)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Dời lịch khám
+                </button>
+                <button
+                  onClick={() => handleRequestRefund(apt)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-bold bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-all"
+                >
+                  <DollarSign className="w-3.5 h-3.5" /> Yêu cầu hoàn tiền
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(apt.status === "cancelled" || apt.status === "rejected") && apt.refundStatus === "requested" && (
+            <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              <span className="font-semibold">Đang xử lý hoàn tiền.</span>
+              <span className="text-green-600">Chúng tôi sẽ liên hệ trong 24-48h.</span>
             </div>
           )}
 
@@ -351,6 +542,18 @@ const AppointmentsPage = ({ navigate }) => {
                 className={apt.hasReview ? "text-yellow-600 hover:bg-yellow-50 border-yellow-200" : "bg-yellow-500 hover:bg-yellow-600 text-white"}
               >
                 {apt.hasReview ? "Sửa đánh giá" : "Đánh giá bác sĩ"}
+              </Button>
+            )}
+
+            {isHistory && apt.status === "completed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleViewMedicalRecord(apt)}
+                icon={Edit3}
+                className="text-blue-600 hover:bg-blue-50 border-blue-200"
+              >
+                Xem bệnh án
               </Button>
             )}
           </div>
@@ -670,6 +873,69 @@ const AppointmentsPage = ({ navigate }) => {
         </div>
       )}
 
+      {/* Medical Record Modal */}
+      {showMedicalRecordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-2xl w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b">
+              <h3 className="text-xl font-bold text-[#143250] flex items-center gap-2">
+                <FileText className="w-6 h-6 text-blue-600" />
+                Hồ sơ bệnh án
+              </h3>
+              <button
+                onClick={() => setShowMedicalRecordModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {loadingMedicalRecord ? (
+              <div className="py-12 text-center text-slate-500">
+                Đang tải dữ liệu hồ sơ...
+              </div>
+            ) : medicalRecordData ? (
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-700 mb-2 uppercase">Chẩn đoán</h4>
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-800 whitespace-pre-wrap">
+                    {medicalRecordData.diagnosis || "Không có ghi chú"}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-bold text-slate-700 mb-2 uppercase">Đơn thuốc</h4>
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-800 whitespace-pre-wrap">
+                    {medicalRecordData.prescription || "Không có đơn thuốc"}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-bold text-slate-700 mb-2 uppercase">Ghi chú của bác sĩ</h4>
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-800 whitespace-pre-wrap">
+                    {medicalRecordData.notes || "Không có ghi chú thêm"}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 border-2 border-dashed border-slate-200 rounded-2xl">
+                <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p>Bác sĩ chưa cập nhật hồ sơ bệnh án cho buổi khám này.</p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
+              <Button
+                variant="outline"
+                onClick={() => setShowMedicalRecordModal(false)}
+              >
+                Đóng
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes scaleIn {
           from {
@@ -685,6 +951,124 @@ const AppointmentsPage = ({ navigate }) => {
           animation: scaleIn 0.2s ease-out;
         }
       `}</style>
+
+      {/* =================== Reschedule Modal =================== */}
+      {showRescheduleModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-lg rounded-2xl shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-blue-600" /> Dời lịch khám
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">Chọn bác sĩ và ca khám mới. Thanh toán được giữ nguyên.</p>
+              </div>
+              <button
+                onClick={() => setShowRescheduleModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Chọn bác sĩ */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Chọn bác sĩ</label>
+                <select
+                  value={rsSelectedDoctorId}
+                  onChange={(e) => handleRsDoctorChange(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none text-sm font-medium"
+                >
+                  <option value="">-- Chọn bác sĩ --</option>
+                  {rsDoctors.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.user?.full_name || doc.name || `Bác sĩ #${doc.id}`}
+                      {doc.specialty ? ` – ${doc.specialty}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Chọn ca khám -> Đổi thành chọn Ngày + Giờ từ availableTimes */}
+              {rsSelectedDoctorId && (
+                <>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Ngày khám</label>
+                    {rsSchedules.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic px-2">Bác sĩ này chưa có lịch làm việc nào.</p>
+                    ) : (
+                      <select
+                        value={rsDate}
+                        onChange={(e) => handleRsDateChange(e.target.value)}
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none text-sm font-medium"
+                      >
+                        <option value="">-- Chọn ngày khám --</option>
+                        {Array.from(new Set(rsSchedules.filter(s => s.is_available).map(s => s.work_date?.slice(0, 10)))).sort().map(dateStr => (
+                          <option key={dateStr} value={dateStr}>
+                            {formatDate(dateStr)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {rsDate && (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Giờ khám trống</label>
+                      {rsLoadingTimes ? (
+                        <p className="text-sm text-slate-500 animate-pulse">Đang kiểm tra khung giờ trống...</p>
+                      ) : (
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                          {generateRsSlots().length > 0 ? (
+                            generateRsSlots().map((slot) => {
+                              const isSelected = rsTime === slot.time;
+                              return (
+                                <button
+                                  key={slot.time}
+                                  onClick={() => {
+                                    setRsTime(slot.time);
+                                    setRsSelectedScheduleId(slot.scheduleId);
+                                  }}
+                                  className={`py-2 px-1 rounded-xl text-sm font-bold transition-all border ${
+                                    isSelected
+                                      ? "bg-[#48a1f3] text-white border-[#48a1f3] shadow-md shadow-blue-500/20"
+                                      : "bg-slate-50 text-slate-600 border-slate-200 hover:border-[#48a1f3] hover:text-[#48a1f3]"
+                                  }`}
+                                >
+                                  {slot.time}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <p className="text-sm text-red-500 col-span-5 py-2">
+                              Không còn khung giờ trống nào trong ngày này.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6 pt-5 border-t border-slate-100">
+              <Button variant="outline" onClick={() => setShowRescheduleModal(false)} className="flex-1">
+                Hủy bỏ
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSubmitReschedule}
+                disabled={rsSubmitting || !rsSelectedDoctorId || !rsSelectedScheduleId || !rsDate || !rsTime}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {rsSubmitting ? "Đang xử lý..." : "Xác nhận dời lịch"}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

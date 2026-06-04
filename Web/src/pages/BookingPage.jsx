@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
-import { createAppointment as apiCreateAppointment } from "../services/appointments.api";
-import { getSchedulesByDoctor, getAvailableTimes } from "../services/doctor.schedules.api";
-import { createPaymentDemo, createVnpayUrl, createPayosUrl } from "../services/payments.api";
+import { createAppointment as apiCreateAppointment, getAvailableTimes } from "../services/appointments.api";
+import { getSchedulesByDoctor } from "../services/doctor.schedules.api";
+import { createVnpayUrl, createPayosUrl } from "../services/payments.api";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
@@ -33,6 +33,7 @@ const BookingPage = ({ navigate }) => {
   const initialDoctorId = location.state?.doctorId || "";
 
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [backendAvailableTimes, setBackendAvailableTimes] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
@@ -138,13 +139,37 @@ const BookingPage = ({ navigate }) => {
     if (!doctorId || !date) return;
     try {
       setLoadingSlots(true);
-      // Gọi API Backend để lấy danh sách giờ trống chuẩn xác
-      const slots = await getAvailableTimes(doctorId, date);
-      setAvailableSlots(Array.isArray(slots) ? slots : []);
-
-      // Vẫn fetch schedules để dùng cho bước Confirm (hoặc API create cần)
-      const schedulesData = await getSchedulesByDoctor(doctorId);
+      const [schedulesData, availableTimesData] = await Promise.all([
+        getSchedulesByDoctor(doctorId),
+        getAvailableTimes(doctorId, date)
+      ]);
       setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
+      setBackendAvailableTimes(Array.isArray(availableTimesData) ? availableTimesData : []);
+      const daySchedules = (schedulesData || []).filter((s) => {
+        const workDate = formatLocalDate(s.work_date);
+        return workDate === date && s.is_available === true;
+      });
+
+      const slotsSet = new Set();
+      for (const sch of daySchedules) {
+        const start = (sch.start_time || "").slice(0, 5);
+        const end = (sch.end_time || "").slice(0, 5);
+        if (!start || !end) continue;
+        let [h, m] = start.split(":").map(Number);
+        const [endH, endM] = end.split(":").map(Number);
+        while (h < endH || (h === endH && m < endM)) {
+          const hh = String(h).padStart(2, "0");
+          const mm = String(m).padStart(2, "0");
+          slotsSet.add(`${hh}:${mm}`);
+          m += 30;
+          if (m >= 60) {
+            h += 1;
+            m -= 60;
+          }
+        }
+      }
+      const slotsArray = Array.from(slotsSet).sort();
+      setAvailableSlots(slotsArray);
     } catch (err) {
       console.error("Load schedule slots error:", err);
       setAvailableSlots([]);
@@ -244,6 +269,7 @@ const BookingPage = ({ navigate }) => {
         appointment_time: formData.time,
         examination_type: "offline",
         symptoms: formData.type,
+        payment_method: paymentMethod,
       };
 
       console.log("PAYLOAD:", payload);
@@ -265,7 +291,8 @@ const BookingPage = ({ navigate }) => {
           }
         } catch (err) {
           console.warn("VNPAY URL creation failed:", err);
-          alert("Không thể tạo URL thanh toán VNPAY, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+          alert("Không thể tạo URL thanh toán VNPAY, vui lòng thử lại sau.");
+          return;
         }
       }
 
@@ -282,19 +309,9 @@ const BookingPage = ({ navigate }) => {
           }
         } catch (err) {
           console.warn("PayOS URL creation failed:", err);
-          alert("Không thể tạo URL thanh toán PayOS, hệ thống sẽ ghi nhận thanh toán tiền mặt.");
+          alert("Không thể tạo URL thanh toán PayOS, vui lòng thử lại sau.");
+          return;
         }
-      }
-
-      try {
-        await createPaymentDemo({
-          appointment_id: created?.id,
-          amount: totalPrice,
-          base_fee: totalPrice,
-          payment_method: "cash",
-        });
-      } catch (err) {
-        console.warn("Demo payment failed:", err);
       }
 
       addAppointment({
@@ -479,11 +496,7 @@ const BookingPage = ({ navigate }) => {
                   {availableSlots.length > 0 ? (
                     availableSlots.map((time) => {
                       const available = formData.date
-                        ? isSlotAvailable(
-                            formData.doctorId,
-                            formData.date,
-                            time,
-                          )
+                        ? backendAvailableTimes.includes(time)
                         : true;
                       
                       const isSelected = formData.time === time;
@@ -690,8 +703,6 @@ const BookingPage = ({ navigate }) => {
                           </div>
                           {paymentMethod === "payos" && <CheckCircle className="w-6 h-6 text-indigo-600 absolute right-4 top-1/2 -translate-y-1/2" />}
                         </button>
-
-
                       </div>
                     </div>
                   </div>

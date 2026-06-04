@@ -21,6 +21,7 @@ export const PAGES = {
   APPLY_DOCTOR: "/apply-doctor",
   HOSPITAL_REGISTRATION: "/hospital-registration",
   SERVICE_PACKAGES: "/service-packages",
+  MEDICAL_RECORDS: "/medical-records",
 };
 
 // Appointment Status

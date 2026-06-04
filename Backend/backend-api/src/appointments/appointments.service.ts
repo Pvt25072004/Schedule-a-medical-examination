@@ -122,7 +122,7 @@ export class AppointmentsService {
         .createQueryBuilder(Appointment, 'appt')
         .where('appt.doctor_id = :doctorId', { doctorId: createAppointmentDto.doctor_id })
         .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
-        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
+        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
         .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
         .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: appointmentTime })
         .getCount();
@@ -135,12 +135,27 @@ export class AppointmentsService {
       const existingAppointmentsCount = await queryRunner.manager.count(Appointment, {
         where: {
           schedule_id: schedule.id,
-          status: In(['pending', 'confirmed']),
+          status: In(['pending', 'confirmed', 'completed']),
         },
       });
 
       if (existingAppointmentsCount >= schedule.max_patients) {
         throw new BadRequestException(`Ca làm việc này đã đầy bệnh nhân (tối đa ${schedule.max_patients} người/ca). Vui lòng chọn ca khám khác!`);
+      }
+
+      // KIỂM TRA: Chỉ cho phép tối đa 2 lượt đặt khám thanh toán tại quầy đang chờ (pending)
+      if (createAppointmentDto.payment_method === 'cash') {
+        const cashAppointmentsCount = await queryRunner.manager
+          .createQueryBuilder(Appointment, 'appt')
+          .innerJoin('appt.payment', 'payment')
+          .where('appt.user_id = :userId', { userId: createAppointmentDto.user_id })
+          .andWhere('appt.status = :status', { status: 'pending' })
+          .andWhere('payment.payment_method = :paymentMethod', { paymentMethod: 'cash' })
+          .getCount();
+
+        if (cashAppointmentsCount >= 2) {
+          throw new BadRequestException('Bạn đang có 2 lịch hẹn thanh toán tại quầy chưa được xử lý. Vui lòng hoàn thành lịch hẹn cũ hoặc chọn phương thức thanh toán trực tuyến.');
+        }
       }
 
       createAppointmentDto.schedule_id = schedule.id;
@@ -202,21 +217,32 @@ export class AppointmentsService {
     }
   }
 
-  async findAll(user?: any): Promise<Appointment[]> {
+  async findAll(user?: any, page: number = 1, limit: number = 100): Promise<{ data: Appointment[]; total: number; page: number; limit: number; totalPages: number }> {
+    const qb = this.appointmentsRepository.createQueryBuilder('appointment')
+      .leftJoinAndSelect('appointment.user', 'user')
+      .leftJoinAndSelect('appointment.doctor', 'doctor')
+      .leftJoinAndSelect('doctor.user', 'doctorUser') // also fetch doctor's user entity for full name
+      .leftJoinAndSelect('appointment.hospital', 'hospital')
+      .leftJoinAndSelect('appointment.payment', 'payment')
+      .orderBy('appointment.created_at', 'DESC');
+
     if (user?.role === 'admin_hospital') {
       if (!user.hospital_id) {
         throw new ForbiddenException('Tài khoản admin cơ sở không có thông tin bệnh viện');
       }
-      return await this.appointmentsRepository.find({
-        where: { hospital_id: user.hospital_id },
-        relations: ['user', 'doctor', 'hospital', 'payment'],
-        order: { created_at: 'DESC' }
-      });
+      qb.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
     }
-    return await this.appointmentsRepository.find({
-      relations: ['user', 'doctor', 'hospital', 'payment'],
-      order: { created_at: 'DESC' }
-    });
+
+    qb.skip((page - 1) * limit).take(limit);
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number) {
@@ -236,6 +262,39 @@ export class AppointmentsService {
     
     if (user?.role === 'admin_hospital' && appointment.hospital_id !== user.hospital_id) {
       throw new ForbiddenException('Bạn không có quyền sửa lịch hẹn của cơ sở khác');
+    }
+
+    // Nếu đổi bác sĩ, ngày hoặc giờ, kiểm tra xung đột lịch của bác sĩ mới
+    const newDoctorId = updateAppointmentDto.doctor_id || appointment.doctor_id;
+    const newDate = updateAppointmentDto.appointment_date || appointment.appointment_date;
+    const newTime = updateAppointmentDto.appointment_time || appointment.appointment_time;
+
+    if (
+      updateAppointmentDto.doctor_id ||
+      updateAppointmentDto.appointment_date ||
+      updateAppointmentDto.appointment_time
+    ) {
+      const dateStr = String(newDate).slice(0, 10);
+      
+      const overlapConflict = await this.appointmentsRepository
+        .createQueryBuilder('appt')
+        .where('appt.doctor_id = :doctorId', { doctorId: newDoctorId })
+        .andWhere('DATE(appt.appointment_date) = :appointmentDate', { appointmentDate: dateStr })
+        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
+        .andWhere('appt.id != :id', { id: appointment.id }) // trừ chính nó ra
+        // Giả sử mỗi lịch khám kéo dài 30 phút
+        .andWhere('appt.appointment_time < ADDTIME(:newTime, "00:30:00")', { newTime })
+        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newTime', { newTime })
+        .getCount();
+
+      if (overlapConflict > 0) {
+        throw new BadRequestException('Bác sĩ mới đã có lịch hẹn trùng vào khung giờ này!');
+      }
+
+      // Cập nhật cancel_reason nếu là đổi lịch
+      if (!updateAppointmentDto.cancel_reason) {
+        updateAppointmentDto.cancel_reason = 'Đã được dời/đổi lịch bởi Admin hoặc Bác sĩ';
+      }
     }
 
     Object.assign(appointment, updateAppointmentDto);
@@ -279,19 +338,43 @@ export class AppointmentsService {
     });
   }
 
+  async findBySchedule(scheduleId: number, user?: any): Promise<Appointment[]> {
+    const where: any = { schedule_id: scheduleId };
+    if (user?.role === 'admin_hospital') {
+      where.hospital_id = user.hospital_id;
+    }
+    return this.appointmentsRepository.find({
+      where,
+      order: { appointment_date: 'DESC', appointment_time: 'DESC' },
+      relations: ['user', 'doctor', 'hospital', 'payment'],
+    });
+  }
+
   async updateStatus(
     id: number,
     status: string,
     reason?: string,
     user?: any,
   ): Promise<Appointment> {
-    const appointment = await this.findOne(id);
+    const appointment = await this.appointmentsRepository.findOne({
+      where: { id },
+      relations: ['user', 'doctor', 'doctor.user'],
+    });
+    
     if (!appointment) {
       throw new Error(`Appointment #${id} not found`);
     }
 
     if (user?.role === 'admin_hospital' && appointment.hospital_id !== user.hospital_id) {
       throw new ForbiddenException('Bạn không có quyền thay đổi trạng thái lịch hẹn của cơ sở khác');
+    }
+
+    if (user?.role === 'patient' && appointment.user_id !== user.id) {
+      throw new ForbiddenException('Bạn không có quyền truy cập tài nguyên này');
+    }
+
+    if (user?.role === 'doctor' && appointment.doctor?.user?.id !== user.id) {
+      throw new ForbiddenException('Bạn không có quyền thay đổi trạng thái lịch hẹn của bác sĩ khác');
     }
 
     appointment.status = status;
@@ -380,7 +463,7 @@ export class AppointmentsService {
       where: {
         doctor_id: doctorId,
         appointment_date: date as any, // TypeORM expected Date object but string "YYYY-MM-DD" works for DB
-        status: In(['pending', 'confirmed']),
+        status: In(['pending', 'confirmed', 'completed']),
       },
     });
 
@@ -506,7 +589,7 @@ export class AppointmentsService {
           .createQueryBuilder(Appointment, 'appt')
           .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
-          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
+          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
           .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
           .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
           .getCount();
@@ -579,7 +662,7 @@ export class AppointmentsService {
         .createQueryBuilder(Appointment, 'appt')
         .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
         .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
-        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
+        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
         .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
         .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
         .getCount();
@@ -619,5 +702,111 @@ export class AppointmentsService {
       await this.appointmentsRepository.save(expiredAppointments);
       this.logger.log(`Auto-cancelled ${expiredAppointments.length} expired appointments.`);
     }
+  }
+
+  async requestRefund(appointmentId: number, user: any): Promise<Appointment> {
+    const appointment = await this.appointmentsRepository.findOne({
+      where: { id: appointmentId },
+    });
+
+    if (!appointment) {
+      throw new BadRequestException('Không tìm thấy lịch hẹn');
+    }
+
+    if (appointment.user_id !== user.id) {
+      throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+    }
+
+    if (!['cancelled', 'rejected'].includes(appointment.status)) {
+      throw new BadRequestException('Chỉ có thể yêu cầu hoàn tiền cho lịch hẹn đã bị hủy');
+    }
+
+    if (appointment.refund_status !== 'none') {
+      throw new BadRequestException('Lịch hẹn này đã có yêu cầu hoàn tiền trước đó');
+    }
+
+    appointment.refund_status = 'requested';
+    await this.appointmentsRepository.save(appointment);
+
+    // Send notification to admin_hospital
+    try {
+      await this.notificationsService.create({
+        user_id: user.id,
+        title: 'Yêu cầu hoàn tiền',
+        body: `Bệnh nhân yêu cầu hoàn tiền cho lịch hẹn #${appointmentId}.`,
+        type: 'refund_request',
+      });
+    } catch (e) {
+      this.logger.warn('Could not send refund notification: ' + e.message);
+    }
+
+    return appointment;
+  }
+
+  async reschedule(
+    appointmentId: number,
+    dto: import('./dto/reschedule-appointment.dto').RescheduleAppointmentDto,
+    user: any,
+  ): Promise<Appointment> {
+    const appointment = await this.appointmentsRepository.findOne({
+      where: { id: appointmentId },
+    });
+
+    if (!appointment) {
+      throw new BadRequestException('Không tìm thấy lịch hẹn');
+    }
+
+    if (appointment.user_id !== user.id) {
+      throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+    }
+
+    if (!['cancelled', 'rejected'].includes(appointment.status)) {
+      throw new BadRequestException('Chỉ có thể dời lịch cho lịch hẹn đã bị hủy');
+    }
+
+    if (appointment.refund_status === 'requested' || appointment.refund_status === 'completed') {
+      throw new BadRequestException('Lịch hẹn này đã có yêu cầu hoàn tiền, không thể dời lịch');
+    }
+
+    // Verify new schedule exists and has capacity
+    const newSchedule = await this.schedulesRepository.findOne({
+      where: { id: dto.schedule_id },
+    });
+    if (!newSchedule) {
+      throw new BadRequestException('Ca làm việc không tồn tại');
+    }
+    const existingAppointmentsCount = await this.appointmentsRepository.count({
+      where: {
+        schedule_id: dto.schedule_id,
+        status: In(['pending', 'confirmed', 'completed']),
+      },
+    });
+
+    if (existingAppointmentsCount >= newSchedule.max_patients) {
+      throw new BadRequestException('Ca làm việc đã đầy, vui lòng chọn ca khác');
+    }
+
+    // Update appointment with new schedule info, reset status to pending
+    appointment.doctor_id = dto.doctor_id;
+    appointment.hospital_id = dto.hospital_id;
+    appointment.schedule_id = dto.schedule_id;
+    appointment.appointment_date = dto.appointment_date as any;
+    appointment.appointment_time = dto.appointment_time;
+    appointment.status = 'pending';
+    appointment.cancel_reason = null;
+    appointment.refund_status = 'none';
+
+    if (dto.doctor_name_snapshot) {
+      appointment.doctor_name_snapshot = dto.doctor_name_snapshot;
+    }
+    if (dto.hospital_name_snapshot) {
+      appointment.hospital_name_snapshot = dto.hospital_name_snapshot;
+    }
+
+
+
+    await this.appointmentsRepository.save(appointment);
+
+    return appointment;
   }
 }

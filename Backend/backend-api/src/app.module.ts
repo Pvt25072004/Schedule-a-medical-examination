@@ -34,6 +34,8 @@ import { DoctorHospitalRequestsModule } from './doctor-hospital-requests/doctor-
 import { ServicePackagesModule } from './service-packages/service-packages.module';
 import { CitiesModule } from './cities/cities.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
+import { MedicalRecordsModule } from './medical-records/medical-records.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -93,6 +95,8 @@ import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
     ServicePackagesModule,
     CitiesModule,
     LeaveRequestsModule,
+    MedicalRecordsModule,
+    DashboardModule,
   ],
   controllers: [AppController, EmailController],
   providers: [
