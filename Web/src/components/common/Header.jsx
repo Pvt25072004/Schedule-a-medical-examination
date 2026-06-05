@@ -102,19 +102,19 @@ const Header = () => {
                         onClick={() => navigate(PAGES.BOOKING)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
                       >
-                        Đặt lịch theo khu vực
+                        Đặt khám theo cơ sở
                       </button>
                       <button
                         onClick={() => navigate(PAGES.DOCTORS)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
                       >
-                        Đặt lịch theo bác sĩ
+                        Đặt khám theo bác sĩ
                       </button>
                       <button
                         onClick={() => navigate(PAGES.BOOKING)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50"
                       >
-                        Đặt lịch khám tại nhà
+                        Đặt khám tại nhà
                       </button>
                       <button
                         onClick={() => navigate(PAGES.SERVICE_PACKAGES)}

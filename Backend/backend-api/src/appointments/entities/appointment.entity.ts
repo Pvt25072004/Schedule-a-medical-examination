@@ -124,6 +124,10 @@ export class Appointment {
   })
   refund_status: string;
 
+  @ApiProperty({ example: 0, description: 'Số lần đã dời lịch' })
+  @Column({ type: 'int', default: 0 })
+  reschedule_count: number;
+
   // --- Snapshot Fields ---
   @Column({
     type: 'decimal',

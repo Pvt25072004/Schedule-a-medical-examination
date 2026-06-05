@@ -146,7 +146,8 @@ const AppointmentsPage = ({ navigate }) => {
 
   const handleCancelAppointment = async () => {
     if (selectedAppointment) {
-      await cancelAppointment(selectedAppointment.id, cancelReason);
+      const reasonToSubmit = `[Bệnh nhân tự hủy] ${cancelReason}`;
+      await cancelAppointment(selectedAppointment.id, reasonToSubmit);
       setShowCancelModal(false);
       setSelectedAppointment(null);
       setCancelReason("");
@@ -454,7 +455,8 @@ const AppointmentsPage = ({ navigate }) => {
 
           {/* Refund / Reschedule options - only show if cancelled/rejected by hospital/doctor AND payment was made */}
           {(apt.status === "cancelled" || apt.status === "rejected") &&
-            apt.refundStatus !== "requested" && apt.refundStatus !== "completed" && (
+            apt.refundStatus !== "requested" && apt.refundStatus !== "completed" &&
+            !(apt.cancelReason && apt.cancelReason.includes("[Bệnh nhân tự hủy]")) && (
             <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm font-semibold text-amber-800 mb-2">ℹ️ Bạn muốn xử lý thế nào?</p>
               <div className="flex gap-2">
@@ -484,7 +486,18 @@ const AppointmentsPage = ({ navigate }) => {
 
           {/* Nút hành động */}
           <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
-            {apt.status === "pending" && (
+            {(apt.status === "pending" || apt.status === "confirmed") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openRescheduleModal(apt)}
+                className="text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+              >
+                Dời lịch
+              </Button>
+            )}
+
+            {(apt.status === "pending" || apt.status === "confirmed") && (
               <Button
                 variant="outline"
                 size="sm"
@@ -498,7 +511,7 @@ const AppointmentsPage = ({ navigate }) => {
               </Button>
             )}
 
-            {apt.status === "awaiting_payment" && (
+            {(apt.status === "awaiting_payment" || apt.status === "pending") && (
               <>
                 <Button
                   variant="primary"
@@ -961,7 +974,11 @@ const AppointmentsPage = ({ navigate }) => {
                 <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   <RefreshCw className="w-5 h-5 text-blue-600" /> Dời lịch khám
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">Chọn bác sĩ và ca khám mới. Thanh toán được giữ nguyên.</p>
+                <p className={`text-sm mt-1 ${rescheduleTarget?.rescheduleCount >= 1 ? 'text-amber-600 font-medium' : 'text-slate-500'}`}>
+                  {rescheduleTarget?.rescheduleCount >= 1 
+                    ? "Bạn đã hết lượt dời lịch miễn phí. Lần dời này sẽ yêu cầu thanh toán lại phí khám."
+                    : "Chọn bác sĩ và ca khám mới. Bạn có 1 lần dời lịch miễn phí."}
+                </p>
               </div>
               <button
                 onClick={() => setShowRescheduleModal(false)}
@@ -1004,7 +1021,11 @@ const AppointmentsPage = ({ navigate }) => {
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none text-sm font-medium"
                       >
                         <option value="">-- Chọn ngày khám --</option>
-                        {Array.from(new Set(rsSchedules.filter(s => s.is_available).map(s => s.work_date?.slice(0, 10)))).sort().map(dateStr => (
+                        {Array.from(new Set(
+                          rsSchedules
+                            .filter(s => s.is_available && s.work_date?.slice(0, 10) >= new Date().toISOString().slice(0, 10))
+                            .map(s => s.work_date?.slice(0, 10))
+                        )).sort().map(dateStr => (
                           <option key={dateStr} value={dateStr}>
                             {formatDate(dateStr)}
                           </option>

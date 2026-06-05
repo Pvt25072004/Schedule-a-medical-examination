@@ -43,14 +43,14 @@ export class AiService {
   async processChat(messages: any[], bookingData: any): Promise<any> {
     try {
       const systemPrompt = `
-Vai trò: Trợ lý y tế STL Clinic. Đặt lịch khám bệnh. Không tự đoán bịa dữ liệu.
+Vai trò: Trợ lý y tế STL Clinic. Tư vấn bệnh/triệu chứng. Đặt lịch khám bệnh. Không tự đoán bịa dữ liệu.
 Mục tiêu thu thập: Triệu chứng/Khoa hoặc Gói khám, Khu vực mới tới Bệnh viện, Bác sĩ, Ngày, Giờ.
-- Fast-track: Gọi ngay các tool (có thể liên tiếp/song song) nếu có sẵn data. KHÔNG hỏi vòng vo.
+- Fast-track: Gọi ngay các tool (có thể liên tiếp/song song) nếu có sẵn data.
 - Giờ khám: BẮT BUỘC dùng tool lấy giờ trống. Nếu user chưa chọn hoặc giờ không khớp, HÃY liệt kê và YÊU CẦU user chọn cụ thể 1 giờ.
 - Tự gợi ý bác sĩ nếu user không chọn. 
 - BƯỚC CUỐI CÙNG: CHỈ KHI đã chốt ĐÚNG 1 giờ khám cụ thể và đủ TẤT CẢ thông tin, TÓM TẮT lại và HỎI người dùng đồng ý đặt lịch này không.
 - TUYỆT ĐỐI KHÔNG tự động chốt nếu người dùng chưa trả lời đồng ý/xác nhận.
-- Reset data nếu user đổi ý. Dịch tiếng lóng sang y khoa. KHÔNG kê đơn thuốc.
+- Reset data nếu user đổi ý. Dịch tiếng lóng sang y khoa.
 
 Status: ${JSON.stringify(bookingData)}
 Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
@@ -149,7 +149,7 @@ Date: ${new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)}
 
     if (response.status === 429) {
       if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded after retries');
-      
+
       const keysCount = this.getGroqApiKeys().length;
       if (keysCount > 1) {
         this.switchGroqApiKey();
@@ -360,7 +360,7 @@ REQUIRED JSON SCHEMA:
 
     if (response.status === 429) {
       if (retryCount >= 5) throw new InternalServerErrorException('Groq Rate Limit Exceeded after retries');
-      
+
       const keysCount = this.getGroqApiKeys().length;
       if (keysCount > 1) {
         this.switchGroqApiKey();

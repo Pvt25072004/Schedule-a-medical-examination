@@ -760,8 +760,8 @@ export class AppointmentsService {
       throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
     }
 
-    if (!['cancelled', 'rejected'].includes(appointment.status)) {
-      throw new BadRequestException('Chỉ có thể dời lịch cho lịch hẹn đã bị hủy');
+    if (!['cancelled', 'rejected', 'pending', 'confirmed'].includes(appointment.status)) {
+      throw new BadRequestException('Chỉ có thể dời lịch cho lịch hẹn hợp lệ');
     }
 
     if (appointment.refund_status === 'requested' || appointment.refund_status === 'completed') {
@@ -786,13 +786,20 @@ export class AppointmentsService {
       throw new BadRequestException('Ca làm việc đã đầy, vui lòng chọn ca khác');
     }
 
-    // Update appointment with new schedule info, reset status to pending
+    // Update appointment with new schedule info
     appointment.doctor_id = dto.doctor_id;
     appointment.hospital_id = dto.hospital_id;
     appointment.schedule_id = dto.schedule_id;
     appointment.appointment_date = dto.appointment_date as any;
     appointment.appointment_time = dto.appointment_time;
-    appointment.status = 'pending';
+    
+    const currentCount = appointment.reschedule_count || 0;
+    if (currentCount >= 1) {
+      appointment.status = 'awaiting_payment';
+    } else {
+      appointment.status = 'pending';
+    }
+    appointment.reschedule_count = currentCount + 1;
     appointment.cancel_reason = null;
     appointment.refund_status = 'none';
 

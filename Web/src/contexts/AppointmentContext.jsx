@@ -61,6 +61,7 @@ export const AppointmentProvider = ({ children }) => {
           relationship: apt.relationship || 'Bản thân',
           payment: apt.payment,
           cancelReason: apt.cancel_reason || "",
+          rescheduleCount: apt.reschedule_count || 0,
           hasReview: !!apt.review,
           reviewId: apt.review?.id,
           reviewRating: apt.review?.rating || 0,
