@@ -50,7 +50,10 @@ class DoctorService {
       ).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        if (decoded is List) return decoded;
+        if (decoded is Map && decoded.containsKey('data')) return decoded['data'] as List<dynamic>;
+        return [];
       } else {
         throw Exception('Lỗi tải danh sách bác sĩ: ${response.statusCode}');
       }
@@ -111,7 +114,10 @@ class DoctorService {
       ).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        if (decoded is List) return decoded;
+        if (decoded is Map && decoded.containsKey('data')) return decoded['data'] as List<dynamic>;
+        return [];
       }
       return [];
     } catch (e) {

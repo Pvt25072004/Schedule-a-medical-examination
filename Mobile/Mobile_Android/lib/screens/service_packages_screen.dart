@@ -72,7 +72,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Giá: ${pkg['price'] ?? 0} đ',
+                                  'Giá: ${pkg['fixed_price'] ?? pkg['price'] ?? 0} đ',
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange),
                                 ),
                                 ElevatedButton(

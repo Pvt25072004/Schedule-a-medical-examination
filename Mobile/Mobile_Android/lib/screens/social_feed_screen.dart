@@ -76,8 +76,8 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
     
     // Optimistic update
     setState(() {
-      _posts[index]['isLiked'] = true;
-      _posts[index]['likesCount'] = (_posts[index]['likesCount'] ?? 0) + 1;
+      _posts[index]['is_liked'] = !(_posts[index]['is_liked'] ?? false);
+      _posts[index]['likes_count'] = (_posts[index]['likes_count'] ?? 0) + (_posts[index]['is_liked'] ? 1 : -1);
     });
 
     final success = await _socialService.likePost(postId);
@@ -85,8 +85,8 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
       // Revert if failed
       if (mounted) {
         setState(() {
-          _posts[index]['isLiked'] = false;
-          _posts[index]['likesCount'] = (_posts[index]['likesCount'] ?? 1) - 1;
+          _posts[index]['is_liked'] = !(_posts[index]['is_liked'] ?? false);
+          _posts[index]['likes_count'] = (_posts[index]['likes_count'] ?? 0) + (_posts[index]['is_liked'] ? 1 : -1);
         });
         showAppSnackBar(context, 'Like không thành công');
       }
@@ -130,7 +130,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                   }
                   
                   final post = _posts[index];
-                  final isLiked = post['isLiked'] ?? false;
+                  final isLiked = post['is_liked'] ?? false;
                   
                   return Card(
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -185,12 +185,12 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                                   isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
                                   color: isLiked ? Colors.green : Colors.grey,
                                 ),
-                                label: Text('${post['likesCount'] ?? 0} Thích'),
+                                label: Text('${post['likes_count'] ?? 0} Thích'),
                               ),
                               TextButton.icon(
                                 onPressed: () => _showComments(post['id']),
                                 icon: const Icon(Icons.comment_outlined, color: Colors.grey),
-                                label: const Text('Bình luận'),
+                                label: Text('${post['comments_count'] ?? 0} Bình luận'),
                               ),
                             ],
                           )

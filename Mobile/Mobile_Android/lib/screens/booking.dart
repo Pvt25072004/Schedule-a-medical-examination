@@ -58,6 +58,13 @@ class _BookingScreenState extends State<BookingScreen> {
   String note = '';   // Dùng biến này để lưu trạng thái
   String bookingCode = ''; // MỚI: Mã lịch khám trả về từ Backend
 
+  // Thông tin người thân
+  bool isForRelative = false;
+  String? patientGender;
+  String? patientDob;
+  String? relationship;
+  String? patientAddress;
+
   @override
   void initState() {
     super.initState();
@@ -178,6 +185,11 @@ class _BookingScreenState extends State<BookingScreen> {
           email = data['email'] ?? '';
           reason = data['reason'] ?? '';
           note = data['note'] ?? '';
+          isForRelative = data['isForRelative'] ?? false;
+          patientGender = data['patientGender'];
+          patientDob = data['patientDob'];
+          relationship = data['relationship'];
+          patientAddress = data['patientAddress'];
         } else if (step == 8) {
           // Step 8: Lưu mã xác nhận từ API Backend đặt lịch trả về
           bookingCode = data['bookingCode'] ?? '';
@@ -276,6 +288,11 @@ class _BookingScreenState extends State<BookingScreen> {
           email: email,
           reason: reason,
           bookingPrice: selectedPrice,
+          isForRelative: isForRelative,
+          patientGender: patientGender,
+          patientDob: patientDob,
+          relationship: relationship,
+          patientAddress: patientAddress,
           onNext: (data) => goToStep(8, data: data), // Chuyển sang Step 8 (Xác nhận)
           onBack: goBack, // Quay lại Step 6
         );

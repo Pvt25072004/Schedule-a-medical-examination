@@ -21,6 +21,13 @@ class Step7Payment extends StatefulWidget {
   final String? reason; // MỚI
   final DateTime date;
   final String timeSlot;
+  
+  // Thông tin người thân (Nếu có)
+  final bool isForRelative;
+  final String? patientGender;
+  final String? patientDob;
+  final String? relationship;
+  final String? patientAddress;
 
   const Step7Payment({
     super.key,
@@ -37,6 +44,11 @@ class Step7Payment extends StatefulWidget {
     this.reason,
     required this.date,
     required this.timeSlot,
+    this.isForRelative = false,
+    this.patientGender,
+    this.patientDob,
+    this.relationship,
+    this.patientAddress,
   });
 
   @override
@@ -137,7 +149,7 @@ class _Step7PaymentState extends State<Step7Payment> {
                   _buildPopupInfo(
                       'Ngày/Giờ:',
                       '${DateFormat('dd/MM/yyyy').format(widget.date)} - ${widget.timeSlot}'),
-                  _buildPopupInfo('Bệnh nhân:', widget.fullName),
+                  _buildPopupInfo('Bệnh nhân:', '${widget.fullName} ${widget.isForRelative ? '(${widget.relationship})' : ''}'),
                   _buildPopupInfo('SĐT:', widget.phone),
                   _buildPopupInfo('Phí:', _formatPrice(widget.bookingPrice),
                       isPrice: true),
@@ -201,6 +213,10 @@ class _Step7PaymentState extends State<Step7Payment> {
                             patientEmail: widget.email ?? 'patient@example.com',
                             patientName: widget.fullName,
                             patientPhone: widget.phone,
+                            patientGender: widget.patientGender,
+                            patientDob: widget.patientDob,
+                            relationship: widget.relationship,
+                            patientAddress: widget.patientAddress,
                           );
                           
                           timer?.cancel();

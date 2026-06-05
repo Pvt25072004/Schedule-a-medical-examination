@@ -28,14 +28,13 @@ class SocialService {
       final token = AuthService.accessToken;
       if (token == null) return false;
 
-      final url = Uri.parse('${ApiConfig.baseUrl}/likes');
+      final url = Uri.parse('${ApiConfig.baseUrl}/likes/toggle/$postId');
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'post_id': postId}),
       ).timeout(ApiConfig.timeout);
 
       return response.statusCode == 200 || response.statusCode == 201;
