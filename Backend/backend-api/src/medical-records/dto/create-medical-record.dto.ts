@@ -11,6 +11,21 @@ export class CreateMedicalRecordDto {
 
   @IsOptional()
   @IsString()
+  symptoms?: string;
+
+  @IsOptional()
+  vitals?: any;
+
+  @IsOptional()
+  @IsString()
+  treatment?: string;
+
+  @IsOptional()
+  @IsString()
+  recommendations?: string;
+
+  @IsOptional()
+  @IsString()
   prescription?: string;
 
   @IsOptional()

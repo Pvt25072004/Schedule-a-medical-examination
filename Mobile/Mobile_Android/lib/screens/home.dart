@@ -14,6 +14,9 @@ import '../utils/api_config.dart';
 import '../service/doctor_service.dart';
 import '../service/banner_service.dart';
 import 'booking.dart';
+import 'social_feed_screen.dart';
+import 'appointments.dart';
+import 'profile.dart' as profile_screen;
 import 'service_packages_screen.dart';
 import 'specialty_doctors.dart';
 import 'package:geolocator/geolocator.dart';
@@ -21,11 +24,13 @@ import 'package:geocoding/geocoding.dart';
 import '../subscreens/profile/notification_history.dart';
 import 'chatbot.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../service/service_package_service.dart';
 
 // --- Cài đặt Màu Chủ đạo ---
-const Color primaryColor = Colors.greenAccent; // Xanh lá cây
-const Color primaryDarkColor = Color(0xFF1B5E20); // Xanh lá đậm cho chữ
-const Color primaryLightColor = Color(0xFFE8F5E9); // Xanh lá rất nhạt cho nền
+const Color primaryColor = Color(0xFF48A1F3); // Xanh lam
+const Color primaryDarkColor = Color(0xFF143250); // Xanh navy đậm cho chữ
+const Color primaryLightColor = Color(0xFFEBF5FF); // Xanh lam rất nhạt cho nền
+const Color accentColor = Color(0xFFF99B1C); // Cam
 
 // Giả định: Mock data
 
@@ -46,28 +51,6 @@ const int initialSpecialtyCount = 5;
 
 
 
-// Fallback mock news
-final List<Map<String, dynamic>> mockNews = [
-  {
-    'title': 'Mẹo ăn uống lành mạnh',
-    'excerpt': 'Chế độ ăn cân bằng cho sức khỏe tốt.',
-    'image': 'assets/news/news1.jpg',
-  },
-  {
-    'title': 'Tập luyện cho tim mạch',
-    'excerpt': 'Bài tập đơn giản hàng ngày.',
-    'image': 'assets/news/news2.jpg',
-  },
-  {
-    'title': 'Phòng ngừa bệnh thường gặp',
-    'excerpt': 'Lời khuyên từ chuyên gia.',
-    'image': 'assets/news/news3.jpg',
-  },
-];
-
-Future<List<Map<String, dynamic>>> fetchHealthNews() async {
-  return Future.value(mockNews);
-}
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onBookingTap;
@@ -122,6 +105,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLoadingCategories = false;
   bool _isLoadingTopDoctors = false;
   bool _isLoadingBanners = false;
+
+  final ServicePackageService _packageService = ServicePackageService();
+  List<dynamic> _popularPackages = [];
+  bool _isLoadingPackages = false;
 
   @override
   void initState() {
@@ -180,7 +167,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _loadCategories(),
       _loadTopDoctors(),
       _loadBanners(),
+      _loadPopularPackages(),
     ]);
+  }
+
+  Future<void> _loadPopularPackages() async {
+    if (mounted) setState(() => _isLoadingPackages = true);
+    try {
+      final pkgs = await _packageService.fetchPopularPackages();
+      if (mounted) {
+        setState(() {
+          _popularPackages = pkgs.take(6).toList();
+          _isLoadingPackages = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingPackages = false);
+    }
   }
 
   Future<void> _loadBanners() async {
@@ -384,6 +387,83 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildPackageCard(dynamic pkg) {
+    return Container(
+      width: 250,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Container(
+              height: 70,
+              width: double.infinity,
+              color: primaryLightColor,
+              child: const Icon(Icons.medical_services_outlined, size: 36, color: primaryColor),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pkg['name'] ?? 'Gói Khám',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryDarkColor),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  pkg['description'] ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${pkg['fixed_price'] ?? pkg['price'] ?? 0}đ',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: accentColor),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingScreen(
+                              initialPackageData: pkg,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: primaryColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text('Đặt', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // --- Hàm show Dialog Chatbot ---
   void _showChatbotDialog(BuildContext context) {
     showDialog(
@@ -498,31 +578,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         // --- AppBar (Thanh tìm kiếm) ---
         appBar: AppBar(
-          title: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: primaryColor.withOpacity(0.3), width: 1),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search, color: primaryDarkColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Tìm kiếm bác sĩ, chuyên khoa, bệnh viện...',
-                      hintStyle: TextStyle(fontSize: 16, color: primaryDarkColor.withOpacity(0.7)),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    style: const TextStyle(fontSize: 16, color: primaryDarkColor),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.asset(
+                    'assets/images/LOGOmain.jpg',
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.cover,
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'STL Clinic',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ],
           ),
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
@@ -530,6 +613,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           automaticallyImplyLeading: false,
           systemOverlayStyle: SystemUiOverlayStyle.dark,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                showAppSnackBar(context, 'Tìm kiếm');
+              },
+            ),
             Stack(
               children: [
                 IconButton(
@@ -557,6 +646,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0, left: 4.0),
+              child: Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const profile_screen.ProfileScreen(),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundImage: AuthService.currentUser?.photoURL != null
+                        ? NetworkImage(AuthService.currentUser!.photoURL!)
+                        : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -1146,7 +1258,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   mainAxisAlignment: MainAxisAlignment.center,
                                                   children: List.generate(5, (i) {
                                                     if (i < rating.floor()) {
-                                                      return const Icon(Icons.star, color: Colors.amber, size: 12);
+                                                      return const Icon(Icons.star, color: accentColor, size: 14);
                                                     } else {
                                                       return Icon(Icons.star_border, color: Colors.grey[300], size: 12);
                                                     }
@@ -1188,6 +1300,61 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                         // Xít Bác sĩ và Tin tức lại
                         const SizedBox(height: 8),
+                        // --- Gói Dịch Vụ Nổi Bật ---
+                        if (_isLoadingPackages || _popularPackages.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Gói dịch vụ nổi bật',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryDarkColor,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const ServicePackagesScreen()),
+                                    );
+                                  },
+                                  child: const Text('Xem tất cả', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                                )
+                              ],
+                            ),
+                          ),
+                        if (_isLoadingPackages)
+                             const SizedBox(
+                                height: 185,
+                                child: Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 40),
+                                    child: LinearProgressIndicator(
+                                      backgroundColor: Color(0xFFE8F5E9),
+                                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                                      minHeight: 2,
+                                    ),
+                                  ),
+                                ),
+                              )
+                        else if (_popularPackages.isNotEmpty)
+                          SizedBox(
+                            height: 200,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              itemCount: _popularPackages.length,
+                              itemBuilder: (context, index) {
+                                final package = _popularPackages[index];
+                                return _buildPackageCard(package);
+                              },
+                            ),
+                          ),
+                        const SizedBox(height: 16),
 
                         // --- Bài viết sức khỏe (Giữ nguyên) ---
                         AnimationConfiguration.staggeredList(

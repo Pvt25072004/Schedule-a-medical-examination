@@ -79,6 +79,10 @@ class AppointmentService {
     required String patientEmail,
     required String patientName,
     required String patientPhone,
+    String? patientGender,
+    String? patientDob,
+    String? relationship,
+    String? patientAddress,
   }) async {
     try {
       int realUserId = 1;
@@ -109,6 +113,10 @@ class AppointmentService {
         'appointment_time': time,
         'examination_type': 'offline',
         'symptoms': symptoms.isNotEmpty ? symptoms : 'Đặt lịch qua Mobile App',
+        if (patientGender != null) 'patientGender': patientGender,
+        if (patientDob != null) 'patientDob': patientDob,
+        if (relationship != null) 'relationship': relationship,
+        if (patientAddress != null) 'patientAddress': patientAddress,
       };
 
       print('🚀 Gửi payload đặt lịch: ${jsonEncode(payload)}');

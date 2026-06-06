@@ -26,8 +26,8 @@ class _BookingProgressBarState extends State<BookingProgressBar> {
     'Khu vực',
     'Bệnh viện',
     'Chuyên khoa',
-    'Ngày giờ',
     'Bác sĩ',
+    'Ngày giờ',
     'Thông tin',
     'Thanh toán',
     'Xác nhận'
@@ -92,9 +92,9 @@ class _BookingProgressBarState extends State<BookingProgressBar> {
   @override
   Widget build(BuildContext context) {
     // Màu chủ đạo giả định
-    const Color primaryColor = Colors.green;
-    const Color activeColor = Colors.teal;
-    const Color primaryDarkColor = Color(0xFF1B5E20);
+    const Color primaryColor = Color(0xFF48A1F3);
+    const Color activeColor = Color(0xFFF99B1C); // Cam accent
+    const Color primaryDarkColor = Color(0xFF143250);
 
     // Kiểm tra nếu đang ở bước Xác nhận (Step 8)
     final bool isFinalConfirmation = widget.currentStep == 8;

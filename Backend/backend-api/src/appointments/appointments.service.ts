@@ -29,7 +29,7 @@ export class AppointmentsService {
     private firebaseService: FirebaseService,
     private notificationsService: NotificationsService,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(AppointmentsService.name);
 
@@ -117,14 +117,17 @@ export class AppointmentsService {
       const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
 
+      const safeNewEndTime = endTime.length === 5 ? `${endTime}:00` : endTime;
+      const safeNewStartTime = appointmentTime.length === 5 ? `${appointmentTime}:00` : appointmentTime;
+
       // KIỂM TRA MỚI: Check trùng giờ cụ thể dựa vào overlap
       const overlapConflict = await queryRunner.manager
         .createQueryBuilder(Appointment, 'appt')
         .where('appt.doctor_id = :doctorId', { doctorId: createAppointmentDto.doctor_id })
         .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
         .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
-        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
-        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: appointmentTime })
+        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: safeNewEndTime })
+        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: safeNewStartTime })
         .getCount();
 
       if (overlapConflict > 0) {
@@ -259,7 +262,7 @@ export class AppointmentsService {
   ): Promise<Appointment> {
     const appointment = (await this.findOne(id)) as Appointment;
     if (!appointment) throw new BadRequestException('Không tìm thấy lịch hẹn');
-    
+
     if (user?.role === 'admin_hospital' && appointment.hospital_id !== user.hospital_id) {
       throw new ForbiddenException('Bạn không có quyền sửa lịch hẹn của cơ sở khác');
     }
@@ -275,7 +278,8 @@ export class AppointmentsService {
       updateAppointmentDto.appointment_time
     ) {
       const dateStr = String(newDate).slice(0, 10);
-      
+
+      const safeNewTime = newTime.length === 5 ? `${newTime}:00` : newTime;
       const overlapConflict = await this.appointmentsRepository
         .createQueryBuilder('appt')
         .where('appt.doctor_id = :doctorId', { doctorId: newDoctorId })
@@ -283,8 +287,8 @@ export class AppointmentsService {
         .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
         .andWhere('appt.id != :id', { id: appointment.id }) // trừ chính nó ra
         // Giả sử mỗi lịch khám kéo dài 30 phút
-        .andWhere('appt.appointment_time < ADDTIME(:newTime, "00:30:00")', { newTime })
-        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newTime', { newTime })
+        .andWhere('appt.appointment_time < ADDTIME(:newTime, "00:30:00")', { newTime: safeNewTime })
+        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newTime', { newTime: safeNewTime })
         .getCount();
 
       if (overlapConflict > 0) {
@@ -360,7 +364,7 @@ export class AppointmentsService {
       where: { id },
       relations: ['user', 'doctor', 'doctor.user'],
     });
-    
+
     if (!appointment) {
       throw new Error(`Appointment #${id} not found`);
     }
@@ -546,9 +550,9 @@ export class AppointmentsService {
     return Array.from(availableSlots).sort();
   }
   async getAvailableTimesForPackage(packageId: number, date: string): Promise<string[]> {
-    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
-      where: { id: packageId }, 
-      relations: ['doctors'] 
+    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, {
+      where: { id: packageId },
+      relations: ['doctors']
     });
 
     if (!servicePackage || !servicePackage.doctors || servicePackage.doctors.length === 0) {
@@ -560,15 +564,15 @@ export class AppointmentsService {
 
     for (const doctor of servicePackage.doctors) {
       const times = await this.getAvailableTimes(doctor.id, date);
-      
+
       // Filter times that can accommodate the duration
       for (const time of times) {
         let isValid = true;
-        
+
         // We must check if the time slot + duration doesn't overlap with another booked appointment
         // We can do a quick check by verifying all 30-min sub-slots are in the 'times' array,
         // EXCEPT if there's a lunch break jump.
-        
+
         // Let's do the rigorous check via DB count (same as create)
         const [h, m] = time.split(':').map(Number);
         const totalStartMins = h * 60 + m;
@@ -585,19 +589,22 @@ export class AppointmentsService {
         const endM = totalEndMins % 60;
         const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
+        const safeNewEndTime = endTimeStr.length === 5 ? `${endTimeStr}:00` : endTimeStr;
+        const safeNewStartTime = time.length === 5 ? `${time}:00` : time;
+
         const overlapConflict = await this.dataSource.manager
           .createQueryBuilder(Appointment, 'appt')
           .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
           .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
-          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
-          .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
+          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: safeNewEndTime })
+          .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: safeNewStartTime })
           .getCount();
 
         // Also check if end time exceeds hospital schedule (assume max 17:00 = 17*60 = 1020)
         // If end time is past 17:00, it's invalid.
         if (totalEndMins > 17 * 60) {
-           isValid = false;
+          isValid = false;
         }
 
         if (overlapConflict > 0) {
@@ -614,9 +621,9 @@ export class AppointmentsService {
   }
 
   async getAvailableDoctorsForPackage(packageId: number, date: string, time: string): Promise<Doctor[]> {
-    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
-      where: { id: packageId }, 
-      relations: ['doctors', 'doctors.user'] 
+    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, {
+      where: { id: packageId },
+      relations: ['doctors', 'doctors.user']
     });
 
     if (!servicePackage || !servicePackage.doctors || servicePackage.doctors.length === 0) {
@@ -657,14 +664,17 @@ export class AppointmentsService {
 
       if (!schedule) continue;
 
+      const safeNewEndTime = endTimeStr.length === 5 ? `${endTimeStr}:00` : endTimeStr;
+      const safeNewStartTime = time.length === 5 ? `${time}:00` : time;
+
       // Check overlap
       const overlapConflict = await this.dataSource.manager
         .createQueryBuilder(Appointment, 'appt')
         .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
         .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
         .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
-        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
-        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
+        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: safeNewEndTime })
+        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: safeNewStartTime })
         .getCount();
 
       if (overlapConflict === 0) {
@@ -695,12 +705,22 @@ export class AppointmentsService {
     });
 
     if (expiredAppointments.length > 0) {
+      const expiredIds: number[] = [];
       for (const appt of expiredAppointments) {
         appt.status = 'cancelled';
         appt.cancel_reason = 'Hệ thống tự động hủy do quá hạn thanh toán (15 phút)';
+        expiredIds.push(appt.id);
       }
       await this.appointmentsRepository.save(expiredAppointments);
-      this.logger.log(`Auto-cancelled ${expiredAppointments.length} expired appointments.`);
+
+      // Cập nhật trạng thái payment tương ứng thành failed
+      if (expiredIds.length > 0) {
+        await this.dataSource.query(
+          `UPDATE payments SET payment_status = 'failed' WHERE appointment_id IN (${expiredIds.join(',')}) AND payment_status = 'pending'`
+        );
+      }
+
+      this.logger.log(`Auto-cancelled ${expiredAppointments.length} expired appointments and marked their payments as failed.`);
     }
   }
 
@@ -792,7 +812,7 @@ export class AppointmentsService {
     appointment.schedule_id = dto.schedule_id;
     appointment.appointment_date = dto.appointment_date as any;
     appointment.appointment_time = dto.appointment_time;
-    
+
     const currentCount = appointment.reschedule_count || 0;
     if (currentCount >= 1) {
       appointment.status = 'awaiting_payment';

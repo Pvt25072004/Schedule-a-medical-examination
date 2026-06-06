@@ -11,9 +11,12 @@ export class CitiesService {
   ) { }
 
   async findAll() {
-    return this.cityRepository.find({
-      order: { area: 'ASC', name: 'ASC' }
-    });
+    return this.cityRepository
+      .createQueryBuilder('city')
+      .loadRelationCountAndMap('city.hospitalCount', 'city.hospitals')
+      .orderBy('city.area', 'ASC')
+      .addOrderBy('city.name', 'ASC')
+      .getMany();
   }
 
   async seedCities() {

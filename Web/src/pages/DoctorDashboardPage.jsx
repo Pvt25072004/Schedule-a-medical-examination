@@ -145,7 +145,17 @@ const DoctorDashboardPage = ({ navigate }) => {
   const [selectedAppointmentForRecord, setSelectedAppointmentForRecord] = useState(null);
   const [medicalRecordForm, setMedicalRecordForm] = useState({
     diagnosis: "",
+    symptoms: "",
+    vitals: {
+      bloodPressure: "",
+      heartRate: "",
+      temperature: "",
+      weight: "",
+      height: "",
+    },
+    treatment: "",
     prescription: "",
+    recommendations: "",
     notes: "",
   });
   const [submittingMedicalRecord, setSubmittingMedicalRecord] = useState(false);
@@ -449,7 +459,11 @@ const DoctorDashboardPage = ({ navigate }) => {
     setSelectedAppointmentForRecord(appointment);
     setMedicalRecordForm({
       diagnosis: "",
+      symptoms: "",
+      vitals: { bloodPressure: "", heartRate: "", temperature: "", weight: "", height: "" },
+      treatment: "",
       prescription: "",
+      recommendations: "",
       notes: "",
     });
     setViewOnlyMedicalRecord(false);
@@ -468,7 +482,11 @@ const DoctorDashboardPage = ({ navigate }) => {
       if (record) {
         setMedicalRecordForm({
           diagnosis: record.diagnosis || "",
+          symptoms: record.symptoms || "",
+          vitals: record.vitals || { bloodPressure: "", heartRate: "", temperature: "", weight: "", height: "" },
+          treatment: record.treatment || "",
           prescription: record.prescription || "",
+          recommendations: record.recommendations || "",
           notes: record.notes || "",
         });
       }
@@ -490,7 +508,11 @@ const DoctorDashboardPage = ({ navigate }) => {
       await createMedicalRecord({
         appointment_id: selectedAppointmentForRecord.id,
         diagnosis: medicalRecordForm.diagnosis,
+        symptoms: medicalRecordForm.symptoms,
+        vitals: medicalRecordForm.vitals,
+        treatment: medicalRecordForm.treatment,
         prescription: medicalRecordForm.prescription,
+        recommendations: medicalRecordForm.recommendations,
         notes: medicalRecordForm.notes,
       });
 
@@ -1914,7 +1936,69 @@ const DoctorDashboardPage = ({ navigate }) => {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Chẩn đoán bệnh <span className="text-red-500">*</span>
+                    Triệu chứng lâm sàng
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Nhập triệu chứng bệnh nhân khai báo..."
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
+                    value={medicalRecordForm.symptoms}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, symptoms: e.target.value })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="col-span-2 md:col-span-5">
+                    <label className="block text-sm font-bold text-slate-700">
+                      Chỉ số sinh tồn
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Huyết áp (mmHg)"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
+                    value={medicalRecordForm.vitals?.bloodPressure || ""}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, bloodPressure: e.target.value } })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nhịp tim (bpm)"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
+                    value={medicalRecordForm.vitals?.heartRate || ""}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, heartRate: e.target.value } })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nhiệt độ (°C)"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
+                    value={medicalRecordForm.vitals?.temperature || ""}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, temperature: e.target.value } })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Cân nặng (kg)"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
+                    value={medicalRecordForm.vitals?.weight || ""}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, weight: e.target.value } })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Chiều cao (cm)"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
+                    value={medicalRecordForm.vitals?.height || ""}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, height: e.target.value } })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Chẩn đoán sơ bộ <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     rows={3}
@@ -1928,14 +2012,40 @@ const DoctorDashboardPage = ({ navigate }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Đơn thuốc / Hướng dẫn điều trị
+                    Hướng điều trị
                   </label>
                   <textarea
-                    rows={4}
-                    placeholder="Nhập đơn thuốc hoặc các hướng dẫn..."
+                    rows={2}
+                    placeholder="Nhập hướng điều trị..."
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
+                    value={medicalRecordForm.treatment}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, treatment: e.target.value })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Đơn thuốc
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Nhập đơn thuốc..."
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
                     value={medicalRecordForm.prescription}
                     onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, prescription: e.target.value })}
+                    disabled={viewOnlyMedicalRecord}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Lời khuyên / Tái khám
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Nhập lời khuyên hoặc dặn dò tái khám..."
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
+                    value={medicalRecordForm.recommendations}
+                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, recommendations: e.target.value })}
                     disabled={viewOnlyMedicalRecord}
                   />
                 </div>

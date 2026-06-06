@@ -5,7 +5,7 @@ import '../utils/api_config.dart';
 class ScheduleService {
   Future<List<dynamic>> fetchDoctorSchedules(int doctorId) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/schedules?doctorId=$doctorId');
+      final url = Uri.parse('${ApiConfig.baseUrl}/schedules/public/doctor/$doctorId');
       final response = await http.get(
         url,
         headers: {'Content-Type': 'application/json'},

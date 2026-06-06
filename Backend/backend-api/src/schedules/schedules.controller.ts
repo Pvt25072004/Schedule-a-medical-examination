@@ -44,6 +44,11 @@ export class SchedulesController {
     return this.schedulesService.findByDoctor(doctorId, req.user);
   }
 
+  @Get('public/doctor/:doctorId')
+  findPublicByDoctor(@Param('doctorId', ParseIntPipe) doctorId: number) {
+    return this.schedulesService.findByDoctor(doctorId);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {

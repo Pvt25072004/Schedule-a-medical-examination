@@ -11,6 +11,9 @@ import 'screens/chatbot.dart';
 import 'screens/social_feed_screen.dart';
 import 'service/auth_service.dart';
 import 'screens/doctor_dashboard.dart';
+import 'screens/all_doctors_screen.dart' as all_doctors_screen;
+import 'screens/service_packages_screen.dart' as service_packages_screen;
+import 'utils/snackbar_helper.dart' as snackbar_helper;
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -87,9 +90,61 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _switchToBooking() {
-    setState(() {
-      _selectedIndex = 1;
-    });
+    _showBookingOptions();
+  }
+
+  void _showBookingOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('Tùy chọn Đặt Lịch', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.local_hospital, color: Color(0xFF48A1F3)),
+                title: const Text('Đặt lịch theo cơ sở'),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => _selectedIndex = 1);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.person, color: Colors.blue),
+                title: const Text('Đặt khám theo bác sĩ'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const all_doctors_screen.AllDoctorsScreen()));
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.home, color: Colors.orange),
+                title: const Text('Khám tại nhà'),
+                onTap: () {
+                  Navigator.pop(context);
+                  snackbar_helper.showAppSnackBar(context, 'Tính năng Khám tại nhà đang phát triển!');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.medical_services, color: Colors.purple),
+                title: const Text('Gói dịch vụ khám'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const service_packages_screen.ServicePackagesScreen()));
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // 👈 Mở popup dialog khi tap chatbot
@@ -117,7 +172,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                      color: Colors.green,
+                      color: const Color(0xFF48A1F3),
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -265,7 +320,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: Colors.green.shade600,
+                                color: const Color(0xFF48A1F3),
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
@@ -328,7 +383,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         bottomNavigationBar: BottomAppBar(
           shape: const CircularNotchedRectangle(),
           notchMargin: 6,
-          elevation: 0, // 👈 Bỏ shadow để navbar không xám khi scroll
+          elevation: 0,
           child: SizedBox(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -336,8 +391,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 navItem(Icons.home, "Trang chủ", 0),
                 navItem(Icons.public, "Cộng đồng", 2),
                 const SizedBox(width: 40),
+                navItem(Icons.calendar_month, "Đặt lịch", -1), // -1 triggers popup
                 navItem(Icons.list_alt, "Lịch hẹn", 3),
-                navItem(Icons.person, "Tài khoản", 4),
               ],
             ),
           ),
@@ -371,7 +426,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     },
                     blendMode: BlendMode.srcATop,
                     child: FloatingActionButton(
-                      backgroundColor: Colors.green,
+                      backgroundColor: const Color(0xFF48A1F3),
                       shape: const CircleBorder(),
                       elevation: 10,
                       child: Transform.scale(
@@ -401,27 +456,33 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   // ✅ Bottom Navbar item
   Widget navItem(IconData icon, String label, int index) {
-    final bool active = _selectedIndex == index;
+    final bool active = _selectedIndex == index && index != -1;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(30),
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
-        splashColor: Colors.green.withOpacity(0.2),
+        splashColor: const Color(0xFF48A1F3).withOpacity(0.2),
         highlightColor: Colors.transparent,
-        onTap: () => setState(() => _selectedIndex = index),
+        onTap: () {
+          if (index == -1) {
+            _showBookingOptions();
+          } else {
+            setState(() => _selectedIndex = index);
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: active ? Colors.green : Colors.grey),
+              Icon(icon, color: active ? const Color(0xFF48A1F3) : Colors.grey),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  color: active ? Colors.green : Colors.grey,
+                  color: active ? const Color(0xFF48A1F3) : Colors.grey,
                 ),
               ),
             ],

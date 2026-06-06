@@ -13,8 +13,8 @@ class NotificationHistoryScreen extends StatefulWidget {
 
 class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
   // --- Styling Palette ---
-  final Color primaryTeal = const Color(0xFF00BFA5);
-  final Color primaryDarkTeal = const Color(0xFF00796B);
+  final Color primaryTeal = const Color(0xFF48A1F3);
+  final Color primaryDarkTeal = const Color(0xFF143250);
   final Color bgGray = const Color(0xFFF5F7FA);
 
   bool _isLoading = true;
@@ -145,8 +145,8 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
       case 'appointment_confirmed':
         return {
           'icon': Icons.check_circle_outline_rounded,
-          'color': const Color(0xFF00BFA5),
-          'bgColor': const Color(0xFFE8F5E9),
+          'color': const Color(0xFF48A1F3),
+          'bgColor': const Color(0xFFEBF5FF),
           'label': 'Lịch hẹn đã xác nhận',
         };
       case 'appointment_cancelled':
@@ -159,8 +159,8 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
       case 'appointment_completed':
         return {
           'icon': Icons.assignment_turned_in_outlined,
-          'color': Colors.green.shade700,
-          'bgColor': Colors.green.shade50,
+          'color': const Color(0xFF48A1F3),
+          'bgColor': const Color(0xFFEBF5FF),
           'label': 'Hoàn thành buổi khám',
         };
       case 'system':
@@ -508,7 +508,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
                 child: const Icon(
                   Icons.notifications_none_rounded,
                   size: 80,
-                  color: Color(0xFF00BFA5),
+                  color: Color(0xFF48A1F3),
                 ),
               ),
               const SizedBox(height: 24),

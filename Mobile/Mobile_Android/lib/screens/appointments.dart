@@ -22,11 +22,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   final ReviewService _reviewService = ReviewService();
   
   late TabController _tabController;
+  DateTime? _selectedDateFilter;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_handleTabChange);
     _loadData();
   }
@@ -40,25 +41,71 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   void _handleTabChange() {
     if (_tabController.indexIsChanging) return;
-    
-    final List<String> filterMapping = ['Tất cả', 'pending', 'confirmed', 'history'];
+    _applyFilters();
+  }
+
+  void _applyFilters() {
+    final List<String> filterMapping = ['Tất cả', 'pending', 'confirmed', 'completed', 'cancelled'];
     final String currentFilter = filterMapping[_tabController.index];
     
     setState(() {
-      if (currentFilter == 'Tất cả') {
-        _filteredAppointments = _allAppointments;
-      } else if (currentFilter == 'history') {
-        _filteredAppointments = _allAppointments.where((a) {
-          final s = a['status']?.toString().toLowerCase() ?? '';
-          return s == 'completed' || s == 'cancelled' || s == 'rejected';
-        }).toList();
-      } else {
-        _filteredAppointments = _allAppointments.where((a) {
-          final s = a['status']?.toString().toLowerCase() ?? '';
-          return s == currentFilter;
-        }).toList();
-      }
+      _filteredAppointments = _allAppointments.where((a) {
+        // Tab filter
+        final s = a['status']?.toString().toLowerCase() ?? '';
+        bool statusMatch = false;
+        if (currentFilter == 'Tất cả') {
+          statusMatch = true;
+        } else if (currentFilter == 'cancelled') {
+           statusMatch = (s == 'cancelled' || s == 'rejected');
+        } else {
+           statusMatch = (s == currentFilter);
+        }
+
+        // Date filter
+        bool dateMatch = true;
+        if (_selectedDateFilter != null) {
+          try {
+            final apptDate = DateTime.parse(a['appointment_date'].toString());
+            dateMatch = apptDate.year == _selectedDateFilter!.year && 
+                        apptDate.month == _selectedDateFilter!.month && 
+                        apptDate.day == _selectedDateFilter!.day;
+          } catch (e) {
+            dateMatch = false;
+          }
+        }
+
+        return statusMatch && dateMatch;
+      }).toList();
     });
+  }
+
+  Future<void> _pickDateFilter() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDateFilter ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF48A1F3),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() => _selectedDateFilter = picked);
+      _applyFilters();
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() => _selectedDateFilter = null);
+    _applyFilters();
   }
 
   Future<void> _loadData() async {
@@ -94,7 +141,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       case 'pending':
         return const Color(0xFFFFA726); // Cam ấm
       case 'confirmed':
-        return const Color(0xFF00A86B); // Ngọc bích Emerald
+        return const Color(0xFF48A1F3); // Xanh lam
       case 'completed':
         return const Color(0xFF42A5F5); // Xanh biển
       case 'cancelled':
@@ -108,11 +155,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   String _getStatusLabel(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'Chờ duyệt';
+        return 'Chưa thanh toán';
       case 'confirmed':
-        return 'Đã duyệt';
+        return 'Đã xác nhận';
       case 'completed':
-        return 'Hoàn thành';
+        return 'Đã hoàn thành';
       case 'cancelled':
       case 'rejected':
         return 'Đã hủy';
@@ -155,8 +202,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryThemeColor = Color(0xFF00A86B); // Ngọc bích đậm tuyệt đẹp
-
+    const Color primaryThemeColor = Color(0xFF48A1F3); // Xanh lam chủ đạo
     return Scaffold(
       backgroundColor: const Color(0xFFF6F9F8),
       body: RefreshIndicator(
@@ -197,11 +243,49 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                       ),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                    child: Text(
-                      'Theo dõi và quản lý các lần thăm khám y tế',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Theo dõi và quản lý các lần thăm khám y tế',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                        Row(
+                          children: [
+                            if (_selectedDateFilter != null)
+                              IconButton(
+                                icon: const Icon(Icons.clear, color: Colors.white70, size: 20),
+                                onPressed: _clearDateFilter,
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 8),
+                              ),
+                            InkWell(
+                              onTap: _pickDateFilter,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.calendar_month, color: Colors.white, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _selectedDateFilter != null 
+                                          ? DateFormat('dd/MM/yyyy').format(_selectedDateFilter!) 
+                                          : 'Lọc ngày',
+                                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -219,9 +303,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                     dividerColor: Colors.transparent,
                     tabs: const [
                       Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Tất cả', style: TextStyle(fontWeight: FontWeight.bold)))),
-                      Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Chờ duyệt', style: TextStyle(fontWeight: FontWeight.bold)))),
-                      Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Đã duyệt', style: TextStyle(fontWeight: FontWeight.bold)))),
-                      Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Lịch sử', style: TextStyle(fontWeight: FontWeight.bold)))),
+                      Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Chưa thanh toán', style: TextStyle(fontWeight: FontWeight.bold)))),
+                      Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Đã xác nhận', style: TextStyle(fontWeight: FontWeight.bold)))),
+                      Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Đã hoàn thành', style: TextStyle(fontWeight: FontWeight.bold)))),
+                      Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Đã hủy', style: TextStyle(fontWeight: FontWeight.bold)))),
                     ],
                   ),
                 ],
@@ -436,27 +521,43 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                     Colors.orange.shade700
                   ),
                   
-                  if (status.toLowerCase() == 'confirmed') ...[
+                  if (status.toLowerCase() == 'pending' || status.toLowerCase() == 'confirmed') ...[
                     const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showAppSnackBar(context, '🎉 Bác sĩ đã chấp nhận lịch khám! Hãy đến đúng giờ.', color: Colors.green);
-                        },
-                        icon: const Icon(Icons.verified, size: 18),
-                        label: const Text(
-                          'BÁC SĨ ĐÃ XÁC NHẬN',
-                          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              showAppSnackBar(context, 'Tính năng dời lịch đang được phát triển, vui lòng hủy và đặt lại!');
+                            },
+                            icon: const Icon(Icons.edit_calendar, size: 18),
+                            label: const Text('Dời lịch'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue.shade700,
+                              side: BorderSide(color: Colors.blue.shade700),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00A86B),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              _showCancelDialog(appt);
+                            },
+                            icon: const Icon(Icons.cancel_outlined, size: 18),
+                            label: const Text('Hủy lịch'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade600,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                   
@@ -536,6 +637,63 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           ),
         ),
       ],
+    );
+  }
+
+  void _showCancelDialog(dynamic appt) {
+    final TextEditingController reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Xác nhận hủy lịch'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Bạn có chắc chắn muốn hủy lịch hẹn này không?'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  labelText: 'Lý do hủy (tùy chọn)',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Không', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                setState(() => _isLoading = true);
+                final success = await _appointmentService.updateAppointmentStatus(
+                  appointmentId: appt['id'], 
+                  status: 'cancelled',
+                  reason: reasonController.text.isNotEmpty ? reasonController.text : 'Người dùng hủy',
+                );
+                if (success) {
+                  showAppSnackBar(context, 'Hủy lịch thành công!', color: const Color(0xFF48A1F3));
+                  _loadData();
+                } else {
+                  showAppSnackBar(context, 'Hủy lịch thất bại! Vui lòng thử lại.');
+                  setState(() => _isLoading = false);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Hủy lịch', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      }
     );
   }
 
@@ -699,8 +857,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                                   return;
                                 }
                                 
-                                Navigator.pop(context); // Close dialog
-                                
                                 bool success;
                                 if (isEditing) {
                                   success = await _reviewService.updateReview(
@@ -719,7 +875,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                                 }
                                 
                                 if (success) {
-                                  showAppSnackBar(context, '🎉 ${isEditing ? 'Cập nhật' : 'Gửi'} đánh giá thành công!', color: Colors.green);
+                                  showAppSnackBar(context, '🎉 ${isEditing ? 'Cập nhật' : 'Gửi'} đánh giá thành công!', color: const Color(0xFF48A1F3));
+                                  Navigator.pop(context); // Close dialog
                                   _loadData(); // Reload appointments to reflect new review status
                                 } else {
                                   showAppSnackBar(context, '❌ Không thể lưu đánh giá.', color: Colors.red);

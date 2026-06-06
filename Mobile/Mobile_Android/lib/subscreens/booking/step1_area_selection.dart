@@ -1,6 +1,8 @@
 // step1_area_selection.dart (Đã sửa UI Khung và Icon Khu vực)
 import 'package:flutter/material.dart';
 
+import '../../service/city_service.dart';
+
 class Step1AreaSelection extends StatefulWidget {
   final Function(Map<String, dynamic>) onNext;
   const Step1AreaSelection({super.key, required this.onNext});
@@ -10,34 +12,46 @@ class Step1AreaSelection extends StatefulWidget {
 }
 
 class _Step1AreaSelectionState extends State<Step1AreaSelection> {
-  // Biến state để theo dõi khu vực nào đang được mở
   String? _expandedArea;
+  final CityService _cityService = CityService();
+  bool _isLoading = true;
 
-  // Dữ liệu mock cho các thành phố và số bệnh viện
   final Map<String, List<Map<String, dynamic>>> areas = {
-    'Miền Bắc': [
-      {'name': 'Hà Nội', 'hospitals': 45, 'color': const Color(0xFF2FA8E0)}, // Màu xanh của bạn
-      {'name': 'Hải Phòng', 'hospitals': 18, 'color': const Color(0xFF2FA8E0)},
-      {'name': 'Quảng Ninh', 'hospitals': 12, 'color': const Color(0xFF2FA8E0)},
-      {'name': 'Thái Nguyên', 'hospitals': 8, 'color': const Color(0xFF2FA8E0)},
-      {'name': 'Hải Dương', 'hospitals': 10, 'color': const Color(0xFF2FA8E0)},
-      {'name': 'Bắc Ninh', 'hospitals': 7, 'color': const Color(0xFF2FA8E0)},
-    ],
-    'Miền Trung': [
-      {'name': 'Đà Nẵng', 'hospitals': 22, 'color': Colors.orange}, // Màu cam
-      {'name': 'Huế', 'hospitals': 15, 'color': Colors.orange},
-      {'name': 'Quảng Nam', 'hospitals': 9, 'color': Colors.orange},
-      {'name': 'Quảng Ngãi', 'hospitals': 8, 'color': Colors.orange},
-    ],
-    'Miền Nam': [
-      {'name': 'TP. Hồ Chí Minh', 'hospitals': 60, 'color': Colors.redAccent}, // Màu đỏ nhạt
-      {'name': 'Bình Dương', 'hospitals': 25, 'color': Colors.redAccent},
-      {'name': 'Đồng Nai', 'hospitals': 20, 'color': Colors.redAccent},
-      {'name': 'Cần Thơ', 'hospitals': 15, 'color': Colors.redAccent},
-      {'name': 'Bà Rịa - Vũng Tàu', 'hospitals': 12, 'color': Colors.redAccent},
-      {'name': 'Long An', 'hospitals': 10, 'color': Colors.redAccent},
-    ],
+    'Miền Bắc': [],
+    'Miền Trung': [],
+    'Miền Nam': [],
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCities();
+  }
+
+  Future<void> _loadCities() async {
+    final cities = await _cityService.fetchCities();
+    if (mounted) {
+      setState(() {
+        // Xóa dữ liệu cũ trước khi nạp mới để tránh trùng lặp nếu gọi lại
+        areas['Miền Bắc']?.clear();
+        areas['Miền Trung']?.clear();
+        areas['Miền Nam']?.clear();
+
+        for (var city in cities) {
+          // Lấy thuộc tính area (hoặc mien/region nếu API thay đổi)
+          final area = (city['area'] ?? city['mien'] ?? city['region'])?.toString().trim();
+          if (areas.containsKey(area)) {
+            areas[area]!.add({
+              'name': city['name'],
+              'hospitals': city['hospitalCount'] ?? 0,
+              'color': area == 'Miền Bắc' ? const Color(0xFF2FA8E0) : (area == 'Miền Trung' ? Colors.orange : Colors.redAccent),
+            });
+          }
+        }
+        _isLoading = false;
+      });
+    }
+  }
 
   // --- Widget helper để hiển thị Icon/Ảnh Khu vực ---
   Widget _buildRegionIcon(String areaName, Color color) {
@@ -133,7 +147,7 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                   ),
                   child: Icon(Icons.location_on, color: cityData['color'], size: 24),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(height: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,6 +160,7 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                           color: Colors.black87,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         '${cityData['hospitals']} bệnh viện',
                         style: TextStyle(
@@ -201,18 +216,18 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
             ),
           ),
         ),
-        // --- Kết thúc Header ---
-
-        // --- Danh sách khu vực ---
-        Expanded(
-          child: Padding(
+        // --- Danh sách thành phố ---
+        if (_isLoading)
+          const Expanded(child: Center(child: CircularProgressIndicator()))
+        else
+          Expanded(
+            child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: ListView(
-              // Đảm bảo padding bottom 120px
               padding: const EdgeInsets.only(top: 16.0, bottom: 100.0),
               children: areas.keys.map((areaName) {
                 final Color areaAccentColor = areaName == 'Miền Bắc'
-                    ? const Color(0xFF2FA8E0)
+                    ? const Color(0xFF48A1F3)
                     : areaName == 'Miền Trung'
                     ? Colors.orange
                     : Colors.redAccent;
@@ -226,7 +241,6 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                     GestureDetector(
                       onTap: () {
                         setState(() {
-                          // Logic chỉ mở một khu vực tại một thời điểm
                           _expandedArea = isCurrentAreaExpanded ? null : areaName;
                         });
                       },
@@ -236,7 +250,6 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          // Viền khung theo màu khu vực
                           border: Border.all(
                             color: isCurrentAreaExpanded ? areaAccentColor : Colors.grey.shade300,
                             width: isCurrentAreaExpanded ? 1.5 : 1.0,
@@ -247,11 +260,8 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                         ),
                         child: Row(
                           children: [
-                            // Icon/Ảnh Khu vực
                             _buildRegionIcon(areaName, areaAccentColor),
                             const SizedBox(width: 12),
-
-                            // Tên Khu vực
                             Expanded(
                               child: Text(
                                 areaName,
@@ -262,7 +272,6 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                                 ),
                               ),
                             ),
-                            // Icon + hoặc - (To hơn)
                             _buildExpansionIcon(areaName, areaAccentColor),
                           ],
                         ),

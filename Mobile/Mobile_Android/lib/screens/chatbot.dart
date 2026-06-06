@@ -45,6 +45,42 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
     });
   }
 
+  void _clearChat() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa trò chuyện'),
+        content: const Text('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _messages.clear();
+                _messages.add({'text': 'Xin chào! Tôi là trợ lý ảo của HealthCare VN. Bạn cần hỗ trợ gì hôm nay?', 'isUser': false});
+                _bookingData = {
+                  'hospitalId': null,
+                  'hospitalName': '',
+                  'specialty': null,
+                  'categoryId': null,
+                  'doctorId': null,
+                  'doctorName': '',
+                  'packageId': null,
+                  'packageName': '',
+                  'date': '',
+                  'time': '',
+                  'symptoms': null,
+                };
+              });
+            },
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -124,9 +160,11 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
         color: const Color(0xFFFFF8F0).withOpacity(0.92), // 👈 Thêm độ trong suốt nhẹ cho hộp chat đẹp hơn
         // 👈 Bỏ borderRadius ở đây, để parent ClipRRect lo bo tròn toàn bộ
       ),
-      child: Column(
+      child: Stack(
         children: [
-          // FIXED: Messages list (mở rộng để chiếm hết không gian)
+          Column(
+            children: [
+              // FIXED: Messages list (mở rộng để chiếm hết không gian)
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -149,7 +187,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: message['isUser'] ? Colors.greenAccent : Colors.white,
+                      color: message['isUser'] ? const Color(0xFF48A1F3) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -177,7 +215,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.9), // 👈 Cũng thêm transparent cho input bar
-              border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+              border: Border.all(color: const Color(0xFF48A1F3).withOpacity(0.3)),
               borderRadius: const BorderRadius.only( // 👈 Bo tròn dưới để đẹp, parent clip nếu cần
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
@@ -199,15 +237,15 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                       hintText: 'Nhập tin nhắn...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: Colors.greenAccent.withOpacity(0.5)),
+                        borderSide: BorderSide(color: const Color(0xFF48A1F3).withOpacity(0.5)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: Colors.greenAccent.withOpacity(0.5)),
+                        borderSide: BorderSide(color: const Color(0xFF48A1F3).withOpacity(0.5)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: Colors.greenAccent, width: 2),
+                        borderSide: const BorderSide(color: Color(0xFF48A1F3), width: 2),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
@@ -218,7 +256,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                 FloatingActionButton(
                   onPressed: _sendMessage,
                   mini: true,
-                  backgroundColor: Colors.greenAccent,
+                  backgroundColor: const Color(0xFF48A1F3),
                   child: const Icon(Icons.send, color: Colors.white),
                 ),
               ],
@@ -226,6 +264,30 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
           ),
         ],
       ),
+      Positioned(
+        top: 8,
+        right: 8,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: _clearChat,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                ],
+              ),
+              child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+            ),
+          ),
+        ),
+      ),
+      ],
+    ),
     );
   }
 

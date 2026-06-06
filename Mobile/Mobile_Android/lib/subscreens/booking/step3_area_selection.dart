@@ -4,6 +4,7 @@ import '../../service/category_service.dart';
 class Step3SpecialtySelection extends StatefulWidget {
   final String cityName;
   final String hospitalName;
+  final int? hospitalId;
   final Color? color;
   final Function(Map<String, dynamic>) onNext;
   final VoidCallback onBack;
@@ -12,6 +13,7 @@ class Step3SpecialtySelection extends StatefulWidget {
     super.key,
     required this.cityName,
     required this.hospitalName,
+    this.hospitalId,
     this.color,
     required this.onNext,
     required this.onBack,
@@ -31,7 +33,7 @@ class _Step3SpecialtySelectionState extends State<Step3SpecialtySelection> {
     Colors.blue,
     Colors.orange,
     Colors.purple,
-    Colors.green,
+    const Color(0xFF48A1F3),
     Colors.pink,
     Colors.brown,
     Colors.teal,
@@ -59,7 +61,7 @@ class _Step3SpecialtySelectionState extends State<Step3SpecialtySelection> {
   Future<void> _loadCategories() async {
     setState(() => _isLoading = true);
     try {
-      final data = await _categoryService.fetchCategories();
+      final data = await _categoryService.fetchCategories(hospitalId: widget.hospitalId);
       setState(() {
         _categories = data;
         _isLoading = false;
@@ -108,7 +110,7 @@ class _Step3SpecialtySelectionState extends State<Step3SpecialtySelection> {
 
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B5E20)))
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF48A1F3)))
               : _categories.isEmpty
                   ? Center(
                       child: Column(
