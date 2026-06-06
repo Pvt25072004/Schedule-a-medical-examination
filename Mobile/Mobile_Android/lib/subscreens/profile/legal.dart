@@ -4,8 +4,8 @@ class LegalScreen extends StatelessWidget {
   const LegalScreen({super.key});
 
   // --- Màu chủ đạo ---
-  final Color primaryColor = Colors.greenAccent;
-  final Color primaryDarkColor = const Color(0xFF1B5E20);
+  final Color primaryColor = const Color(0xFF48A1F3);
+  final Color primaryDarkColor = const Color(0xFF143250);
 
   // Ngày giả định đồng ý
   static const String consentDate = '15/01/2024';
@@ -127,7 +127,7 @@ class LegalScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle, size: 20, color: Colors.green.shade700),
+          Icon(Icons.check_circle, size: 20, color: const Color(0xFF48A1F3)),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(

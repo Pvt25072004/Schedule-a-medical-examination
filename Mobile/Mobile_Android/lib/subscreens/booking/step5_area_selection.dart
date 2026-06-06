@@ -38,7 +38,7 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
   bool _isLoading = true;
 
   // Màu chủ đạo giả định
-  final Color primaryDarkColor = const Color(0xFF1B5E20);
+  final Color primaryDarkColor = const Color(0xFF143250);
 
   @override
   void initState() {
@@ -111,7 +111,7 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
 
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B5E20)))
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF48A1F3)))
               : _doctors.isEmpty
                   ? Center(
                       child: Column(
@@ -245,7 +245,7 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
                                   children: [
                                     Chip(
                                       label: Text('$expYears năm kinh nghiệm', style: TextStyle(fontSize: 12, color: primaryDarkColor)),
-                                      backgroundColor: Colors.greenAccent.withOpacity(0.3),
+                                      backgroundColor: const Color(0xFF48A1F3).withOpacity(0.3),
                                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     Chip(
@@ -254,9 +254,9 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
                                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     Chip(
-                                      label: Text('Sẵn sàng', style: TextStyle(fontSize: 12, color: Colors.green.shade700)),
-                                      backgroundColor: Colors.green.shade100,
-                                      avatar: Icon(Icons.check_circle, size: 16, color: Colors.green.shade700),
+                                      label: Text('Sẵn sàng', style: TextStyle(fontSize: 12, color: const Color(0xFF48A1F3))),
+                                      backgroundColor: const Color(0xFFEBF5FF),
+                                      avatar: Icon(Icons.check_circle, size: 16, color: const Color(0xFF48A1F3)),
                                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ],

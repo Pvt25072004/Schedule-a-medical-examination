@@ -28,10 +28,14 @@ export class CategoriesService {
     return this.categoriesRepository.save(category);
   }
 
-  findAll(): Promise<Category[]> {
-    return this.categoriesRepository.find({
-      order: { name: 'ASC' },
-    });
+  findAll(hospitalId?: number): Promise<Category[]> {
+    const qb = this.categoriesRepository.createQueryBuilder('category');
+    if (hospitalId) {
+      qb.innerJoin('hospital_category', 'hc', 'hc.category_id = category.id')
+        .where('hc.hospital_id = :hospitalId', { hospitalId });
+    }
+    qb.orderBy('category.name', 'ASC');
+    return qb.getMany();
   }
 
   async findOne(id: number): Promise<Category> {

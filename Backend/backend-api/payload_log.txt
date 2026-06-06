@@ -55,3 +55,19 @@
 2026-06-04T10:36:51.680Z PAYLOAD: {"user_id":20,"doctor_id":9,"hospital_id":1,"schedule_id":15,"appointment_date":"2026-06-06","appointment_time":"15:00","examination_type":"offline","symptoms":"df","payment_method":"vnpay"}
 2026-06-04T16:02:06.433Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":280,"appointment_date":"2026-06-09","appointment_time":"10:30","examination_type":"offline","symptoms":"ewrwerwr","patient_name":"drgdrgdrg","patient_phone":"1553153131","patient_gender":"Nam","patient_dob":"2026-06-03","patient_address":"èwsfrsr","relationship":"Khác"}
 2026-06-04T19:13:18.962Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"schedule_id":282,"appointment_date":"2026-06-10","appointment_time":"14:30","examination_type":"offline","symptoms":"ưefwef","relationship":"Bản thân"}
+2026-06-06T07:21:18.123Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-18","appointment_time":"13:30","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:21:32.203Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-18","appointment_time":"13:30","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:29:44.147Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-18","appointment_time":"13:30","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:30:29.172Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-06","appointment_time":"15:30","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:33:42.053Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-06","appointment_time":"16:00","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:34:32.159Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-07","appointment_time":"07:00","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:37:40.437Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-07","appointment_time":"07:30","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:38:15.544Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-07","appointment_time":"11:00","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:39:11.121Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-07","appointment_time":"11:00","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:46:38.285Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-06","appointment_time":"16:00","examination_type":"offline","symptoms":"shshdhd"}
+2026-06-06T07:51:48.028Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-09","appointment_time":"10:30","examination_type":"offline","symptoms":"hehehrh"}
+2026-06-06T08:02:44.528Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-09","appointment_time":"10:30","examination_type":"offline","symptoms":"hehehrh"}
+2026-06-06T08:10:13.965Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-11","appointment_time":"10:30","examination_type":"offline","symptoms":"crcrc"}
+2026-06-06T09:31:15.934Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-09","appointment_time":"10:30","examination_type":"offline","symptoms":"hsbsbsb"}
+2026-06-06T09:42:55.435Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-08","appointment_time":"10:30","examination_type":"offline","symptoms":"nấn"}
+2026-06-06T09:49:30.934Z PAYLOAD: {"user_id":1,"doctor_id":1,"hospital_id":1,"appointment_date":"2026-06-09","appointment_time":"11:00","examination_type":"offline","symptoms":"tyyg"}

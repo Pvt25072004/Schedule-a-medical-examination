@@ -81,7 +81,7 @@ class _AllDoctorsScreenState extends State<AllDoctorsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryThemeColor = Color(0xFF00A86B);
+    const Color primaryThemeColor = Color(0xFF48A1F3);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F9F8),
@@ -181,10 +181,10 @@ class _AllDoctorsScreenState extends State<AllDoctorsScreen> {
             // Avatar
             CircleAvatar(
               radius: 36,
-              backgroundColor: const Color(0xFF00A86B).withOpacity(0.1),
+              backgroundColor: const Color(0xFF48A1F3).withOpacity(0.1),
               child: Text(
                 name.isNotEmpty ? name.substring(0, 1) : 'D',
-                style: const TextStyle(color: Color(0xFF00A86B), fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Color(0xFF48A1F3), fontSize: 24, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: 16),

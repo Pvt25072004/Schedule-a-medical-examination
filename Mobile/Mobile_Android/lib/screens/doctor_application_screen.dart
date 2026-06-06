@@ -83,7 +83,7 @@ class _DoctorApplicationScreenState extends State<DoctorApplicationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ứng tuyển Bác sĩ'),
-        backgroundColor: Colors.greenAccent,
+        backgroundColor: const Color(0xFF48A1F3),
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -95,7 +95,7 @@ class _DoctorApplicationScreenState extends State<DoctorApplicationScreen> {
                 children: [
                   const Text(
                     'Tham gia mạng lưới Bác sĩ của chúng tôi',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF143250)),
                   ),
                   const SizedBox(height: 16),
                   
@@ -146,7 +146,7 @@ class _DoctorApplicationScreenState extends State<DoctorApplicationScreen> {
                     child: ElevatedButton(
                       onPressed: _isSubmitting ? null : _submitApplication,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.greenAccent,
+                        backgroundColor: const Color(0xFF48A1F3),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),

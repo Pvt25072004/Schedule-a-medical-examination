@@ -14,8 +14,8 @@ class NotificationSettingsScreen extends StatefulWidget {
 
 class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
   // --- Màu chủ đạo ---
-  final Color primaryColor = const Color(0xFF00BFA5); // Teal (Match main profile theme)
-  final Color primaryDarkColor = const Color(0xFF00796B);
+  final Color primaryColor = const Color(0xFF48A1F3); // Blue (Match main profile theme)
+  final Color primaryDarkColor = const Color(0xFF143250);
 
   bool _isLoading = true;
 

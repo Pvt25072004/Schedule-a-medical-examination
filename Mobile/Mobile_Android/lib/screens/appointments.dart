@@ -89,7 +89,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
         return Theme(
           data: ThemeData.light().copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF00A86B),
+              primary: Color(0xFF48A1F3),
             ),
           ),
           child: child!,
@@ -141,7 +141,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       case 'pending':
         return const Color(0xFFFFA726); // Cam ấm
       case 'confirmed':
-        return const Color(0xFF00A86B); // Ngọc bích Emerald
+        return const Color(0xFF48A1F3); // Xanh lam
       case 'completed':
         return const Color(0xFF42A5F5); // Xanh biển
       case 'cancelled':
@@ -202,8 +202,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryThemeColor = Color(0xFF00A86B); // Ngọc bích đậm tuyệt đẹp
-
+    const Color primaryThemeColor = Color(0xFF48A1F3); // Xanh lam chủ đạo
     return Scaffold(
       backgroundColor: const Color(0xFFF6F9F8),
       body: RefreshIndicator(
@@ -679,7 +678,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                   reason: reasonController.text.isNotEmpty ? reasonController.text : 'Người dùng hủy',
                 );
                 if (success) {
-                  showAppSnackBar(context, 'Hủy lịch thành công!', color: Colors.green);
+                  showAppSnackBar(context, 'Hủy lịch thành công!', color: const Color(0xFF48A1F3));
                   _loadData();
                 } else {
                   showAppSnackBar(context, 'Hủy lịch thất bại! Vui lòng thử lại.');
@@ -858,8 +857,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                                   return;
                                 }
                                 
-                                Navigator.pop(context); // Close dialog
-                                
                                 bool success;
                                 if (isEditing) {
                                   success = await _reviewService.updateReview(
@@ -878,7 +875,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                                 }
                                 
                                 if (success) {
-                                  showAppSnackBar(context, '🎉 ${isEditing ? 'Cập nhật' : 'Gửi'} đánh giá thành công!', color: Colors.green);
+                                  showAppSnackBar(context, '🎉 ${isEditing ? 'Cập nhật' : 'Gửi'} đánh giá thành công!', color: const Color(0xFF48A1F3));
+                                  Navigator.pop(context); // Close dialog
                                   _loadData(); // Reload appointments to reflect new review status
                                 } else {
                                   showAppSnackBar(context, '❌ Không thể lưu đánh giá.', color: Colors.red);

@@ -3,9 +3,12 @@ import 'package:http/http.dart' as http;
 import '../utils/api_config.dart';
 
 class CategoryService {
-  Future<List<dynamic>> fetchCategories() async {
+  Future<List<dynamic>> fetchCategories({int? hospitalId}) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/categories');
+      final urlStr = hospitalId != null 
+          ? '${ApiConfig.baseUrl}/categories?hospitalId=$hospitalId' 
+          : '${ApiConfig.baseUrl}/categories';
+      final url = Uri.parse(urlStr);
       
       final response = await http.get(
         url,

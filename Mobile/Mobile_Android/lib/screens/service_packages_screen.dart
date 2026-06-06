@@ -35,7 +35,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gói Khám Sức Khỏe'),
-        backgroundColor: Colors.greenAccent,
+        backgroundColor: const Color(0xFF48A1F3),
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -87,7 +87,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.greenAccent,
+                                    backgroundColor: const Color(0xFF48A1F3),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                   ),

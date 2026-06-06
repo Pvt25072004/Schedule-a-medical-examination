@@ -24,8 +24,8 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
   DateTime? selectedDate;
   String selectedTimeSlot = '';
 
-  final Color primaryColor = Colors.greenAccent;
-  final Color primaryDarkColor = const Color(0xFF1B5E20);
+  final Color primaryColor = const Color(0xFF48A1F3);
+  final Color primaryDarkColor = const Color(0xFF143250);
 
   late DateTime _displayedMonth;
   bool flashcardEnabled = true;
@@ -293,10 +293,10 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Lịch khám đã chọn:', style: TextStyle(fontSize:16,fontWeight: FontWeight.bold,color: Color(0xFF1B5E20))),
+            const Text('Lịch khám đã chọn:', style: TextStyle(fontSize:16,fontWeight: FontWeight.bold,color: Color(0xFF143250))),
             const SizedBox(height:4),
             Text('$formattedDate | Giờ: $selectedTimeSlot',
-                style: const TextStyle(fontSize:18,fontWeight:FontWeight.w600,color: Color(0xFF1B5E20))),
+                style: const TextStyle(fontSize:18,fontWeight:FontWeight.w600,color: Color(0xFF143250))),
           ],
         ),
       );

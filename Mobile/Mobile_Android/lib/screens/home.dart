@@ -27,9 +27,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../service/service_package_service.dart';
 
 // --- Cài đặt Màu Chủ đạo ---
-const Color primaryColor = Colors.greenAccent; // Xanh lá cây
-const Color primaryDarkColor = Color(0xFF1B5E20); // Xanh lá đậm cho chữ
-const Color primaryLightColor = Color(0xFFE8F5E9); // Xanh lá rất nhạt cho nền
+const Color primaryColor = Color(0xFF48A1F3); // Xanh lam
+const Color primaryDarkColor = Color(0xFF143250); // Xanh navy đậm cho chữ
+const Color primaryLightColor = Color(0xFFEBF5FF); // Xanh lam rất nhạt cho nền
+const Color accentColor = Color(0xFFF99B1C); // Cam
 
 // Giả định: Mock data
 
@@ -431,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   children: [
                     Text(
                       '${pkg['fixed_price'] ?? pkg['price'] ?? 0}đ',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: accentColor),
                     ),
                     InkWell(
                       onTap: () {
@@ -1257,7 +1258,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   mainAxisAlignment: MainAxisAlignment.center,
                                                   children: List.generate(5, (i) {
                                                     if (i < rating.floor()) {
-                                                      return const Icon(Icons.star, color: Colors.amber, size: 12);
+                                                      return const Icon(Icons.star, color: accentColor, size: 14);
                                                     } else {
                                                       return Icon(Icons.star_border, color: Colors.grey[300], size: 12);
                                                     }

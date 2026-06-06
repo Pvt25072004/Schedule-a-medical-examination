@@ -376,6 +376,32 @@ export class PaymentsService {
     if (!payment) {
       throw new NotFoundException(`Payment for Appointment #${appointmentId} not found`);
     }
+
+    // Nếu đang chạy local (webhook không tới được), chủ động check lại với PayOS
+    if (payment.payment_status === 'pending' && payment.payment_method === 'payos' && payment.transaction_id) {
+      try {
+        const payos = this.getPayosInstance();
+        const linkInfo = await payos.paymentRequests.get(Number(payment.transaction_id));
+        
+        if (linkInfo && linkInfo.status === 'PAID') {
+          payment.payment_status = 'completed';
+          payment.paid_at = new Date();
+          await this.paymentsRepository.save(payment);
+
+          const appointment = await this.appointmentsRepository.findOne({ where: { id: appointmentId } });
+          if (appointment) {
+            appointment.status = 'confirmed';
+            await this.appointmentsRepository.save(appointment);
+          }
+        } else if (linkInfo && linkInfo.status === 'CANCELLED') {
+          payment.payment_status = 'failed';
+          await this.paymentsRepository.save(payment);
+        }
+      } catch (e) {
+        console.error('Error fetching PayOS status manually:', e.message);
+      }
+    }
+
     return payment;
   }
 }

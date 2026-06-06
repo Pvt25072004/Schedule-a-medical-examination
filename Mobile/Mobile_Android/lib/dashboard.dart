@@ -109,7 +109,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 child: Text('Tùy chọn Đặt Lịch', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
               ListTile(
-                leading: const Icon(Icons.local_hospital, color: Colors.green),
+                leading: const Icon(Icons.local_hospital, color: Color(0xFF48A1F3)),
                 title: const Text('Đặt lịch theo cơ sở'),
                 onTap: () {
                   Navigator.pop(context);
@@ -172,7 +172,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                      color: Colors.green,
+                      color: const Color(0xFF48A1F3),
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -320,7 +320,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: Colors.green.shade600,
+                                color: const Color(0xFF48A1F3),
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
@@ -426,7 +426,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     },
                     blendMode: BlendMode.srcATop,
                     child: FloatingActionButton(
-                      backgroundColor: Colors.green,
+                      backgroundColor: const Color(0xFF48A1F3),
                       shape: const CircleBorder(),
                       elevation: 10,
                       child: Transform.scale(
@@ -462,7 +462,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       borderRadius: BorderRadius.circular(30),
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
-        splashColor: Colors.green.withOpacity(0.2),
+        splashColor: const Color(0xFF48A1F3).withOpacity(0.2),
         highlightColor: Colors.transparent,
         onTap: () {
           if (index == -1) {
@@ -476,13 +476,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: active ? Colors.green : Colors.grey),
+              Icon(icon, color: active ? const Color(0xFF48A1F3) : Colors.grey),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  color: active ? Colors.green : Colors.grey,
+                  color: active ? const Color(0xFF48A1F3) : Colors.grey,
                 ),
               ),
             ],

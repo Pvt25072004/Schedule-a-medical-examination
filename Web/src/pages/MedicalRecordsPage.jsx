@@ -9,7 +9,12 @@ import {
   Filter,
   ChevronDown,
   MapPin,
-  ArrowLeft
+  ArrowLeft,
+  Activity,
+  HeartPulse,
+  Thermometer,
+  Scale,
+  Ruler
 } from "lucide-react";
 import { getMyMedicalRecords } from "../services/medical-records.api";
 import Card from "../components/common/Card";
@@ -191,33 +196,127 @@ const MedicalRecordsPage = ({ navigate: injectedNavigate }) => {
                 </div>
 
                 <div className="p-8 space-y-8">
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                      Chẩn đoán
-                    </h3>
-                    <div className="bg-gray-50 rounded-2xl p-5 text-gray-800 text-lg leading-relaxed whitespace-pre-wrap border border-gray-100">
-                      {selectedRecord.diagnosis || "Không có chẩn đoán"}
+                  <div className="grid grid-cols-1 gap-6">
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                        Chẩn đoán sơ bộ
+                      </h3>
+                      <div className="bg-gray-50 rounded-2xl p-5 text-gray-800 text-lg leading-relaxed whitespace-pre-wrap border border-gray-100">
+                        {selectedRecord.diagnosis || "Không có chẩn đoán"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                        Triệu chứng lâm sàng
+                      </h3>
+                      <div className="bg-orange-50/50 rounded-2xl p-5 text-gray-800 leading-relaxed whitespace-pre-wrap border border-orange-100">
+                        {selectedRecord.symptoms || "Không ghi nhận"}
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      Đơn thuốc
-                    </h3>
-                    <div className="bg-blue-50/50 rounded-2xl p-5 text-gray-800 leading-relaxed whitespace-pre-wrap border border-blue-100">
-                      {selectedRecord.prescription || "Không có đơn thuốc"}
+                  {selectedRecord.vitals && Object.keys(selectedRecord.vitals).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                        Chỉ số sinh tồn
+                      </h3>
+                      <div className="bg-purple-50/50 rounded-2xl p-5 border border-purple-100">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {selectedRecord.vitals.bloodPressure && (
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white rounded-lg text-purple-600 shadow-sm"><Activity className="w-4 h-4"/></div>
+                              <div>
+                                <p className="text-xs text-gray-500">Huyết áp</p>
+                                <p className="font-bold text-gray-800">{selectedRecord.vitals.bloodPressure} mmHg</p>
+                              </div>
+                            </div>
+                          )}
+                          {selectedRecord.vitals.heartRate && (
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white rounded-lg text-red-500 shadow-sm"><HeartPulse className="w-4 h-4"/></div>
+                              <div>
+                                <p className="text-xs text-gray-500">Nhịp tim</p>
+                                <p className="font-bold text-gray-800">{selectedRecord.vitals.heartRate} bpm</p>
+                              </div>
+                            </div>
+                          )}
+                          {selectedRecord.vitals.temperature && (
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white rounded-lg text-orange-500 shadow-sm"><Thermometer className="w-4 h-4"/></div>
+                              <div>
+                                <p className="text-xs text-gray-500">Nhiệt độ</p>
+                                <p className="font-bold text-gray-800">{selectedRecord.vitals.temperature} °C</p>
+                              </div>
+                            </div>
+                          )}
+                          {selectedRecord.vitals.weight && (
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white rounded-lg text-green-600 shadow-sm"><Scale className="w-4 h-4"/></div>
+                              <div>
+                                <p className="text-xs text-gray-500">Cân nặng</p>
+                                <p className="font-bold text-gray-800">{selectedRecord.vitals.weight} kg</p>
+                              </div>
+                            </div>
+                          )}
+                          {selectedRecord.vitals.height && (
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white rounded-lg text-blue-500 shadow-sm"><Ruler className="w-4 h-4"/></div>
+                              <div>
+                                <p className="text-xs text-gray-500">Chiều cao</p>
+                                <p className="font-bold text-gray-800">{selectedRecord.vitals.height} cm</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        Hướng điều trị
+                      </h3>
+                      <div className="bg-blue-50/50 rounded-2xl p-5 text-gray-800 leading-relaxed whitespace-pre-wrap border border-blue-100 h-full">
+                        {selectedRecord.treatment || "Chưa cập nhật"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        Đơn thuốc
+                      </h3>
+                      <div className="bg-green-50/50 rounded-2xl p-5 text-gray-800 leading-relaxed whitespace-pre-wrap border border-green-100 h-full">
+                        {selectedRecord.prescription || "Không có đơn thuốc"}
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                      Ghi chú thêm từ bác sĩ
-                    </h3>
-                    <div className="bg-orange-50/50 rounded-2xl p-5 text-gray-800 leading-relaxed whitespace-pre-wrap border border-orange-100">
-                      {selectedRecord.notes || "Không có ghi chú"}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                        Lời khuyên & Tái khám
+                      </h3>
+                      <div className="bg-pink-50/50 rounded-2xl p-5 text-gray-800 leading-relaxed whitespace-pre-wrap border border-pink-100 h-full">
+                        {selectedRecord.recommendations || "Không có lời khuyên"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                        Ghi chú thêm
+                      </h3>
+                      <div className="bg-gray-50 rounded-2xl p-5 text-gray-800 leading-relaxed whitespace-pre-wrap border border-gray-100 h-full">
+                        {selectedRecord.notes || "Không có ghi chú"}
+                      </div>
                     </div>
                   </div>
                 </div>

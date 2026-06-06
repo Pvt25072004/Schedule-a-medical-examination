@@ -42,9 +42,9 @@ class Step8Confirmation extends StatelessWidget {
   });
 
   // Màu chủ đạo giả định
-  final Color primaryColor = Colors.greenAccent;
-  final Color primaryDarkColor = const Color(0xFF1B5E20);
-  final Color successColor = Colors.green;
+  final Color primaryColor = const Color(0xFF48A1F3);
+  final Color primaryDarkColor = const Color(0xFF143250);
+  final Color successColor = const Color(0xFF48A1F3);
 
   String _formatPrice(double price) {
     final formatter = NumberFormat('###,###', 'vi_VN');

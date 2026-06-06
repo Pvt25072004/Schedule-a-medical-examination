@@ -51,8 +51,8 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
   final AuthService _authService = AuthService();
 
   // Màu chủ đạo
-  final Color primaryColor = Colors.greenAccent;
-  final Color primaryDarkColor = const Color(0xFF1B5E20);
+  final Color primaryColor = const Color(0xFF48A1F3);
+  final Color primaryDarkColor = const Color(0xFF143250);
   final Color errorColor = Colors.red.shade700;
 
   @override
@@ -205,7 +205,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
   @override
   Widget build(BuildContext context) {
     if (_userData == null && AuthService.currentUser != null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.greenAccent));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF48A1F3)));
     }
 
     return GestureDetector(
@@ -441,7 +441,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFF48A1F3),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

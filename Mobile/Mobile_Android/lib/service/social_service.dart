@@ -7,7 +7,12 @@ class SocialService {
   Future<List<dynamic>> fetchPosts({int page = 1, int limit = 10}) async {
     try {
       final url = Uri.parse('${ApiConfig.baseUrl}/posts?page=$page&limit=$limit');
-      final response = await http.get(url).timeout(ApiConfig.timeout);
+      final headers = <String, String>{};
+      final token = AuthService.accessToken;
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      final response = await http.get(url, headers: headers).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -40,6 +45,30 @@ class SocialService {
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       print('🔥 Lỗi likePost: $e');
+      return false;
+    }
+  }
+
+  Future<bool> checkLikeStatus(int postId) async {
+    try {
+      final token = AuthService.accessToken;
+      if (token == null) return false;
+
+      final url = Uri.parse('${ApiConfig.baseUrl}/likes/check/$postId');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['is_liked'] == true;
+      }
+      return false;
+    } catch (e) {
+      print('🔥 Lỗi checkLikeStatus: $e');
       return false;
     }
   }
@@ -81,6 +110,45 @@ class SocialService {
     } catch (e) {
       print('🔥 Lỗi commentPost: $e');
       return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchFanpageDetail(int id) async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/fanpages/$id');
+      final response = await http.get(url).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      print('🔥 Lỗi fetchFanpageDetail: $e');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>> fetchPostsByFanpage(int fanpageId, {int page = 1, int limit = 10}) async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/posts/fanpage/$fanpageId?page=$page&limit=$limit');
+      final headers = <String, String>{};
+      final token = AuthService.accessToken;
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      final response = await http.get(url, headers: headers).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        if (decoded is List) return decoded;
+        if (decoded is Map && decoded.containsKey('data')) {
+          return decoded['data'] as List<dynamic>;
+        }
+      }
+      return [];
+    } catch (e) {
+      print('🔥 Lỗi fetchPostsByFanpage: $e');
+      return [];
     }
   }
 }

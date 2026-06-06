@@ -7,8 +7,8 @@ import '../../welcome/welcome.dart';
 import 'editprofile.dart';
 import 'notification.dart';
 
-const Color primaryColor = Color(0xFF00BFA5);
-const Color primaryDarkColor = Color(0xFF00796B);
+const Color primaryColor = Color(0xFF48A1F3);
+const Color primaryDarkColor = Color(0xFF143250);
 const Color backgroundLight = Color(0xFFF7F7F7);
 
 class SettingsScreen extends StatefulWidget {

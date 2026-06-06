@@ -32,12 +32,18 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
     final cities = await _cityService.fetchCities();
     if (mounted) {
       setState(() {
+        // Xóa dữ liệu cũ trước khi nạp mới để tránh trùng lặp nếu gọi lại
+        areas['Miền Bắc']?.clear();
+        areas['Miền Trung']?.clear();
+        areas['Miền Nam']?.clear();
+
         for (var city in cities) {
-          final area = city['area'];
+          // Lấy thuộc tính area (hoặc mien/region nếu API thay đổi)
+          final area = (city['area'] ?? city['mien'] ?? city['region'])?.toString().trim();
           if (areas.containsKey(area)) {
             areas[area]!.add({
               'name': city['name'],
-              'hospitals': 10, // Giả định
+              'hospitals': city['hospitalCount'] ?? 0,
               'color': area == 'Miền Bắc' ? const Color(0xFF2FA8E0) : (area == 'Miền Trung' ? Colors.orange : Colors.redAccent),
             });
           }
@@ -154,6 +160,7 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                           color: Colors.black87,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         '${cityData['hospitals']} bệnh viện',
                         style: TextStyle(
@@ -209,9 +216,7 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
             ),
           ),
         ),
-        // --- Kết thúc Header ---
-
-        // --- Danh sách khu vực ---
+        // --- Danh sách thành phố ---
         if (_isLoading)
           const Expanded(child: Center(child: CircularProgressIndicator()))
         else
@@ -219,11 +224,10 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
             child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: ListView(
-              // Đảm bảo padding bottom 120px
               padding: const EdgeInsets.only(top: 16.0, bottom: 100.0),
               children: areas.keys.map((areaName) {
                 final Color areaAccentColor = areaName == 'Miền Bắc'
-                    ? const Color(0xFF2FA8E0)
+                    ? const Color(0xFF48A1F3)
                     : areaName == 'Miền Trung'
                     ? Colors.orange
                     : Colors.redAccent;
@@ -237,7 +241,6 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                     GestureDetector(
                       onTap: () {
                         setState(() {
-                          // Logic chỉ mở một khu vực tại một thời điểm
                           _expandedArea = isCurrentAreaExpanded ? null : areaName;
                         });
                       },
@@ -247,7 +250,6 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          // Viền khung theo màu khu vực
                           border: Border.all(
                             color: isCurrentAreaExpanded ? areaAccentColor : Colors.grey.shade300,
                             width: isCurrentAreaExpanded ? 1.5 : 1.0,
@@ -258,11 +260,8 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                         ),
                         child: Row(
                           children: [
-                            // Icon/Ảnh Khu vực
                             _buildRegionIcon(areaName, areaAccentColor),
                             const SizedBox(width: 12),
-
-                            // Tên Khu vực
                             Expanded(
                               child: Text(
                                 areaName,
@@ -273,7 +272,6 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
                                 ),
                               ),
                             ),
-                            // Icon + hoặc - (To hơn)
                             _buildExpansionIcon(areaName, areaAccentColor),
                           ],
                         ),
