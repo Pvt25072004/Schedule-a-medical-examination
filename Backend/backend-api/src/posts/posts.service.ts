@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
@@ -12,18 +12,18 @@ export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
-    @InjectRepository(Fanpage)
-    private readonly fanpageRepository: Repository<Fanpage>,
+    @InjectRepository(Hospital)
+    private readonly hospitalRepository: Repository<Hospital>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(createPostDto: CreatePostDto): Promise<Post> {
-    const fanpage = await this.fanpageRepository.findOne({
-      where: { id: createPostDto.fanpage_id },
+    const hospital = await this.hospitalRepository.findOne({
+      where: { id: createPostDto.hospital_id },
     });
 
-    if (!fanpage) {
-      throw new NotFoundException('Không tìm thấy Fanpage');
+    if (!hospital) {
+      throw new NotFoundException('Không tìm thấy Bệnh viện');
     }
 
     const post = this.postRepository.create(createPostDto);
@@ -34,7 +34,7 @@ export class PostsService {
     const skip = (page - 1) * limit;
     
     const [posts, total] = await this.postRepository.findAndCount({
-      relations: ['fanpage', 'fanpage.hospital'],
+      relations: ['hospital'],
       order: { created_at: 'DESC' },
       skip,
       take: limit,
@@ -52,7 +52,7 @@ export class PostsService {
   async findOne(id: number): Promise<Post> {
     const post = await this.postRepository.findOne({
       where: { id },
-      relations: ['fanpage', 'fanpage.hospital'],
+      relations: ['hospital'],
     });
 
     if (!post) {
@@ -62,20 +62,20 @@ export class PostsService {
     return post;
   }
 
-  async findByFanpageId(fanpage_id: number, page: number = 1, limit: number = 10) {
-    const fanpage = await this.fanpageRepository.findOne({
-      where: { id: fanpage_id },
+  async findByHospitalId(hospital_id: number, page: number = 1, limit: number = 10) {
+    const hospital = await this.hospitalRepository.findOne({
+      where: { id: hospital_id },
     });
 
-    if (!fanpage) {
-      throw new NotFoundException('Không tìm thấy Fanpage');
+    if (!hospital) {
+      throw new NotFoundException('Không tìm thấy Bệnh viện');
     }
 
     const skip = (page - 1) * limit;
 
     const [posts, total] = await this.postRepository.findAndCount({
-      where: { fanpage_id },
-      relations: ['fanpage', 'fanpage.hospital'],
+      where: { hospital_id },
+      relations: ['hospital'],
       order: { created_at: 'DESC' },
       skip,
       take: limit,

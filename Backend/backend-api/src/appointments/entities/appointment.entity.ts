@@ -27,9 +27,9 @@ export class Appointment {
   @Column()
   user_id: number;
 
-  @ApiProperty({ example: 202, description: 'ID bác sĩ' })
-  @Column()
-  doctor_id: number;
+  @ApiPropertyOptional({ example: 202, description: 'ID bác sĩ' })
+  @Column({ type: 'int', nullable: true })
+  doctor_id: number | null;
 
   @ApiProperty({ example: 5, description: 'ID bệnh viện' })
   @Column()
@@ -42,13 +42,13 @@ export class Appointment {
   @Column({ type: 'int', nullable: true })
   schedule_id: number | null;
 
-  @ApiProperty({ example: '2025-02-27', description: 'Ngày khám (YYYY-MM-DD)' })
-  @Column({ type: 'date' })
-  appointment_date: Date;
+  @ApiPropertyOptional({ example: '2025-02-27', description: 'Ngày khám (YYYY-MM-DD)' })
+  @Column({ type: 'date', nullable: true })
+  appointment_date: Date | null;
 
-  @ApiProperty({ example: '09:30', description: 'Giờ khám (HH:mm)' })
-  @Column({ type: 'time' })
-  appointment_time: string;
+  @ApiPropertyOptional({ example: '09:30', description: 'Giờ khám (HH:mm)' })
+  @Column({ type: 'time', nullable: true })
+  appointment_time: string | null;
 
   @ApiPropertyOptional({ example: '10:00', description: 'Giờ kết thúc khám (tính toán từ duration_minutes)' })
   @Column({ type: 'time', nullable: true })

@@ -41,8 +41,6 @@ export class Fanpage {
   @Column({ type: 'int', default: 0 })
   follower_count: number;
 
-  @OneToMany(() => Post, (post) => post.fanpage)
-  posts: Post[];
 
   @CreateDateColumn()
   created_at: Date;

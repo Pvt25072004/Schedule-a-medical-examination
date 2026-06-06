@@ -13,6 +13,7 @@ export class ServicePackagesService {
   async findAll(): Promise<ServicePackage[]> {
     return this.servicePackageRepo.find({
       relations: ['categories', 'hospitals', 'doctors'],
+      order: { created_at: 'DESC' },
     });
   }
 
@@ -39,5 +40,16 @@ export class ServicePackagesService {
       take: limit,
       relations: ['categories', 'hospitals'], // perhaps just basic info for the card
     });
+  }
+
+  async update(id: number, data: Partial<ServicePackage>): Promise<ServicePackage> {
+    const pkg = await this.findOne(id);
+    const updated = this.servicePackageRepo.merge(pkg, data);
+    return this.servicePackageRepo.save(updated);
+  }
+
+  async remove(id: number): Promise<void> {
+    const pkg = await this.findOne(id);
+    await this.servicePackageRepo.remove(pkg);
   }
 }

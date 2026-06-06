@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import { createAppointment as apiCreateAppointment, getAvailableTimes } from "../services/appointments.api";
 import { getSchedulesByDoctor } from "../services/doctor.schedules.api";
 import { createVnpayUrl, createPayosUrl } from "../services/payments.api";
@@ -29,6 +30,7 @@ import { getDoctors as getDoctorsApi } from "../services/admin.doctors.api";
 const BookingPage = ({ navigate }) => {
   const { addAppointment, isSlotAvailable } = useAppointments();
   const { user } = useAuth();
+  const { showError, showSuccess: showSuccessToast, showInfo } = useNotification();
   const location = useLocation();
   const initialDoctorId = location.state?.doctorId || "";
 
@@ -219,7 +221,7 @@ const BookingPage = ({ navigate }) => {
     }
 
     if (!user?.id) {
-      alert("Bạn cần đăng nhập trước khi đặt lịch");
+      showInfo("Bạn cần đăng nhập trước khi đặt lịch");
       return;
     }
 
@@ -267,9 +269,7 @@ const BookingPage = ({ navigate }) => {
       console.log("FOUND SCHEDULE:", foundSchedule);
 
       if (!foundSchedule) {
-        alert(
-          "Ngày bạn chọn chưa có lịch làm việc của bác sĩ. Hãy chọn ngày khác.",
-        );
+        showError("Ngày bạn chọn chưa có lịch làm việc của bác sĩ. Hãy chọn ngày khác.");
         return;
       }
 
@@ -312,7 +312,7 @@ const BookingPage = ({ navigate }) => {
           }
         } catch (err) {
           console.warn("VNPAY URL creation failed:", err);
-          alert("Không thể tạo URL thanh toán VNPAY, vui lòng thử lại sau.");
+          showError("Không thể tạo URL thanh toán VNPAY, vui lòng thử lại sau.");
           return;
         }
       }
@@ -330,7 +330,7 @@ const BookingPage = ({ navigate }) => {
           }
         } catch (err) {
           console.warn("PayOS URL creation failed:", err);
-          alert("Không thể tạo URL thanh toán PayOS, vui lòng thử lại sau.");
+          showError("Không thể tạo URL thanh toán PayOS, vui lòng thử lại sau.");
           return;
         }
       }
@@ -353,12 +353,7 @@ const BookingPage = ({ navigate }) => {
       }, 2000);
     } catch (error) {
       console.error(error);
-
-      alert(
-        error?.response?.data?.message ||
-        error.message ||
-        "Không thể tạo lịch hẹn",
-      );
+      showError(error?.response?.data?.message || error.message || "Không thể tạo lịch hẹn");
     } finally {
       setIsLoading(false);
     }

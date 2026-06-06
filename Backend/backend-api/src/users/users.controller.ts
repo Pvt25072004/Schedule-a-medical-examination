@@ -37,11 +37,15 @@ export class UsersController {
   findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('role') role: string,
+    @Query('status') status: string,
+    @Query('region') region: string,
+    @Query('search') search: string,
     @Req() req: any,
   ) {
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 100;
-    return this.usersService.findAll(pageNumber, limitNumber, req.user);
+    return this.usersService.findAll(pageNumber, limitNumber, req.user, { role, status, search, region });
   }
 
   @Get('/:id')

@@ -22,6 +22,12 @@ export const PAGES = {
   HOSPITAL_REGISTRATION: "/hospital-registration",
   SERVICE_PACKAGES: "/service-packages",
   MEDICAL_RECORDS: "/medical-records",
+  ABOUT: "/about",
+  FAQ: "/faq",
+  BOOKING_GUIDE: "/booking-guide",
+  PRIVACY_POLICY: "/privacy-policy",
+  TERMS: "/terms",
+  SPECIALTIES: "/specialties",
 };
 
 // Appointment Status

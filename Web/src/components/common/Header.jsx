@@ -183,11 +183,12 @@ const Header = () => {
                   <img
                     src={
                       user?.avatar_url ||
+                      user?.avatar ||
                       "https://ui-avatars.com/api/?name=" +
                       (user?.fullName || "User")
                     }
                     alt="Avatar"
-                    className="w-8 h-8 rounded-full border border-gray-200"
+                    className="w-8 h-8 rounded-full border border-gray-200 object-cover"
                   />
                   <span className="font-medium text-gray-700">
                     {user?.fullName || "Người dùng"}

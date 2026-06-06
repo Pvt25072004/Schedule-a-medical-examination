@@ -82,12 +82,13 @@ export class SchedulesService {
           continue;
         }
 
+        const isCreatedByAdmin = user?.role === 'admin' || user?.role === 'admin_hospital';
         const schedule = this.schedulesRepository.create({
           ...dto,
           work_date: workDateStr, // overwrite work_date with current date in loop
           doctor_id: doctor.id,
-          is_available: false,
-          approval_status: 'pending',
+          is_available: isCreatedByAdmin ? true : false,
+          approval_status: isCreatedByAdmin ? 'approved' : 'pending',
         });
         await this.schedulesRepository.save(schedule);
         successCount++;

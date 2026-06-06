@@ -30,6 +30,7 @@ import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { PAGES } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import logo from "../assets/LOGOmain.jpg";
 
 import {
@@ -68,8 +69,9 @@ const TABS = {
   PROFILE: "profile",
 };
 
-const DoctorDashboardPage = ({ navigate }) => {
+export default function DoctorDashboardPage({ navigate }) {
   const { user, logout } = useAuth();
+  const { showError, showSuccess, showInfo, confirm } = useNotification();
   const [activeTab, setActiveTab] = useState(TABS.OVERVIEW);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -172,8 +174,8 @@ const DoctorDashboardPage = ({ navigate }) => {
           license_number: profileData.license_number || "",
           category_id: profileData.category?.id || "",
           description: profileData.description || "",
-          avatar_url: profileData.avatar_url || "",
-          avatar_public_id: profileData.avatar_public_id || "",
+          avatar_url: profileData.avatar_url || profileData.user?.avatar_url || user?.avatar_url || user?.avatar || "",
+          avatar_public_id: profileData.avatar_public_id || profileData.user?.avatar_public_id || "",
           hospitalIds:
             profileData.hospitals?.map((h) => h.id || h.hospital_id) || [],
           old_password: "",
@@ -368,7 +370,7 @@ const DoctorDashboardPage = ({ navigate }) => {
 
   const handleQuickCreateSchedule = () => {
     if (!doctorProfile?.id) {
-      alert("Vui lòng lưu hồ sơ bác sĩ trước khi tạo ca làm việc");
+      showInfo("Vui lòng lưu hồ sơ bác sĩ trước khi tạo ca làm việc");
       return;
     }
     const linkedHospitals = Array.isArray(doctorProfile.hospitals)
@@ -401,12 +403,14 @@ const DoctorDashboardPage = ({ navigate }) => {
   };
 
   const handleDeleteSchedule = async (entry) => {
-    if (!window.confirm("Bạn có chắc muốn xóa ca làm việc này?")) return;
+    const isConfirm = await confirm("Xác nhận xóa", "Bạn có chắc muốn xóa ca làm việc này?");
+    if (!isConfirm) return;
     try {
       await deleteSchedule(entry.id);
       setSchedules((prev) => prev.filter((s) => s.id !== entry.id));
+      showSuccess("Đã xóa ca làm việc");
     } catch (e) {
-      alert(e.message || "Không thể xóa ca làm việc");
+      showError(e.message || "Không thể xóa ca làm việc");
     }
   };
 
@@ -419,8 +423,9 @@ const DoctorDashboardPage = ({ navigate }) => {
       setDoctorAppointments((prev) =>
         prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
+      showSuccess("Đã xác nhận lịch hẹn");
     } catch (e) {
-      alert(e.message || "Không thể xác nhận lịch hẹn");
+      showError(e.message || "Không thể xác nhận lịch hẹn");
     }
   };
 
@@ -428,7 +433,7 @@ const DoctorDashboardPage = ({ navigate }) => {
     const reason =
       window.prompt("Nhập lý do từ chối lịch hẹn này (bắt buộc):") || "";
     if (!reason.trim()) {
-      alert("Bạn cần nhập lý do khi từ chối lịch hẹn.");
+      showError("Bạn cần nhập lý do khi từ chối lịch hẹn.");
       return;
     }
     try {
@@ -440,8 +445,9 @@ const DoctorDashboardPage = ({ navigate }) => {
       setDoctorAppointments((prev) =>
         prev.map((apt) => (apt.id === updated.id ? updated : apt)),
       );
+      showSuccess("Đã từ chối lịch hẹn");
     } catch (e) {
-      alert(e.message || "Không thể từ chối lịch hẹn");
+      showError(e.message || "Không thể từ chối lịch hẹn");
     }
   };
 
@@ -473,7 +479,7 @@ const DoctorDashboardPage = ({ navigate }) => {
         });
       }
     } catch (e) {
-      alert("Không thể tải hồ sơ bệnh án: " + (e.message || "Lỗi"));
+      showError("Không thể tải hồ sơ bệnh án: " + (e.message || "Lỗi"));
       setShowMedicalRecordModal(false);
     }
   };
@@ -481,7 +487,7 @@ const DoctorDashboardPage = ({ navigate }) => {
   const handleSubmitMedicalRecord = async (e) => {
     e.preventDefault();
     if (!medicalRecordForm.diagnosis) {
-      alert("Vui lòng nhập chẩn đoán");
+      showError("Vui lòng nhập chẩn đoán");
       return;
     }
 
@@ -494,15 +500,15 @@ const DoctorDashboardPage = ({ navigate }) => {
         notes: medicalRecordForm.notes,
       });
 
-      alert("Đã lưu hồ sơ bệnh án thành công!");
       setShowMedicalRecordModal(false);
 
       // Update local appointment status to 'completed'
       setDoctorAppointments((prev) =>
         prev.map((apt) => (apt.id === selectedAppointmentForRecord.id ? { ...apt, status: "completed" } : apt)),
       );
+      showSuccess("Đã lưu hồ sơ bệnh án thành công!");
     } catch (e) {
-      alert(e.message || "Không thể lưu hồ sơ bệnh án");
+      showError(e.message || "Không thể lưu hồ sơ bệnh án");
     } finally {
       setSubmittingMedicalRecord(false);
     }
@@ -511,7 +517,7 @@ const DoctorDashboardPage = ({ navigate }) => {
   const handleSubmitJoinForm = async (e) => {
     e.preventDefault();
     if (!joinForm.hospital_id) {
-      alert("Vui lòng chọn bệnh viện");
+      showError("Vui lòng chọn bệnh viện");
       return;
     }
     try {
@@ -521,12 +527,12 @@ const DoctorDashboardPage = ({ navigate }) => {
         cover_letter: joinForm.cover_letter,
         type: "join",
       });
-      alert("Đã gửi yêu cầu liên kết. Vui lòng chờ bệnh viện duyệt.");
+      showSuccess("Đã gửi yêu cầu liên kết. Vui lòng chờ bệnh viện duyệt.");
       setShowJoinModal(false);
       setJoinForm({ hospital_id: "", cover_letter: "" });
       void loadApplications();
     } catch (e) {
-      alert(e.message || "Lỗi khi gửi yêu cầu");
+      showError(e.message || "Lỗi khi gửi yêu cầu");
     } finally {
       setSubmittingJoin(false);
     }
@@ -541,12 +547,12 @@ const DoctorDashboardPage = ({ navigate }) => {
         cover_letter: leaveForm.cover_letter,
         type: "leave",
       });
-      alert("Đã gửi yêu cầu xin nghỉ. Vui lòng chờ bệnh viện duyệt.");
+      showSuccess("Đã gửi yêu cầu xin nghỉ. Vui lòng chờ bệnh viện duyệt.");
       setShowLeaveModal(false);
       setLeaveForm({ hospital_id: "", hospital_name: "", cover_letter: "" });
       void loadApplications();
     } catch (e) {
-      alert(e.message || "Lỗi khi gửi yêu cầu");
+      showError(e.message || "Lỗi khi gửi yêu cầu");
     } finally {
       setSubmittingLeave(false);
     }
@@ -554,35 +560,119 @@ const DoctorDashboardPage = ({ navigate }) => {
 
   // === RENDERERS ===
 
+  // === STATISTICS CALCULATIONS ===
+  const dashboardStats = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    // 1. Cuộc hẹn tuần này
+    let appsThisWeek = 0;
+    let newAppsThisWeek = 0; // Assuming 'pending' as new
+    doctorAppointments.forEach(app => {
+      if (!app.appointment_date) return;
+      const appDate = new Date(app.appointment_date);
+      if (appDate >= startOfWeek && appDate <= endOfWeek) {
+        appsThisWeek++;
+        if (app.status === 'pending' || app.status === 'confirmed') newAppsThisWeek++;
+      }
+    });
+
+    // 2. Giờ làm việc
+    let totalHours = 0;
+    const uniqueHospitals = new Set();
+    schedules.forEach(schedule => {
+      if (schedule.hospital?.id) uniqueHospitals.add(schedule.hospital.id);
+      if (schedule.start_time && schedule.end_time) {
+        const [startH, startM] = schedule.start_time.split(':').map(Number);
+        const [endH, endM] = schedule.end_time.split(':').map(Number);
+        totalHours += (endH + endM/60) - (startH + startM/60);
+      }
+    });
+
+    // 3. Điểm đánh giá
+    let totalRating = 0;
+    let reviewCount = doctorReviews.length;
+    doctorReviews.forEach(r => totalRating += (Number(r.rating) || 0));
+    const avgRating = reviewCount > 0 ? (totalRating / reviewCount).toFixed(1) : '0.0';
+
+    // 4. Thu nhập tháng
+    let incomeThisMonth = 0;
+    let incomeLastMonth = 0;
+    doctorPayments.forEach(pay => {
+      if (pay.payment_status === 'completed') {
+        const payDate = new Date(pay.created_at);
+        if (payDate >= startOfMonth) incomeThisMonth += Number(pay.amount || 0);
+        else if (payDate >= startOfLastMonth && payDate <= endOfLastMonth) incomeLastMonth += Number(pay.amount || 0);
+      }
+    });
+
+    const incomeGrowth = incomeLastMonth > 0 ? (((incomeThisMonth - incomeLastMonth) / incomeLastMonth) * 100).toFixed(0) : 100;
+    const incomeGrowthText = incomeThisMonth === 0 ? '0%' : (incomeLastMonth === 0 ? '+100%' : (incomeGrowth > 0 ? `+${incomeGrowth}%` : `${incomeGrowth}%`));
+    
+    const formatIncome = (amount) => {
+      if (amount >= 1000000) return (amount / 1000000).toFixed(amount % 1000000 === 0 ? 0 : 1) + ' triệu';
+      if (amount >= 1000) return (amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1) + 'k';
+      return amount.toString() + ' đ';
+    };
+
+    return {
+      appointments: {
+        value: appsThisWeek.toString(),
+        detail: `+${newAppsThisWeek} mới`,
+      },
+      workingHours: {
+        value: Math.round(totalHours) + 'h',
+        detail: `${uniqueHospitals.size} cơ sở y tế`,
+      },
+      ratings: {
+        value: avgRating,
+        detail: `${reviewCount} nhận xét`,
+      },
+      income: {
+        value: formatIncome(incomeThisMonth),
+        detail: `${incomeGrowthText} so với tháng trước`,
+      }
+    };
+  }, [doctorAppointments, schedules, doctorReviews, doctorPayments]);
+
   const renderOverview = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {[
           {
             title: "Cuộc hẹn tuần này",
-            value: "18",
-            detail: "+3 mới",
+            value: dashboardStats.appointments.value,
+            detail: dashboardStats.appointments.detail,
             icon: Calendar,
             color: "bg-blue-50 text-blue-600 border-blue-100",
           },
           {
             title: "Giờ làm việc",
-            value: "32h",
-            detail: "3 cơ sở y tế",
+            value: dashboardStats.workingHours.value,
+            detail: dashboardStats.workingHours.detail,
             icon: Clock,
             color: "bg-emerald-50 text-emerald-600 border-emerald-100",
           },
           {
             title: "Điểm đánh giá",
-            value: "4.9",
-            detail: "256 nhận xét",
+            value: dashboardStats.ratings.value,
+            detail: dashboardStats.ratings.detail,
             icon: Star,
             color: "bg-amber-50 text-amber-600 border-amber-100",
           },
           {
             title: "Thu nhập tháng",
-            value: "62 triệu",
-            detail: "+8% so với tháng trước",
+            value: dashboardStats.income.value,
+            detail: dashboardStats.income.detail,
             icon: DollarSign,
             color: "bg-purple-50 text-purple-600 border-purple-100",
           },
@@ -1168,9 +1258,9 @@ const DoctorDashboardPage = ({ navigate }) => {
                 password: "",
                 old_password: "",
               }));
-              alert("Cập nhật hồ sơ thành công");
+              showSuccess("Cập nhật hồ sơ thành công");
             } catch (err) {
-              alert(err.message || "Không thể cập nhật hồ sơ");
+              showError(err.message || "Không thể cập nhật hồ sơ");
             }
           }}
         >
@@ -1211,7 +1301,7 @@ const DoctorDashboardPage = ({ navigate }) => {
                           avatar_public_id: result.image_public_id,
                         }));
                       } catch (err) {
-                        alert(err.message || "Lỗi tải ảnh");
+                        showError(err.message || "Lỗi tải ảnh");
                       } finally {
                         setUploadingAvatar(false);
                       }
@@ -1488,7 +1578,7 @@ const DoctorDashboardPage = ({ navigate }) => {
       (p) => p.payment_status === "completed",
     );
     if (completedPayments.length === 0)
-      return alert("Không có dữ liệu để xuất");
+      return showInfo("Không có dữ liệu để xuất");
 
     const headers = [
       "Mã GD",
@@ -1981,5 +2071,3 @@ const DoctorDashboardPage = ({ navigate }) => {
     </div>
   );
 };
-
-export default DoctorDashboardPage;

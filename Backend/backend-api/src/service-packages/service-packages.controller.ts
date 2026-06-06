@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Put, Delete } from '@nestjs/common';
 import { ServicePackagesService } from './service-packages.service';
 
 @Controller('service-packages')
@@ -23,5 +23,15 @@ export class ServicePackagesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.servicePackagesService.findOne(+id);
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() data: any) {
+    return this.servicePackagesService.update(+id, data);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.servicePackagesService.remove(+id);
   }
 }

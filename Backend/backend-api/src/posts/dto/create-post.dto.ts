@@ -1,23 +1,23 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePostDto {
+  @IsNotEmpty()
   @IsNumber()
-  @IsNotEmpty()
-  fanpage_id: number;
+  hospital_id: number;
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   title: string;
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   content: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   image_url?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   image_public_id?: string;
 }

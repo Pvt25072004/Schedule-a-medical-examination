@@ -28,11 +28,12 @@ export const AppointmentProvider = ({ children }) => {
       const data = await getAppointmentsByUser(user.id);
       const list = Array.isArray(data) ? data : [];
       const mapped = list.map((apt) => {
-        const rawDate =
-          typeof apt.appointment_date === "string"
-            ? apt.appointment_date.slice(0, 10)
-            : apt.appointment_date?.toString().slice(0, 10);
-        const rawTime = (apt.appointment_time || "").slice(0, 5);
+        const rawDate = apt.appointment_date 
+          ? (typeof apt.appointment_date === "string"
+              ? apt.appointment_date.slice(0, 10)
+              : apt.appointment_date.toString().slice(0, 10))
+          : null;
+        const rawTime = apt.appointment_time ? apt.appointment_time.slice(0, 5) : null;
         let mappedStatus = apt.status || APPOINTMENT_STATUS.PENDING;
         if (
           mappedStatus === APPOINTMENT_STATUS.PENDING &&
@@ -52,7 +53,7 @@ export const AppointmentProvider = ({ children }) => {
             apt.doctor?.specialty ||
             apt.doctor?.category?.name ||
             "Chuyên khoa",
-          avatar_url: apt.doctor?.avatar_url || "",
+          avatar_url: apt.doctor?.user?.avatar_url || apt.doctor?.avatar_url || "",
           date: rawDate,
           time: rawTime,
           type: apt.symptoms || "",

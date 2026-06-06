@@ -110,7 +110,7 @@ export class ReviewsService {
 
   findAll(): Promise<Review[]> {
     return this.reviewsRepository.find({
-      relations: ['appointment', 'user', 'doctor'],
+      relations: ['appointment', 'user', 'doctor', 'doctor.hospitals'],
       order: { created_at: 'DESC' },
     });
   }

@@ -1,4 +1,4 @@
-import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { Like } from 'src/likes/entities/like.entity';
 import { Comment } from 'src/comments/entities/comment.entity';
 import {
@@ -17,12 +17,12 @@ export class Post {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'fanpage_id' })
-  fanpage_id: number;
+  @Column({ name: 'hospital_id' })
+  hospital_id: number;
 
-  @ManyToOne(() => Fanpage, (fanpage) => fanpage.posts, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'fanpage_id' })
-  fanpage: Fanpage;
+  @ManyToOne(() => Hospital, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'hospital_id' })
+  hospital: Hospital;
 
   @Column({ length: 255 })
   title: string;

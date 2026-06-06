@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 
@@ -21,7 +21,7 @@ export class NotificationsService {
     return await this.notificationsRepository.find({
       where: [
         { user_id: userId },
-        { user_id: null as any }, // global system announcements
+        { user_id: IsNull() }, // global system announcements
       ],
       order: { created_at: 'DESC' },
       take: limit,
@@ -31,7 +31,7 @@ export class NotificationsService {
 
   async findAllSystem(): Promise<Notification[]> {
     return await this.notificationsRepository.find({
-      where: { user_id: null as any },
+      where: { user_id: IsNull() },
       order: { created_at: 'DESC' },
     });
   }

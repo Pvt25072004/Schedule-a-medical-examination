@@ -12,7 +12,7 @@ dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
 const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modalOnly = false, onClose }) => {
-  const { fanpage, title, content, image_url, created_at, id: postId } = post;
+  const { hospital, title, content, image_url, created_at, id: postId } = post;
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(defaultOpenCommentModal);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState([]);
@@ -20,7 +20,6 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
   
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0);
-  const [sharesCount, setSharesCount] = useState(post.shares_count || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -68,7 +67,7 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
   // Check initial like status
   useEffect(() => {
     const checkLikeStatus = async () => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated || post.isNews) return;
       try {
         const res = await fetch(`${API_BASE_URL}/likes/check/${postId}`, {
           headers: getAuthHeaders(),
@@ -82,9 +81,10 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
       }
     };
     checkLikeStatus();
-  }, [isAuthenticated, postId]);
+  }, [isAuthenticated, postId, post.isNews]);
 
   const fetchComments = async () => {
+    if (post.isNews) return;
     try {
       const res = await fetch(`${API_BASE_URL}/comments/post/${postId}?t=${Date.now()}`, {
         headers: {
@@ -133,20 +133,6 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
     }
   };
 
-  const sharePost = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/posts/share/${postId}`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSharesCount(data.shares_count);
-      }
-    } catch (error) {
-      console.error('Error sharing post:', error);
-    }
-  };
-
   const submitComment = async () => {
     if (!commentText.trim()) return;
     try {
@@ -189,23 +175,18 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 hover:shadow-md transition-shadow">
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
-          <div 
-            className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => navigate(`/fanpage/${fanpage?.id}`)}
-          >
+          <div className="flex items-center gap-3">
             <img 
-              src={fanpage?.avatar_url || 'https://via.placeholder.com/50'} 
-              alt={fanpage?.hospital?.name || 'Hospital'} 
+              src={hospital?.avatar_url || 'https://via.placeholder.com/50'} 
+              alt={hospital?.name || 'Hospital'} 
               className="w-12 h-12 rounded-full object-cover border border-gray-100 group-hover:border-blue-200 transition-colors"
             />
             <div>
               <div className="flex items-center gap-1.5">
                 <h3 className="font-semibold text-gray-900 text-[15px] group-hover:text-blue-600 transition-colors">
-                  {fanpage?.hospital?.name || 'Bệnh viện chưa xác định'}
+                  {hospital?.name || 'Bệnh viện chưa xác định'}
                 </h3>
-                {fanpage?.follower_count >= 100000 && (
-                  <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 flex-shrink-0" style={{ color: 'white' }} title="Đã xác minh" />
-                )}
+                <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 flex-shrink-0" style={{ color: 'white' }} title="Đã xác minh" />
               </div>
               <p className="text-gray-500 text-sm">
                 {dayjs(created_at).fromNow()}
@@ -250,32 +231,26 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
           </div>
         )}
 
-        {/* Footer / Actions & Stats */}
-        <div className="px-4 py-3 border-t border-gray-50 bg-gray-50/50 flex items-center justify-between">
-          <div className="flex flex-1 justify-between gap-2 max-w-[400px]">
-            <button 
-              onClick={() => handleInteraction(toggleLike)}
-              className={`flex items-center gap-2 transition-colors group ${isLiked ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-blue-600' : 'group-hover:fill-blue-100'}`} />
-              <span className="text-sm font-medium">{likesCount} Thích</span>
-            </button>
-            <button 
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={() => handleInteraction(() => setIsCommentModalOpen(true))}
-            >
-              <MessageCircle className="w-5 h-5" />
-              <span className="text-sm font-medium">{commentsCount} Bình luận</span>
-            </button>
-            <button 
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={sharePost}
-            >
-              <Share2 className="w-5 h-5" />
-              <span className="text-sm font-medium">{sharesCount} Chia sẻ</span>
-            </button>
+        {!(post.isNews || post.isNotification) && (
+          <div className="px-4 py-3 border-t border-gray-50 bg-gray-50/50 flex items-center justify-between">
+            <div className="flex flex-1 justify-between gap-2 max-w-[400px]">
+              <button 
+                onClick={() => handleInteraction(toggleLike)}
+                className={`flex items-center gap-2 transition-colors group ${isLiked ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+              >
+                <Heart className={`w-5 h-5 ${isLiked ? 'fill-blue-600' : 'group-hover:fill-blue-100'}`} />
+                <span className="text-sm font-medium">{likesCount} Thích</span>
+              </button>
+              <button 
+                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                onClick={() => handleInteraction(() => setIsCommentModalOpen(true))}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-sm font-medium">{commentsCount} Bình luận</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         </div>
       )}
 
@@ -310,26 +285,18 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
               
               {/* Header */}
               <div className="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <div 
-                  className="flex items-center gap-3 cursor-pointer group"
-                  onClick={() => {
-                    setIsCommentModalOpen(false);
-                    navigate(`/fanpage/${fanpage?.id}`);
-                  }}
-                >
+                <div className="flex items-center gap-3">
                   <img 
-                    src={fanpage?.avatar_url || 'https://via.placeholder.com/50'} 
-                    alt={fanpage?.hospital?.name || 'Hospital'} 
+                    src={hospital?.avatar_url || 'https://via.placeholder.com/50'} 
+                    alt={hospital?.name || 'Hospital'} 
                     className="w-10 h-10 rounded-full object-cover border border-gray-100"
                   />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h3 className="font-semibold text-gray-900 text-sm group-hover:text-blue-600 transition-colors">
-                        {fanpage?.hospital?.name || 'Bệnh viện chưa xác định'}
+                        {hospital?.name || 'Bệnh viện chưa xác định'}
                       </h3>
-                      {fanpage?.follower_count >= 100000 && (
-                        <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500 flex-shrink-0" style={{ color: 'white' }} title="Đã xác minh" />
-                      )}
+                      <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500 flex-shrink-0" style={{ color: 'white' }} title="Đã xác minh" />
                     </div>
                     <p className="text-gray-500 text-xs">
                       {dayjs(created_at).fromNow()}
@@ -353,35 +320,31 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
                   </div>
                 )}
 
-                <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
-                  <button 
-                    onClick={() => handleInteraction(toggleLike)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-colors font-medium text-sm ${isLiked ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    <Heart className={`w-5 h-5 ${isLiked ? 'fill-blue-600' : ''}`} /> {likesCount} Thích
-                  </button>
-                  <button 
-                    onClick={() => handleInteraction(() => document.getElementById('comment-input-modal')?.focus())}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors font-medium text-sm"
-                  >
-                    <MessageCircle className="w-5 h-5" /> {commentsCount} Bình luận
-                  </button>
-                  <button 
-                    onClick={sharePost}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors font-medium text-sm"
-                  >
-                    <Share2 className="w-5 h-5" /> {sharesCount} Chia sẻ
-                  </button>
-                </div>
-
-                <div className="p-4 space-y-5">
-                  {topLevelComments.length === 0 ? (
-                    <div className="text-center text-gray-500 py-8">
-                      <p className="text-sm">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+                {!(post.isNews || post.isNotification) && (
+                  <>
+                    <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between gap-2">
+                      <button 
+                        onClick={() => handleInteraction(toggleLike)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-colors font-medium text-sm ${isLiked ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        <Heart className={`w-5 h-5 ${isLiked ? 'fill-blue-600' : ''}`} /> {likesCount} Thích
+                      </button>
+                      <button 
+                        onClick={() => handleInteraction(() => document.getElementById('comment-input-modal')?.focus())}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors font-medium text-sm"
+                      >
+                        <MessageCircle className="w-5 h-5" /> {commentsCount} Bình luận
+                      </button>
                     </div>
-                  ) : (
-                    topLevelComments.map(comment => (
-                      <div key={comment.id} className="flex gap-3">
+
+                    <div className="p-4 space-y-5">
+                      {topLevelComments.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">
+                          <p className="text-sm">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+                        </div>
+                      ) : (
+                        topLevelComments.map(comment => (
+                          <div key={comment.id} className="flex gap-3">
                         <img 
                           src={comment.user?.avatar_url || 'https://via.placeholder.com/40'} 
                           alt="User avatar" 
@@ -441,50 +404,54 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
                     ))
                   )}
                 </div>
+                </>
+              )}
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-gray-100 bg-white shrink-0">
-                {replyingTo && (
-                  <div className="flex items-center justify-between mb-2 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                    <span>Đang trả lời trong luồng của <span className="font-semibold">{replyingTo.user?.full_name || 'Người dùng'}</span></span>
-                    <button 
-                      onClick={() => {
-                        setReplyingTo(null);
-                        setCommentText('');
-                      }} 
-                      className="hover:text-gray-900 text-xs font-medium"
-                    >
-                      Hủy
-                    </button>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={user?.avatar_url || 'https://via.placeholder.com/40'} 
-                    alt="My avatar" 
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <div className="flex-1 relative">
-                    <input
-                      id="comment-input-modal"
-                      type="text"
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Viết bình luận..."
-                      className="w-full px-4 py-2 bg-gray-100 border-transparent focus:bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm"
-                      onClick={() => handleInteraction()}
-                      onKeyDown={(e) => {
-                        handleInteraction(() => {
-                          if (e.key === 'Enter') {
-                            submitComment();
-                          }
-                        });
-                      }}
+              {!(post.isNews || post.isNotification) && (
+                <div className="p-4 border-t border-gray-100 bg-white shrink-0">
+                  {replyingTo && (
+                    <div className="flex items-center justify-between mb-2 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                      <span>Đang trả lời trong luồng của <span className="font-semibold">{replyingTo.user?.full_name || 'Người dùng'}</span></span>
+                      <button 
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setCommentText('');
+                        }} 
+                        className="hover:text-gray-900 text-xs font-medium"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={user?.avatar_url || 'https://via.placeholder.com/40'} 
+                      alt="My avatar" 
+                      className="w-8 h-8 rounded-full object-cover"
                     />
+                    <div className="flex-1 relative">
+                      <input
+                        id="comment-input-modal"
+                        type="text"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Viết bình luận..."
+                        className="w-full px-4 py-2 bg-gray-100 border-transparent focus:bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm"
+                        onClick={() => handleInteraction()}
+                        onKeyDown={(e) => {
+                          handleInteraction(() => {
+                            if (e.key === 'Enter') {
+                              submitComment();
+                            }
+                          });
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

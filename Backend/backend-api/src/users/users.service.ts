@@ -16,9 +16,26 @@ export class UsersService {
     private cloudinaryService: CloudinaryService,
   ) { }
 
-  async findAll(page: number = 1, limit: number = 100, userCtx?: any): Promise<{ data: User[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(page: number = 1, limit: number = 100, userCtx?: any, filters?: { role?: string; status?: string; search?: string; region?: string }): Promise<{ data: User[]; total: number; page: number; limit: number; totalPages: number }> {
     const qb = this.usersRepository.createQueryBuilder('user')
+      .where('user.role != :adminRole', { adminRole: 'admin' })
       .orderBy('user.id', 'DESC');
+
+    if (filters?.role && filters.role !== 'all') {
+      qb.andWhere('user.role = :roleFilter', { roleFilter: filters.role });
+    }
+
+    if (filters?.status && filters.status !== 'all') {
+      qb.andWhere('user.is_active = :isActive', { isActive: filters.status === 'active' });
+    }
+
+    if (filters?.search) {
+      qb.andWhere('(user.full_name LIKE :search OR user.email LIKE :search OR user.phone LIKE :search OR user.address LIKE :search)', { search: `%${filters.search}%` });
+    }
+
+    if (filters?.region && filters.region !== 'all') {
+      qb.andWhere('user.address LIKE :region', { region: `%${filters.region}%` });
+    }
 
     if (userCtx?.role === 'admin_hospital') {
       if (!userCtx.hospital_id) {
@@ -27,7 +44,7 @@ export class UsersService {
       qb.andWhere(subQuery => {
         const sq = subQuery.subQuery()
           .select('1')
-          .from('appointment', 'a')
+          .from('appointments', 'a')
           .where('a.user_id = user.id')
           .andWhere('a.hospital_id = :hospitalId')
           .getQuery();

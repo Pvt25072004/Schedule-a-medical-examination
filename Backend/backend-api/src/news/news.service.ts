@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import Parser from 'rss-parser';
 import * as he from 'he';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { News } from './entities/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
@@ -83,7 +83,10 @@ export class NewsService {
 
   async findAllAdmin(): Promise<News[]> {
     return this.newsRepository.find({
-      relations: ['hospital'],
+      where: [
+        { source: IsNull() },
+        { source: '' }
+      ],
       order: {
         created_at: 'DESC',
       },
@@ -93,7 +96,6 @@ export class NewsService {
   async findOneAdmin(id: number): Promise<News> {
     const news = await this.newsRepository.findOne({
       where: { id },
-      relations: ['hospital'],
     });
 
     if (!news) {
@@ -171,7 +173,6 @@ export class NewsService {
         slug,
         is_published: true,
       },
-      relations: ['hospital'],
     });
 
     if (!news) {

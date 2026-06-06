@@ -43,51 +43,16 @@ export class AppointmentsService {
     await queryRunner.connect();
     // Bắt đầu Transaction với cơ chế khoá dòng (Pessimistic Lock)
     await queryRunner.startTransaction();
-
     try {
       let schedule: Schedule | null = null;
-      const appointmentDateStr = createAppointmentDto.appointment_date.slice(0, 10);
-      const appointmentTime = createAppointmentDto.appointment_time;
-
-      if (createAppointmentDto.schedule_id) {
-        schedule = await queryRunner.manager
-          .createQueryBuilder(Schedule, 'schedule')
-          .setLock('pessimistic_write')
-          .where('schedule.id = :id', { id: createAppointmentDto.schedule_id })
-          .getOne();
-      } else {
-        schedule = await queryRunner.manager
-          .createQueryBuilder(Schedule, 'schedule')
-          .setLock('pessimistic_write')
-          .where('schedule.doctor_id = :doctorId', {
-            doctorId: createAppointmentDto.doctor_id,
-          })
-          .andWhere('schedule.work_date = :workDate', {
-            workDate: appointmentDateStr,
-          })
-          .andWhere('schedule.start_time <= :appointmentTime', {
-            appointmentTime,
-          })
-          .andWhere('schedule.end_time >= :appointmentTime', {
-            appointmentTime,
-          })
-          .getOne();
-      }
-
-      if (!schedule) {
-        throw new BadRequestException('Không tìm thấy lịch làm việc phù hợp của bác sĩ vào thời gian đã chọn!');
-      }
-
-      if (!schedule.is_available) {
-        throw new BadRequestException('Ca làm việc này của bác sĩ hiện đã tạm ngưng hoặc không khả dụng. Vui lòng chọn ca khác!');
-      }
-
-      // -- NEW: Override hospital_id to match the actual schedule's hospital --
-      createAppointmentDto.hospital_id = schedule.hospital_id;
-
-      // -- NEW: Xử lý Service Package & duration --
+      let doctor: Doctor | null = null;
+      let hospital: Hospital | null = null;
+      let endTime: string | null = null;
       let durationMinutes = 30; // default
       let servicePackagePrice: number | null = null;
+      let servicePackageName: string | null = null;
+
+      // Handle Service Package First
       if (createAppointmentDto.service_package_id) {
         const servicePackage = await queryRunner.manager.findOneBy(ServicePackage, { id: createAppointmentDto.service_package_id });
         if (!servicePackage) {
@@ -98,52 +63,100 @@ export class AppointmentsService {
         }
         durationMinutes = servicePackage.duration_minutes || 30;
         servicePackagePrice = Number(servicePackage.fixed_price) || 0;
+        servicePackageName = servicePackage.name;
       }
 
-      const [h, m] = appointmentTime.split(':').map(Number);
-      const totalStartMins = h * 60 + m;
-      let totalEndMins = totalStartMins + durationMinutes;
+      // Check if Date, Time, Doctor are provided
+      const hasSpecificTime = createAppointmentDto.appointment_date && createAppointmentDto.appointment_time && createAppointmentDto.doctor_id;
 
-      // Xử lý Vắt Ca (Nghỉ trưa từ 11:30 đến 13:00)
-      const morningEndMins = 11 * 60 + 30; // 11:30
-      const lunchDuration = 90; // 1.5 hours
+      if (hasSpecificTime) {
+        const appointmentDateStr = String(createAppointmentDto.appointment_date).slice(0, 10);
+        const appointmentTime = createAppointmentDto.appointment_time;
 
-      if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
-        totalEndMins += lunchDuration;
+        if (createAppointmentDto.schedule_id) {
+          schedule = await queryRunner.manager
+            .createQueryBuilder(Schedule, 'schedule')
+            .setLock('pessimistic_write')
+            .where('schedule.id = :id', { id: createAppointmentDto.schedule_id })
+            .getOne();
+        } else {
+          schedule = await queryRunner.manager
+            .createQueryBuilder(Schedule, 'schedule')
+            .setLock('pessimistic_write')
+            .where('schedule.doctor_id = :doctorId', {
+              doctorId: createAppointmentDto.doctor_id,
+            })
+            .andWhere('schedule.work_date = :workDate', {
+              workDate: appointmentDateStr,
+            })
+            .andWhere('schedule.start_time <= :appointmentTime', {
+              appointmentTime,
+            })
+            .andWhere('schedule.end_time >= :appointmentTime', {
+              appointmentTime,
+            })
+            .getOne();
+        }
+
+        if (!schedule) {
+          throw new BadRequestException('Không tìm thấy lịch làm việc phù hợp của bác sĩ vào thời gian đã chọn!');
+        }
+
+        if (!schedule.is_available) {
+          throw new BadRequestException('Ca làm việc này của bác sĩ hiện đã tạm ngưng hoặc không khả dụng. Vui lòng chọn ca khác!');
+        }
+
+        createAppointmentDto.hospital_id = schedule.hospital_id;
+        createAppointmentDto.schedule_id = schedule.id;
+
+        const [h, m] = appointmentTime!.split(':').map(Number);
+        const totalStartMins = h * 60 + m;
+        let totalEndMins = totalStartMins + durationMinutes;
+
+        const morningEndMins = 11 * 60 + 30; // 11:30
+        const lunchDuration = 90; // 1.5 hours
+
+        if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
+          totalEndMins += lunchDuration;
+        }
+
+        const endH = Math.floor(totalEndMins / 60);
+        const endM = totalEndMins % 60;
+        endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+        const overlapConflict = await queryRunner.manager
+          .createQueryBuilder(Appointment, 'appt')
+          .where('appt.doctor_id = :doctorId', { doctorId: createAppointmentDto.doctor_id })
+          .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
+          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
+          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
+          .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: appointmentTime })
+          .getCount();
+
+        if (overlapConflict > 0) {
+          throw new BadRequestException(`Khung giờ từ ${appointmentTime} đến ${endTime} bị trùng với lịch khám khác của bác sĩ. Vui lòng chọn khung giờ khác!`);
+        }
+
+        const existingAppointmentsCount = await queryRunner.manager.count(Appointment, {
+          where: {
+            schedule_id: schedule.id,
+            status: In(['pending', 'confirmed', 'completed']),
+          },
+        });
+
+        if (existingAppointmentsCount >= schedule.max_patients) {
+          throw new BadRequestException(`Ca làm việc này đã đầy bệnh nhân (tối đa ${schedule.max_patients} người/ca). Vui lòng chọn ca khám khác!`);
+        }
+
+        doctor = await queryRunner.manager.findOne(Doctor, { where: { id: createAppointmentDto.doctor_id }, relations: ['user'] });
+      } else {
+        // Required for Service Package Open Booking
+        if (!createAppointmentDto.service_package_id) {
+          throw new BadRequestException('Bắt buộc phải chọn ngày giờ khám, HOẶC đặt qua Gói dịch vụ!');
+        }
       }
 
-      const endH = Math.floor(totalEndMins / 60);
-      const endM = totalEndMins % 60;
-      const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-
-
-      // KIỂM TRA MỚI: Check trùng giờ cụ thể dựa vào overlap
-      const overlapConflict = await queryRunner.manager
-        .createQueryBuilder(Appointment, 'appt')
-        .where('appt.doctor_id = :doctorId', { doctorId: createAppointmentDto.doctor_id })
-        .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
-        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
-        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
-        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: appointmentTime })
-        .getCount();
-
-      if (overlapConflict > 0) {
-        throw new BadRequestException(`Khung giờ từ ${appointmentTime} đến ${endTime} bị trùng với lịch khám khác của bác sĩ. Vui lòng chọn khung giờ khác!`);
-      }
-
-      // Kiểm tra sức chứa của cả ca
-      const existingAppointmentsCount = await queryRunner.manager.count(Appointment, {
-        where: {
-          schedule_id: schedule.id,
-          status: In(['pending', 'confirmed', 'completed']),
-        },
-      });
-
-      if (existingAppointmentsCount >= schedule.max_patients) {
-        throw new BadRequestException(`Ca làm việc này đã đầy bệnh nhân (tối đa ${schedule.max_patients} người/ca). Vui lòng chọn ca khám khác!`);
-      }
-
-      // KIỂM TRA: Chỉ cho phép tối đa 2 lượt đặt khám thanh toán tại quầy đang chờ (pending)
+      // Check max pending cash appointments
       if (createAppointmentDto.payment_method === 'cash') {
         const cashAppointmentsCount = await queryRunner.manager
           .createQueryBuilder(Appointment, 'appt')
@@ -158,28 +171,41 @@ export class AppointmentsService {
         }
       }
 
-      createAppointmentDto.schedule_id = schedule.id;
-
-      const [doctor, hospital] = await Promise.all([
-        queryRunner.manager.findOne(Doctor, { where: { id: createAppointmentDto.doctor_id }, relations: ['user'] }),
-        queryRunner.manager.findOneBy(Hospital, { id: createAppointmentDto.hospital_id }),
-      ]);
-
-      if (!doctor || !hospital) {
-        throw new BadRequestException('Thông tin bác sĩ hoặc bệnh viện không hợp lệ!');
+      hospital = await queryRunner.manager.findOneBy(Hospital, { id: createAppointmentDto.hospital_id });
+      if (!hospital) {
+        throw new BadRequestException('Bệnh viện không hợp lệ!');
       }
 
-      const pricing = this.pricingService.calculateAppointmentFee(doctor, hospital);
+      let doctorFeeSnapshot = 0;
+      let hospitalFeeSnapshot = 0;
+      let totalFee = 0;
+      let doctorNameSnapshot = '';
+      let hospitalNameSnapshot = hospital.name;
+      let currencySnapshot = 'VND';
+
+      if (servicePackagePrice !== null) {
+        totalFee = servicePackagePrice;
+        if (doctor) {
+          doctorNameSnapshot = doctor.user?.full_name || '';
+        }
+      } else if (doctor && hospital) {
+        const pricing = this.pricingService.calculateAppointmentFee(doctor, hospital);
+        doctorFeeSnapshot = pricing.doctorFeeSnapshot;
+        hospitalFeeSnapshot = pricing.hospitalFeeSnapshot;
+        totalFee = pricing.totalFee;
+        doctorNameSnapshot = pricing.doctorNameSnapshot;
+        currencySnapshot = pricing.currencySnapshot;
+      }
 
       const appointment = queryRunner.manager.create(Appointment, {
         ...createAppointmentDto,
         end_time: endTime,
-        doctor_fee_snapshot: servicePackagePrice !== null ? 0 : pricing.doctorFeeSnapshot,
-        hospital_fee_snapshot: servicePackagePrice !== null ? 0 : pricing.hospitalFeeSnapshot,
-        total_fee: servicePackagePrice !== null ? servicePackagePrice : pricing.totalFee,
-        doctor_name_snapshot: pricing.doctorNameSnapshot,
-        hospital_name_snapshot: pricing.hospitalNameSnapshot,
-        currency_snapshot: pricing.currencySnapshot,
+        doctor_fee_snapshot: doctorFeeSnapshot,
+        hospital_fee_snapshot: hospitalFeeSnapshot,
+        total_fee: totalFee,
+        doctor_name_snapshot: doctorNameSnapshot,
+        hospital_name_snapshot: hospitalNameSnapshot,
+        currency_snapshot: currencySnapshot,
       });
 
       const savedAppointment = await queryRunner.manager.save(Appointment, appointment);
@@ -189,7 +215,9 @@ export class AppointmentsService {
         const notification = queryRunner.manager.create(Notification, {
           user_id: savedAppointment.user_id,
           title: '🎉 Đặt lịch hẹn khám thành công!',
-          body: `Lịch khám của bạn với bác sĩ ${savedAppointment.doctor_name_snapshot || ''} tại ${savedAppointment.hospital_name_snapshot || ''} vào lúc ${savedAppointment.appointment_time} ngày ${savedAppointment.appointment_date} đã được ghi nhận và đang chờ xác nhận.`,
+          body: savedAppointment.appointment_time && savedAppointment.appointment_date
+            ? `Lịch khám của bạn với bác sĩ ${savedAppointment.doctor_name_snapshot || ''} tại ${savedAppointment.hospital_name_snapshot || ''} vào lúc ${savedAppointment.appointment_time} ngày ${savedAppointment.appointment_date} đã được ghi nhận và đang chờ xác nhận.`
+            : `Lịch khám Gói dịch vụ "${servicePackageName || ''}" tại ${savedAppointment.hospital_name_snapshot || ''} của bạn đã được ghi nhận. Cơ sở y tế sẽ chủ động liên hệ và sắp xếp lịch khám cho bạn.`,
           type: 'appointment_pending',
         });
         await queryRunner.manager.save(Notification, notification);
@@ -217,7 +245,7 @@ export class AppointmentsService {
     }
   }
 
-  async findAll(user?: any, page: number = 1, limit: number = 100): Promise<{ data: Appointment[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(user?: any, page: number = 1, limit: number = 100, status?: string, hospitalId?: string): Promise<{ data: Appointment[]; total: number; page: number; limit: number; totalPages: number }> {
     const qb = this.appointmentsRepository.createQueryBuilder('appointment')
       .leftJoinAndSelect('appointment.user', 'user')
       .leftJoinAndSelect('appointment.doctor', 'doctor')
@@ -230,7 +258,15 @@ export class AppointmentsService {
       if (!user.hospital_id) {
         throw new ForbiddenException('Tài khoản admin cơ sở không có thông tin bệnh viện');
       }
-      qb.andWhere('appointment.hospital_id = :hospitalId', { hospitalId: user.hospital_id });
+      qb.andWhere('appointment.hospital_id = :userHospitalId', { userHospitalId: user.hospital_id });
+    }
+
+    if (status && status !== 'all') {
+      qb.andWhere('appointment.status = :status', { status });
+    }
+
+    if (hospitalId && hospitalId !== 'all') {
+      qb.andWhere('appointment.hospital_id = :filterHospitalId', { filterHospitalId: hospitalId });
     }
 
     qb.skip((page - 1) * limit).take(limit);
@@ -470,6 +506,7 @@ export class AppointmentsService {
     // 3. Collect booked times (hỗ trợ block theo duration)
     const bookedSlots = new Set<string>();
     for (const appt of appointments) {
+      if (!appt.appointment_time) continue;
       const startStr = appt.appointment_time.slice(0, 5); // "HH:mm"
       const endStr = appt.end_time ? appt.end_time.slice(0, 5) : null;
 
@@ -548,17 +585,26 @@ export class AppointmentsService {
   async getAvailableTimesForPackage(packageId: number, date: string): Promise<string[]> {
     const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
       where: { id: packageId }, 
-      relations: ['doctors'] 
+      relations: ['doctors', 'hospitals', 'hospitals.doctors'] 
     });
 
-    if (!servicePackage || !servicePackage.doctors || servicePackage.doctors.length === 0) {
+    if (!servicePackage) {
+      return [];
+    }
+
+    let doctorsToCheck = servicePackage.doctors || [];
+    if (doctorsToCheck.length === 0 && servicePackage.hospitals && servicePackage.hospitals.length > 0) {
+      doctorsToCheck = servicePackage.hospitals.flatMap(h => h.doctors || []);
+    }
+
+    if (doctorsToCheck.length === 0) {
       return [];
     }
 
     const durationMinutes = servicePackage.duration_minutes || 30;
     const allAvailableSlots = new Set<string>();
 
-    for (const doctor of servicePackage.doctors) {
+    for (const doctor of doctorsToCheck) {
       const times = await this.getAvailableTimes(doctor.id, date);
       
       // Filter times that can accommodate the duration
@@ -616,10 +662,19 @@ export class AppointmentsService {
   async getAvailableDoctorsForPackage(packageId: number, date: string, time: string): Promise<Doctor[]> {
     const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
       where: { id: packageId }, 
-      relations: ['doctors', 'doctors.user'] 
+      relations: ['doctors', 'doctors.user', 'hospitals', 'hospitals.doctors', 'hospitals.doctors.user'] 
     });
 
-    if (!servicePackage || !servicePackage.doctors || servicePackage.doctors.length === 0) {
+    if (!servicePackage) {
+      return [];
+    }
+
+    let doctorsToCheck = servicePackage.doctors || [];
+    if (doctorsToCheck.length === 0 && servicePackage.hospitals && servicePackage.hospitals.length > 0) {
+      doctorsToCheck = servicePackage.hospitals.flatMap(h => h.doctors || []);
+    }
+
+    if (doctorsToCheck.length === 0) {
       return [];
     }
 
@@ -645,7 +700,7 @@ export class AppointmentsService {
       return []; // Exceeds hospital hours
     }
 
-    for (const doctor of servicePackage.doctors) {
+    for (const doctor of doctorsToCheck) {
       // Check if doctor has a valid schedule for this time
       const schedule = await this.dataSource.manager.createQueryBuilder(Schedule, 'schedule')
         .where('schedule.doctor_id = :doctorId', { doctorId: doctor.id })
@@ -668,11 +723,28 @@ export class AppointmentsService {
         .getCount();
 
       if (overlapConflict === 0) {
+        // Find which hospital this doctor belongs to that is also in the package
+        let matchedHospitalId: number | null = null;
+        if (doctor.hospitals && doctor.hospitals.length > 0) {
+          // If the package has hospitals, try to find intersection
+          if (servicePackage.hospitals && servicePackage.hospitals.length > 0) {
+            const intersection = doctor.hospitals.find(h => servicePackage.hospitals.some(sh => sh.id === h.id));
+            if (intersection) {
+              matchedHospitalId = intersection.id;
+            } else {
+              matchedHospitalId = doctor.hospitals[0].id;
+            }
+          } else {
+            matchedHospitalId = doctor.hospitals[0].id;
+          }
+        }
+
         // Map to include name and avatar for frontend convenience
         availableDoctors.push({
           ...doctor,
           name: doctor.user?.full_name || 'Bác sĩ ẩn danh',
-          avatar_url: doctor.user?.avatar_url || ''
+          avatar_url: doctor.user?.avatar_url || '',
+          hospital_id: matchedHospitalId
         } as any);
       }
     }

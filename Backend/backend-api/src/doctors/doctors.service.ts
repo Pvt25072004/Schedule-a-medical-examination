@@ -36,8 +36,7 @@ export class DoctorsService {
   ) {}
 
   async findTopRated(): Promise<Doctor[]> {
-    // Lấy tất cả bác sĩ hoạt động, sắp xếp theo Rating (giảm dần) và Review Count (giảm dần) để tránh bias
-    const doctors = await this.doctorsRepository.createQueryBuilder('doctor')
+    return this.doctorsRepository.createQueryBuilder('doctor')
       .leftJoinAndSelect('doctor.category', 'category')
       .leftJoinAndSelect('doctor.hospitals', 'hospital')
       .leftJoinAndSelect('doctor.user', 'user')
@@ -45,18 +44,8 @@ export class DoctorsService {
       .andWhere('user.is_active = :isActive', { isActive: true })
       .orderBy('doctor.rating', 'DESC')
       .addOrderBy('doctor.review_count', 'DESC')
+      .take(10)
       .getMany();
-
-    // Group theo chuyên khoa và chỉ lấy bác sĩ xuất sắc nhất của mỗi khoa (Top 1 per Specialty)
-    const topRatedPerCategory = new Map<number, Doctor>();
-    for (const doc of doctors) {
-      const catId = doc.category?.id;
-      if (catId && !topRatedPerCategory.has(catId)) {
-        topRatedPerCategory.set(catId, doc);
-      }
-    }
-
-    return Array.from(topRatedPerCategory.values());
   }
 
   async findAll(hospitalId?: number, categoryId?: number, status?: string, date?: string, time?: string, page: number = 1, limit: number = 100): Promise<{ data: Doctor[]; total: number; page: number; limit: number; totalPages: number }> {
@@ -94,6 +83,7 @@ export class DoctorsService {
         .setParameter('statuses', ['pending', 'confirmed']);
     }
 
+    query.orderBy('doctor.id', 'DESC');
     query.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await query.getManyAndCount();

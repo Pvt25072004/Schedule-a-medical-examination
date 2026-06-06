@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAppointments } from "../contexts/AppointmentContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { PAGES, APPOINTMENT_STATUS } from "../utils/constants";
@@ -44,6 +45,7 @@ const AppointmentsPage = ({ navigate }) => {
     refreshAppointments
   } = useAppointments();
   const { user } = useAuth();
+  const { showError, showSuccess, showInfo, confirm } = useNotification();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -99,11 +101,19 @@ const AppointmentsPage = ({ navigate }) => {
   const [rsSubmitting, setRsSubmitting] = useState(false);
 
   const sortedAppointments = [...appointments].sort((a, b) => {
-    if (sortBy === "date_desc") {
-      return new Date(`${b.date}T${b.time || "00:00"}`) - new Date(`${a.date}T${a.time || "00:00"}`);
-    }
-    if (sortBy === "date_asc") {
-      return new Date(`${a.date}T${a.time || "00:00"}`) - new Date(`${b.date}T${b.time || "00:00"}`);
+    if (sortBy === "date_desc" || sortBy === "date_asc") {
+      const aTime = a.date ? new Date(`${a.date}T${a.time || "00:00"}`).getTime() : 0;
+      const bTime = b.date ? new Date(`${b.date}T${b.time || "00:00"}`).getTime() : 0;
+      
+      if (sortBy === "date_desc") {
+        if (!a.date && b.date) return -1;
+        if (a.date && !b.date) return 1;
+        return bTime - aTime;
+      } else {
+        if (!a.date && b.date) return 1;
+        if (a.date && !b.date) return -1;
+        return aTime - bTime;
+      }
     }
     if (sortBy === "price_desc") {
       return (b.price || 0) - (a.price || 0);
@@ -180,7 +190,7 @@ const AppointmentsPage = ({ navigate }) => {
       }
     } catch (err) {
       console.warn("Retry payment failed:", err);
-      alert("Không thể tạo URL thanh toán. Vui lòng thử lại sau.");
+      showError("Không thể tạo URL thanh toán. Vui lòng thử lại sau.");
     }
   };
 
@@ -211,11 +221,11 @@ const AppointmentsPage = ({ navigate }) => {
 
   const handleSubmitReview = async () => {
     if (!reviewAppointment || !user?.id) {
-      alert("Thiếu thông tin để gửi đánh giá");
+      showError("Thiếu thông tin để gửi đánh giá");
       return;
     }
     if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
-      alert("Vui lòng chọn điểm đánh giá từ 1 đến 5");
+      showError("Vui lòng chọn điểm đánh giá từ 1 đến 5");
       return;
     }
     try {
@@ -230,10 +240,10 @@ const AppointmentsPage = ({ navigate }) => {
 
       if (reviewAppointment.hasReview && reviewAppointment.reviewId) {
         await updateReview(reviewAppointment.reviewId, payload);
-        alert("Đã cập nhật đánh giá thành công!");
+        showSuccess("Đã cập nhật đánh giá thành công!");
       } else {
         await createReview(payload);
-        alert("Ðảm ơn bạn đã đánh giá bác sĩ!");
+        showSuccess("Cảm ơn bạn đã đánh giá bác sĩ!");
       }
 
       // Cập nhật lại context hoặc tải lại danh sách
@@ -250,20 +260,25 @@ const AppointmentsPage = ({ navigate }) => {
       setShowReviewModal(false);
       setReviewAppointment(null);
     } catch (e) {
-      alert(e.message || "Không thể gửi đánh giá");
+      showError(e.message || "Không thể gửi đánh giá");
     } finally {
       setIsSubmittingReview(false);
     }
   };
 
   const handleRequestRefund = async (apt) => {
-    if (!window.confirm("Xác nhận yêu cầu hoàn tiền cho lịch hẹn này?\nBộ phận chăm sóc khách hàng sẽ liên hệ trong vòng 24-48h.")) return;
+    const isConfirm = await confirm(
+      "Xác nhận hoàn tiền",
+      "Xác nhận yêu cầu hoàn tiền cho lịch hẹn này?\nBộ phận chăm sóc khách hàng sẽ liên hệ trong vòng 24-48h.",
+      { confirmText: "Đồng ý" }
+    );
+    if (!isConfirm) return;
     try {
       await requestRefund(apt.backendId || apt.id);
-      alert("Đã gửi yêu cầu hoàn tiền! Chúng tôi sẽ liên hệ bạn trong vòng 24-48h.");
+      showSuccess("Đã gửi yêu cầu hoàn tiền! Chúng tôi sẽ liên hệ bạn trong vòng 24-48h.");
       if (refreshAppointments) refreshAppointments();
     } catch (e) {
-      alert(e.message || "Không thể gửi yêu cầu hoàn tiền");
+      showError(e.message || "Không thể gửi yêu cầu hoàn tiền");
     }
   };
 
@@ -344,7 +359,7 @@ const AppointmentsPage = ({ navigate }) => {
 
   const handleSubmitReschedule = async () => {
     if (!rsSelectedDoctorId || !rsSelectedScheduleId || !rsDate || !rsTime) {
-      alert("Vui lòng chọn đầy đủ bác sĩ, ngày và giờ khám");
+      showError("Vui lòng chọn đầy đủ bác sĩ, ngày và giờ khám");
       return;
     }
     const selectedSchedule = rsSchedules.find(s => s.id === Number(rsSelectedScheduleId));
@@ -360,11 +375,11 @@ const AppointmentsPage = ({ navigate }) => {
         doctor_name_snapshot: selectedDoctor?.name || selectedDoctor?.user?.full_name,
         hospital_name_snapshot: selectedSchedule?.hospital?.name,
       });
-      alert("Đã dời lịch thành công! Lịch hẹn đang chờ bệnh viện xác nhận lại.");
+      showSuccess("Đã dời lịch thành công! Lịch hẹn đang chờ bệnh viện xác nhận lại.");
       setShowRescheduleModal(false);
       if (refreshAppointments) refreshAppointments();
     } catch (e) {
-      alert(e.message || "Không thể dời lịch");
+      showError(e.message || "Không thể dời lịch");
     } finally {
       setRsSubmitting(false);
     }
@@ -456,7 +471,8 @@ const AppointmentsPage = ({ navigate }) => {
           {/* Refund / Reschedule options - only show if cancelled/rejected by hospital/doctor AND payment was made */}
           {(apt.status === "cancelled" || apt.status === "rejected") &&
             apt.refundStatus !== "requested" && apt.refundStatus !== "completed" &&
-            !(apt.cancelReason && apt.cancelReason.includes("[Bệnh nhân tự hủy]")) && (
+            !(apt.cancelReason && apt.cancelReason.includes("[Bệnh nhân tự hủy]")) && 
+            apt.payment?.payment_status === 'completed' && (
             <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm font-semibold text-amber-800 mb-2">ℹ️ Bạn muốn xử lý thế nào?</p>
               <div className="flex gap-2">
@@ -486,7 +502,7 @@ const AppointmentsPage = ({ navigate }) => {
 
           {/* Nút hành động */}
           <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
-            {(apt.status === "pending" || apt.status === "confirmed") && (
+            {(apt.status === "pending" || apt.status === "confirmed") && apt.payment?.payment_status === 'completed' && (
               <Button
                 variant="outline"
                 size="sm"
@@ -511,7 +527,7 @@ const AppointmentsPage = ({ navigate }) => {
               </Button>
             )}
 
-            {(apt.status === "awaiting_payment" || apt.status === "pending") && (
+            {(apt.status === "awaiting_payment" || (apt.status === "pending" && apt.payment?.payment_status !== 'completed')) && (
               <>
                 <Button
                   variant="primary"

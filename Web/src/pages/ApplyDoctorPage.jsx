@@ -7,9 +7,11 @@ import { registerGuestDoctor } from "../services/api";
 import { uploadDoctorAvatar } from "../services/doctor.profile.api";
 import { getHospitals } from "../services/admin.hospitals.api";
 import { getCategories } from "../services/admin.categories.api";
+import { useNotification } from "../contexts/NotificationContext";
 
 export default function ApplyDoctorPage() {
   const navigate = useNavigate();
+  const { showError, showSuccess, showInfo } = useNotification();
   const [hospitals, setHospitals] = useState([]);
   const [categories, setCategories] = useState([]);
   
@@ -63,17 +65,17 @@ export default function ApplyDoctorPage() {
     if (!file || !uploadingField) return;
 
     try {
-      alert("Đang tải file lên..."); // Fallback simple alert, no useNotification in web
+      showInfo("Đang tải file lên..."); // Fallback simple alert, no useNotification in web
       const result = await uploadDoctorAvatar(file);
       if (result && result.image_url) {
         setForm((prev) => ({
           ...prev,
           [uploadingField]: result.image_url,
         }));
-        alert("Tải file thành công!");
+        showSuccess("Tải file thành công!");
       }
     } catch (error) {
-      alert("Lỗi tải file: " + error.message);
+      showError("Lỗi tải file: " + error.message);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setUploadingField(null);
@@ -86,8 +88,8 @@ export default function ApplyDoctorPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.hospital_id) return alert("Vui lòng chọn bệnh viện ứng tuyển");
-    if (!form.category_id) return alert("Vui lòng chọn chuyên khoa");
+    if (!form.hospital_id) return showError("Vui lòng chọn bệnh viện ứng tuyển");
+    if (!form.category_id) return showError("Vui lòng chọn chuyên khoa");
     
     try {
       setLoading(true);
@@ -97,10 +99,10 @@ export default function ApplyDoctorPage() {
         category_id: Number(form.category_id),
         experience_years: Number(form.experience_years) || 0,
       });
-      alert("Đã gửi đơn ứng tuyển thành công! Vui lòng chờ bệnh viện phê duyệt. Thông tin đăng nhập sẽ được gửi qua email của bạn.");
+      showSuccess("Đã gửi đơn ứng tuyển thành công! Vui lòng chờ bệnh viện phê duyệt. Thông tin đăng nhập sẽ được gửi qua email của bạn.");
       navigate("/login");
     } catch (err) {
-      alert(err.message || "Không thể gửi đơn ứng tuyển");
+      showError(err.message || "Không thể gửi đơn ứng tuyển");
     } finally {
       setLoading(false);
     }

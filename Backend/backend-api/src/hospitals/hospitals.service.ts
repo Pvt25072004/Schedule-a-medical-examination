@@ -5,6 +5,7 @@ import { Hospital } from './entities/hospital.entity';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { UpdateHospitalDto } from './dto/update-hospital.dto';
 import { Category } from 'src/categories/entities/category.entity';
+import { City } from 'src/cities/entities/city.entity';
 
 @Injectable()
 export class HospitalsService {
@@ -15,12 +16,21 @@ export class HospitalsService {
     private readonly categoriesRepository: Repository<Category>,
   ) {}
 
-  async create(dto: CreateHospitalDto): Promise<Hospital> {
-    const { categoryIds, city_id, ...rest } = dto;
+  async create(dto: any): Promise<Hospital> {
+    const { categoryIds, city_id, city, ...rest } = dto;
     const hospital = this.hospitalsRepository.create({
       ...rest,
-      ...(city_id && { city: { id: city_id } as any })
     } as Partial<Hospital>);
+
+    if (city_id) {
+      hospital.city = { id: city_id } as any;
+    } else if (city && typeof city === 'string') {
+      let foundCity = await this.categoriesRepository.manager.findOne(City, { where: { name: city } });
+      if (!foundCity) {
+        foundCity = await this.categoriesRepository.manager.save(City, { name: city });
+      }
+      hospital.city = foundCity;
+    }
 
     if (categoryIds?.length) {
       hospital.categories = await this.categoriesRepository.find({
@@ -56,12 +66,19 @@ export class HospitalsService {
     return hospital;
   }
 
-  async update(id: number, dto: UpdateHospitalDto): Promise<Hospital> {
-    const { categoryIds, city_id, ...rest } = dto;
+  async update(id: number, dto: any): Promise<Hospital> {
+    const { categoryIds, city_id, city, ...rest } = dto;
     const hospital = await this.findOne(id);
     Object.assign(hospital, rest);
+    
     if (city_id) {
       hospital.city = { id: city_id } as any;
+    } else if (city && typeof city === 'string') {
+      let foundCity = await this.categoriesRepository.manager.findOne(City, { where: { name: city } });
+      if (!foundCity) {
+        foundCity = await this.categoriesRepository.manager.save(City, { name: city });
+      }
+      hospital.city = foundCity;
     }
 
     if (categoryIds) {

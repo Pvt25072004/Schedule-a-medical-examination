@@ -17,12 +17,17 @@ const BannerCarousel = () => {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/hospital-admin/banners/active`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.length > 0) {
-            setBanners(data);
-          }
+        const newsData = await getPublicNews();
+        const newsArray = Array.isArray(newsData) ? newsData : (newsData?.data || []);
+        const rssNews = newsArray.filter(n => n.source && n.image_url).slice(0, 5).map(n => ({
+          id: n.id,
+          image_url: n.image_url,
+          title: n.title,
+          description: n.summary,
+          redirect_url: n.source
+        }));
+        if (rssNews.length > 0) {
+          setBanners(rssNews);
         }
       } catch (err) {
         console.error('Failed to fetch banners:', err);
@@ -41,7 +46,7 @@ const BannerCarousel = () => {
 
   return (
     <div 
-      className="relative w-full h-40 sm:h-48 md:h-64 rounded-2xl overflow-hidden mb-8 shadow-sm group cursor-pointer"
+      className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[450px] rounded-2xl overflow-hidden mb-8 shadow-sm group cursor-pointer bg-slate-900"
       onClick={() => {
         const banner = banners[currentIdx];
         if (!banner) return;
@@ -49,7 +54,7 @@ const BannerCarousel = () => {
           if (!isAuthenticated) navigate('/login');
           else navigate('/book-doctor', { state: { doctorId: banner.doctor_id }});
         }
-        else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
+        else if (banner.hospital_id) navigate(`/doctors`);
         else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
       }}
     >
@@ -117,33 +122,83 @@ const FanpagePage = () => {
         setIsLoading(true);
         // Fetch posts (page 1)
         const postsRes = await fetch(`${API_BASE_URL}/posts?page=1&limit=10`);
+        let initialPostsData = null;
         if (postsRes.ok) {
-          const postsData = await postsRes.json();
-          setPosts(postsData.data || postsData);
-          setHasMore((postsData.page || 1) < (postsData.totalPages || 1));
+          initialPostsData = await postsRes.json();
+          setPosts(initialPostsData.data || initialPostsData);
+          setHasMore((initialPostsData.page || 1) < (initialPostsData.totalPages || 1));
         }
 
-        // Fetch hospitals with fanpages for sidebar
-        const fanpagesRes = await fetch(`${API_BASE_URL}/fanpages`);
-        if (fanpagesRes.ok) {
-          const fanpagesData = await fanpagesRes.json();
-          // Extract hospital info from fanpages for the sidebar
-          const hospitalsData = fanpagesData.map(f => ({
-            id: f.hospital?.id,
-            name: f.hospital?.name,
-            city: f.hospital?.city,
-            fanpage: f,
-          })).filter(h => h.id);
-          setHospitals(hospitalsData);
+        // Fetch hospitals for sidebar
+        const hospitalsRes = await fetch(`${API_BASE_URL}/hospitals`);
+        if (hospitalsRes.ok) {
+          const hospitalsData = await hospitalsRes.json();
+          // Extract hospital info for the sidebar
+          const validHospitals = hospitalsData.filter(h => h.id);
+          setHospitals(validHospitals);
         }
 
-        // Fetch news for sidebar search
+        // Fetch news for sidebar search and feed
+        let customNewsArray = [];
         try {
           const newsData = await getPublicNews();
           const newsArray = Array.isArray(newsData) ? newsData : (newsData?.data || []);
           setNewsList(newsArray);
+          
+          // Inject custom news into feed (exclude google medical news which have source)
+          customNewsArray = newsArray.filter(n => !n.source).map(n => ({
+            id: `news_${n.id}`,
+            isNews: true,
+            title: n.title,
+            content: n.summary || '',
+            image_url: n.image_url,
+            created_at: n.published_at || n.created_at,
+            hospital: { name: "adminClinic", avatar_url: "https://cdn-icons-png.flaticon.com/512/2965/2965879.png" },
+            likes_count: 0,
+            comments_count: 0,
+            shares_count: 0,
+            originalNewsId: n.id,
+          }));
         } catch (err) {
           console.error('Error fetching news:', err);
+        }
+
+        // Fetch system notifications for feed
+        let notificationsArray = [];
+        try {
+          const notifRes = await fetch(`${API_BASE_URL}/notifications/system`);
+          if (notifRes.ok) {
+            const notifData = await notifRes.json();
+            const notifs = Array.isArray(notifData) ? notifData : [];
+            notificationsArray = notifs.map(n => ({
+              id: `notif_${n.id}`,
+              isNotification: true,
+              title: `[${n.type === 'alert' ? 'Cảnh báo khẩn cấp' : n.type === 'promotion' ? 'Khuyến mãi' : 'Hệ thống'}] ${n.title}`,
+              content: n.body,
+              created_at: n.created_at,
+              hospital: { name: "adminClinic", avatar_url: "https://cdn-icons-png.flaticon.com/512/2965/2965879.png" },
+              likes_count: 0,
+              comments_count: 0,
+              shares_count: 0,
+              type: n.type,
+            }));
+          }
+        } catch (err) {
+          console.error('Error fetching notifications:', err);
+        }
+
+        // Merge and sort
+        const combined = [
+          ...(initialPostsData ? (initialPostsData.data || initialPostsData) : []),
+          ...customNewsArray,
+          ...notificationsArray
+        ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        setPosts(combined);
+        if (initialPostsData) {
+          setHasMore((initialPostsData.page || 1) < (initialPostsData.totalPages || 1));
+        } else {
+          setHasMore(false);
         }
       } catch (error) {
         console.error('Error fetching fanpage data:', error);
@@ -202,9 +257,7 @@ const FanpagePage = () => {
   }, [posts]);
 
   // Filter logic with normalized comparison
-  const searchResultsHospitals = hospitals.filter(h => 
-    normalizeForSearch(h.name).includes(normalizeForSearch(searchQuery))
-  );
+
   const searchResultsPosts = posts.filter(post => 
     normalizeForSearch(post.title).includes(normalizeForSearch(searchQuery)) ||
     normalizeForSearch(post.content).includes(normalizeForSearch(searchQuery))
@@ -300,7 +353,7 @@ const FanpagePage = () => {
               <div className="relative w-full">
                 <input
                   type="text"
-                  placeholder="Tìm kiếm fanpage, bài viết..."
+                  placeholder="Tìm kiếm bài viết..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
@@ -337,25 +390,6 @@ const FanpagePage = () => {
                       </div>
                     )}
 
-                    {/* Hospitals */}
-                    <div className="py-2">
-                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Bệnh viện / Fanpage</div>
-                      {searchResultsHospitals.length > 0 ? (
-                        searchResultsHospitals.map(h => (
-                          <div 
-                            key={h.id} 
-                            onClick={() => navigate(`/fanpage/${h.fanpage?.id}`)}
-                            className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-                          >
-                            <img src={h.fanpage?.avatar_url || 'https://via.placeholder.com/32'} alt="" className="w-8 h-8 rounded-full object-cover" />
-                            <span className="text-sm font-medium text-gray-800">{h.name}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-gray-500 px-2 py-1">Không tìm thấy bệnh viện</div>
-                      )}
-                    </div>
-
                     {/* Posts */}
                     <div className="py-2">
                       <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Bài viết</div>
@@ -381,7 +415,7 @@ const FanpagePage = () => {
 
                     {/* News */}
                     <div className="py-2">
-                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Tin tức y khoa / Báo chí</div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Tin tức hệ thống</div>
                       {searchResultsNews.length > 0 ? (
                         searchResultsNews.map(item => (
                           <div 

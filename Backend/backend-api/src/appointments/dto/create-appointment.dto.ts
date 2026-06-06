@@ -26,8 +26,8 @@ export class CreateAppointmentDto {
     description: 'ID của bác sĩ',
   })
   @IsInt()
-  @IsNotEmpty()
-  doctor_id: number;
+  @IsOptional()
+  doctor_id?: number;
 
   // --- HOSPITAL ID ---
   @ApiProperty({
@@ -62,8 +62,8 @@ export class CreateAppointmentDto {
     description: 'Ngày hẹn khám (Format: YYYY-MM-DD)',
   })
   @IsDateString()
-  @IsNotEmpty()
-  appointment_date: string;
+  @IsOptional()
+  appointment_date?: string;
 
   // --- TIME ---
   @ApiProperty({
@@ -71,11 +71,11 @@ export class CreateAppointmentDto {
     description: 'Giờ hẹn (Format: HH:mm)',
     pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, {
     message: 'Thời gian hẹn không hợp lệ (HH:mm)',
   })
-  appointment_time: string;
+  appointment_time?: string;
 
   // --- TYPE ---
   @ApiProperty({

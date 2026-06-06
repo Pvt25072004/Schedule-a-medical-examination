@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppointmentProvider } from "./contexts/AppointmentContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 // Pages
@@ -23,10 +24,14 @@ import AppointmentsPage from "./pages/AppointmentsPage";
 import ChatPage from "./pages/ChatPage";
 import SettingsPage from "./pages/SettingsPage";
 import MedicalRecordsPage from "./pages/MedicalRecordsPage";
-
+import AboutPage from "./pages/AboutPage";
+import FAQPage from "./pages/FAQPage";
+import BookingGuidePage from "./pages/BookingGuidePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsPage from "./pages/TermsPage";
+import SpecialtiesPage from "./pages/SpecialtiesPage";
 import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 import FanpagePage from "./pages/FanpagePage";
-import FanpageDetailPage from "./pages/FanpageDetailPage";
 import NewsPage from "./pages/NewsPage";
 import ApplyDoctorPage from "./pages/ApplyDoctorPage";
 import HospitalRegistrationPage from "./pages/HospitalRegistrationPage";
@@ -151,10 +156,6 @@ const AppRoutes = () => {
           element={<FanpagePage navigate={navigateTo} />}
         />
         <Route
-          path={PAGES.FANPAGE_DETAIL}
-          element={<FanpageDetailPage />}
-        />
-        <Route
           path="/payment/vnpay-return"
           element={<VNPayReturnPage />}
         />
@@ -208,6 +209,30 @@ const AppRoutes = () => {
             )
           }
         />
+        <Route
+          path={PAGES.ABOUT}
+          element={<AboutPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.FAQ}
+          element={<FAQPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.BOOKING_GUIDE}
+          element={<BookingGuidePage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.PRIVACY_POLICY}
+          element={<PrivacyPolicyPage />}
+        />
+        <Route
+          path={PAGES.TERMS}
+          element={<TermsPage />}
+        />
+        <Route
+          path={PAGES.SPECIALTIES}
+          element={<SpecialtiesPage navigate={navigateTo} />}
+        />
 
         <Route
           path={PAGES.DOCTOR_DASHBOARD}
@@ -229,15 +254,17 @@ const App = () => {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthProvider>
-        <AppointmentProvider>
-          <BrowserRouter>
-            <ScrollToTop />
-            <div className="font-sans">
-              <AppRoutes />
-              <FloatingWidgets />
-            </div>
-          </BrowserRouter>
-        </AppointmentProvider>
+        <NotificationProvider>
+          <AppointmentProvider>
+            <BrowserRouter>
+              <ScrollToTop />
+              <div className="font-sans">
+                <AppRoutes />
+                <FloatingWidgets />
+              </div>
+            </BrowserRouter>
+          </AppointmentProvider>
+        </NotificationProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );

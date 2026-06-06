@@ -20,6 +20,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAppointments } from "../contexts/AppointmentContext";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
+import Footer from "../components/common/Footer";
 import { PAGES, HEALTH_TIPS, SPECIALTIES } from "../utils/constants";
 import {
   formatDate,
@@ -79,21 +80,18 @@ const HomePage = ({ navigate }) => {
       value: stats.completed,
       icon: Activity,
       color: "blue",
-      change: "+12%",
     },
     {
       label: "Lịch hẹn",
       value: stats.upcoming,
       icon: Calendar,
       color: "purple",
-      change: "+5%",
     },
     {
-      label: "Điểm sức khỏe",
-      value: "85",
-      icon: Heart,
-      color: "red",
-      change: "+3%",
+      label: "Tổng số lịch",
+      value: stats.total,
+      icon: FileText,
+      color: "orange",
     },
   ];
   useEffect(() => {
@@ -123,7 +121,7 @@ const HomePage = ({ navigate }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8fbff] pb-12 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-[#f8fbff] relative overflow-hidden">
       {/* Decorative Blurs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#48a1f3]/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
       <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-[#f99b1c]/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
@@ -131,7 +129,7 @@ const HomePage = ({ navigate }) => {
       {/* Header is managed globally in AppRoutes */}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-12">
         {/* Welcome Section */}
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -157,14 +155,6 @@ const HomePage = ({ navigate }) => {
                 <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{metric.label}</p>
                 <p className="text-4xl font-black text-[#143250] mb-2 group-hover:scale-105 origin-left transition-transform duration-300">
                   {metric.value}
-                </p>
-                <p
-                  className={`text-sm font-bold flex items-center gap-1 ${
-                    metric.color === "blue" ? "text-[#48a1f3]" : metric.color === "purple" ? "text-purple-500" : "text-[#f99b1c]"
-                  }`}
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  {metric.change} tháng trước
                 </p>
               </div>
               <div
@@ -396,92 +386,7 @@ const HomePage = ({ navigate }) => {
           </div>
         </div>
       </main>
-      <footer id="contact" className="bg-gray-900 text-white py-12 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="font-bold text-lg mb-4">STL Clinic</h3>
-              <p className="text-gray-400 text-sm">
-                Nền tảng đặt khám trực tuyến hàng đầu Việt Nam
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Liên kết</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Về chúng tôi
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Bác sĩ
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Chuyên khoa
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Tin tức
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Hỗ trợ</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Câu hỏi thường gặp
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Hướng dẫn đặt lịch
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Chính sách bảo mật
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Điều khoản sử dụng
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Liên hệ</h4>
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-center gap-2 text-gray-400">
-                  <Phone className="w-4 h-4" />
-                  <span>1900-xxxx</span>
-                </li>
-                <li className="flex items-center gap-2 text-gray-400">
-                  <Mail className="w-4 h-4" />
-                  <span>support@stlclinic.com</span>
-                </li>
-                <li className="flex items-start gap-2 text-gray-400">
-                  <MapPin className="w-4 h-4 mt-1" />
-                  <span>123 Đường ABC, Q.1, TP.HCM</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>© 2025 STL Clinic. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

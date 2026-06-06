@@ -3,13 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostsService } from './posts.service';
 import { PostsController } from './posts.controller';
 import { Post } from './entities/post.entity';
-import { Fanpage } from 'src/fanpages/entities/fanpage.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Post, Fanpage]),
+    TypeOrmModule.forFeature([Post, Hospital]),
     CloudinaryModule,
   ],
   controllers: [PostsController],
