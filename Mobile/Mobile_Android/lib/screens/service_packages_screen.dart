@@ -35,7 +35,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gói Khám Sức Khỏe'),
-        backgroundColor: Colors.greenAccent,
+        backgroundColor: const Color(0xFF48A1F3),
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -72,7 +72,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Giá: ${pkg['price'] ?? 0} đ',
+                                  'Giá: ${pkg['fixed_price'] ?? pkg['price'] ?? 0} đ',
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange),
                                 ),
                                 ElevatedButton(
@@ -87,7 +87,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.greenAccent,
+                                    backgroundColor: const Color(0xFF48A1F3),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                   ),

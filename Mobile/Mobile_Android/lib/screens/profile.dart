@@ -4,10 +4,11 @@ import '../subscreens/profile/help.dart';
 import '../subscreens/profile/legal.dart';
 import '../subscreens/profile/setting/setting.dart';
 import '../service/auth_service.dart';
+import 'my_medical_records_screen.dart';
 
 // --- Cài đặt Màu Chủ đạo Mới (Teal - Xanh Ngọc) ---
-const Color primaryColor = Color(0xFF00BFA5); // Teal (Xanh ngọc)
-const Color primaryDarkColor = Color(0xFF00796B); // Dark Teal
+const Color primaryColor = Color(0xFF48A1F3); // Blue
+const Color primaryDarkColor = Color(0xFF143250); // Dark Blue
 const Color backgroundLight = Color(0xFFF7F7F7); // Màu nền nhẹ
 
 class ProfileScreen extends StatefulWidget {
@@ -468,7 +469,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                     title: 'Hồ sơ Sức khỏe',
                     subtitle: 'Lịch sử bệnh án, kết quả xét nghiệm',
                     onTap: () {
-                      showAppSnackBar(context, 'Mở Hồ sơ Sức khỏe (sắp có)');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyMedicalRecordsScreen()),
+                      );
                     },
                     iconColor: Colors.redAccent,
                     delayFactor: 3,
@@ -482,7 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     onTap: () {
                       showAppSnackBar(context, 'Mở Ưu đãi (sắp có)');
                     },
-                    iconColor: Colors.green,
+                    iconColor: const Color(0xFF48A1F3),
                     delayFactor: 4,
                   ),
                 ],

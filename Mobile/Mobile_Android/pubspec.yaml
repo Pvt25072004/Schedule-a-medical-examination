@@ -26,7 +26,7 @@ dependencies:
   lottie: ^3.3.2
   animations: ^2.1.0
   image_picker: ^1.2.0
-  http: ^1.5.0
+  http: ^1.6.0
   flutter_launcher_icons: ^0.14.4
   carousel_slider: ^5.1.1
   flutter_staggered_animations: ^1.1.1

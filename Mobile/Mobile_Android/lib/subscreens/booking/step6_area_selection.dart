@@ -35,12 +35,24 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
   final GlobalKey _phoneKey = GlobalKey(); 
   final GlobalKey _reasonKey = GlobalKey(); 
 
+  // --- Cho Người Thân ---
+  bool _isForRelative = false;
+  final _relativeNameController = TextEditingController();
+  final _relativePhoneController = TextEditingController();
+  final _relativeDobController = TextEditingController();
+  final _relativeAddressController = TextEditingController();
+  String _relativeGender = 'Nam';
+  String _relativeRelationship = 'Cha mẹ';
+
+  final List<String> _genderOptions = ['Nam', 'Nữ', 'Khác'];
+  final List<String> _relationshipOptions = ['Cha mẹ', 'Vợ chồng', 'Con cái', 'Anh chị em', 'Khác'];
+
   Map<String, dynamic>? _userData;
   final AuthService _authService = AuthService();
 
   // Màu chủ đạo
-  final Color primaryColor = Colors.greenAccent;
-  final Color primaryDarkColor = const Color(0xFF1B5E20);
+  final Color primaryColor = const Color(0xFF48A1F3);
+  final Color primaryDarkColor = const Color(0xFF143250);
   final Color errorColor = Colors.red.shade700;
 
   @override
@@ -193,7 +205,7 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
   @override
   Widget build(BuildContext context) {
     if (_userData == null && AuthService.currentUser != null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.greenAccent));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF48A1F3)));
     }
 
     return GestureDetector(
@@ -246,55 +258,140 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                       margin: const EdgeInsets.only(bottom: 20),
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
-                        child: Row(
+                        child: Column(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                'Thông tin Hồ sơ (Họ tên, SĐT, Email) được lấy tự động.',
-                                style: TextStyle(fontSize: 13),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: RadioListTile<bool>(
+                                    title: const Text('Cho bản thân', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                    value: false,
+                                    groupValue: _isForRelative,
+                                    activeColor: primaryColor,
+                                    contentPadding: EdgeInsets.zero,
+                                    onChanged: (val) => setState(() => _isForRelative = val!),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: RadioListTile<bool>(
+                                    title: const Text('Cho người thân', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                    value: true,
+                                    groupValue: _isForRelative,
+                                    activeColor: primaryColor,
+                                    contentPadding: EdgeInsets.zero,
+                                    onChanged: (val) => setState(() => _isForRelative = val!),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (!_isForRelative) ...[
+                              const Divider(),
+                              Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Thông tin Hồ sơ được lấy tự động.',
+                                      style: TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => _goToEditProfile(context),
+                                    child: Text('Sửa', style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () => _goToEditProfile(context),
-                              child: Text('Sửa hồ sơ', style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
-                            ),
+                            ]
                           ],
                         ),
                       ),
                     ),
 
                     // 1. Họ và tên
-                    _buildReadOnlyField(
-                      controller: _nameController,
-                      labelText: 'Họ và tên',
-                      icon: Icons.person_outline,
-                      required: true,
-                    ),
+                    if (!_isForRelative)
+                      _buildReadOnlyField(
+                        controller: _nameController,
+                        labelText: 'Họ và tên',
+                        icon: Icons.person_outline,
+                        required: true,
+                      )
+                    else
+                      _buildInputField(
+                        controller: _relativeNameController,
+                        labelText: 'Họ và tên người thân',
+                        validationMessage: 'Vui lòng nhập họ tên người thân',
+                        required: true,
+                      ),
                     const SizedBox(height: 16),
 
                     // 2. Số điện thoại
-                    _buildReadOnlyField(
-                      key: _phoneKey,
-                      controller: _phoneController,
-                      labelText: 'Số điện thoại',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                      required: true,
-                    ),
+                    if (!_isForRelative)
+                      _buildReadOnlyField(
+                        key: _phoneKey,
+                        controller: _phoneController,
+                        labelText: 'Số điện thoại',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                        required: true,
+                      )
+                    else
+                      _buildInputField(
+                        controller: _relativePhoneController,
+                        labelText: 'SĐT người thân',
+                        validationMessage: 'Vui lòng nhập SĐT',
+                        keyboardType: TextInputType.phone,
+                        required: true,
+                      ),
                     const SizedBox(height: 16),
 
-                    // 3. Email
-                    _buildReadOnlyField(
-                      controller: _emailController,
-                      labelText: 'Email',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      required: false,
-                    ),
-
-                    const SizedBox(height: 25),
+                    // 3. Giới tính, Năm sinh, Mối quan hệ, Địa chỉ (Dành cho người thân)
+                    if (_isForRelative) ...[
+                      DropdownButtonFormField<String>(
+                        value: _relativeGender,
+                        decoration: const InputDecoration(
+                          labelText: 'Giới tính',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                        ),
+                        items: _genderOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (val) => setState(() => _relativeGender = val!),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInputField(
+                        controller: _relativeDobController,
+                        labelText: 'Năm sinh (VD: 1990)',
+                        validationMessage: 'Vui lòng nhập năm sinh',
+                        keyboardType: TextInputType.number,
+                        required: true,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _relativeRelationship,
+                        decoration: const InputDecoration(
+                          labelText: 'Mối quan hệ',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                        ),
+                        items: _relationshipOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (val) => setState(() => _relativeRelationship = val!),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInputField(
+                        controller: _relativeAddressController,
+                        labelText: 'Địa chỉ người thân (Không bắt buộc)',
+                        validationMessage: '',
+                        required: false,
+                      ),
+                      const SizedBox(height: 16),
+                    ] else ...[
+                      _buildReadOnlyField(
+                        controller: _emailController,
+                        labelText: 'Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        required: false,
+                      ),
+                      const SizedBox(height: 25),
+                    ],
 
                     const Text('Thông tin khám bệnh:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
                     const Divider(height: 10, thickness: 1),
@@ -328,18 +425,23 @@ class _Step6PatientInfoState extends State<Step6PatientInfo> {
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
                             widget.onNext({
-                              'fullName': _nameController.text,
-                              'phone': _phoneController.text,
-                              'email': _emailController.text,
+                              'fullName': _isForRelative ? _relativeNameController.text : _nameController.text,
+                              'phone': _isForRelative ? _relativePhoneController.text : _phoneController.text,
+                              'email': _isForRelative ? '' : _emailController.text,
                               'reason': _reasonController.text,
                               'note': _noteController.text,
+                              'isForRelative': _isForRelative,
+                              'patientGender': _isForRelative ? _relativeGender : null,
+                              'patientDob': _isForRelative ? _relativeDobController.text : null,
+                              'relationship': _isForRelative ? _relativeRelationship : null,
+                              'patientAddress': _isForRelative ? _relativeAddressController.text : null,
                             });
                           } else {
                             _scrollToError();
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFF48A1F3),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

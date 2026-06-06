@@ -100,7 +100,7 @@ class _Step2HospitalSelectionState extends State<Step2HospitalSelection> {
 
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B5E20)))
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF48A1F3)))
               : _hospitals.isEmpty
                   ? Center(
                       child: Column(
@@ -201,7 +201,7 @@ class _Step2HospitalSelectionState extends State<Step2HospitalSelection> {
                                       runSpacing: 8.0,
                                       children: [
                                         _buildInfoChip(Icons.medical_services, '$categoriesCount chuyên khoa', Colors.deepOrange),
-                                        _buildInfoChip(Icons.access_time_filled, 'Đang mở cửa', Colors.green.shade700),
+                                        _buildInfoChip(Icons.access_time_filled, 'Đang mở cửa', const Color(0xFF48A1F3)),
                                       ],
                                     ),
 

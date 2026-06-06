@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // --- Cài đặt Màu Chủ đạo (Phải đồng bộ với SettingScreen) ---
-const Color primaryColor = Colors.greenAccent;
-const Color primaryDarkColor = const Color(0xFF1B5E20);
+const Color primaryColor = const Color(0xFF48A1F3);
+const Color primaryDarkColor = const Color(0xFF143250);
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});

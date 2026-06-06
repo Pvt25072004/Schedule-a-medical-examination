@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../service/social_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../service/auth_service.dart';
+import '../widgets/post_card.dart';
+
+import 'fanpage_detail_screen.dart';
 
 class SocialFeedScreen extends StatefulWidget {
   const SocialFeedScreen({super.key});
@@ -20,11 +23,26 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   int _page = 1;
   bool _hasMore = true;
 
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _loadPosts();
     _scrollController.addListener(_onScroll);
+  }
+
+  List<dynamic> get _filteredPosts {
+    if (_searchQuery.trim().isEmpty) return [];
+    final q = _searchQuery.toLowerCase();
+    return _posts.where((post) {
+      final title = (post['title'] ?? '').toString().toLowerCase();
+      final content = (post['content'] ?? '').toString().toLowerCase();
+      final fanpageName = (post['fanpage']?['hospital']?['name'] ?? post['fanpage']?['name'] ?? '').toString().toLowerCase();
+      return title.contains(q) || content.contains(q) || fanpageName.contains(q);
+    }).toList();
   }
 
   void _onScroll() {
@@ -68,31 +86,6 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
     }
   }
 
-  Future<void> _handleLike(int index, int postId) async {
-    if (AuthService.accessToken == null) {
-      showAppSnackBar(context, 'Bạn cần đăng nhập để like');
-      return;
-    }
-    
-    // Optimistic update
-    setState(() {
-      _posts[index]['isLiked'] = true;
-      _posts[index]['likesCount'] = (_posts[index]['likesCount'] ?? 0) + 1;
-    });
-
-    final success = await _socialService.likePost(postId);
-    if (!success) {
-      // Revert if failed
-      if (mounted) {
-        setState(() {
-          _posts[index]['isLiked'] = false;
-          _posts[index]['likesCount'] = (_posts[index]['likesCount'] ?? 1) - 1;
-        });
-        showAppSnackBar(context, 'Like không thành công');
-      }
-    }
-  }
-
   void _showComments(int postId) {
     showModalBottomSheet(
       context: context,
@@ -109,101 +102,135 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final searchResults = _filteredPosts;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cộng đồng Y tế'),
-        backgroundColor: Colors.greenAccent,
-        foregroundColor: Colors.white,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadPosts,
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: _posts.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == _posts.length) {
-                    return _isLoadingMore
-                        ? const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
-                        : const SizedBox.shrink();
-                  }
-                  
-                  final post = _posts[index];
-                  final isLiked = post['isLiked'] ?? false;
-                  
-                  return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: Colors.green.shade100,
-                                child: const Icon(Icons.business, color: Colors.green),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post['fanpage']?['name'] ?? 'Fanpage',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                    ),
-                                    Text(
-                                      'Vừa xong',
-                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(post['content'] ?? ''),
-                          if (post['image_url'] != null && post['image_url'].toString().isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(post['image_url'], fit: BoxFit.cover),
-                            ),
-                          ],
-                          const SizedBox(height: 12),
-                          const Divider(),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              TextButton.icon(
-                                onPressed: () => _handleLike(index, post['id']),
-                                icon: Icon(
-                                  isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
-                                  color: isLiked ? Colors.green : Colors.grey,
-                                ),
-                                label: Text('${post['likesCount'] ?? 0} Thích'),
-                              ),
-                              TextButton.icon(
-                                onPressed: () => _showComments(post['id']),
-                                icon: const Icon(Icons.comment_outlined, color: Colors.grey),
-                                label: const Text('Bình luận'),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                  );
+        title: _isSearching 
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Tìm hashtag, fanpage, bài viết...',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
                 },
+              )
+            : const Text('Cộng đồng Y tế'),
+        backgroundColor: const Color(0xFF48A1F3),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
+                _isSearching = !_isSearching;
+              });
+            },
+          )
+        ],
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                        onRefresh: _loadPosts,
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          itemCount: _posts.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == _posts.length) {
+                              return _isLoadingMore
+                                  ? const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
+                                  : const SizedBox.shrink();
+                            }
+                            final post = _posts[index];
+                            return PostCardWidget(post: post, socialService: _socialService);
+                          },
+                        ),
+                      ),
+              ),
+            ],
+          ),
+          
+          // Search Results Dropdown Card Overlay
+          if (_searchQuery.isNotEmpty)
+            Positioned(
+              top: 8,
+              left: 16,
+              right: 16,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 350),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: searchResults.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Text('Không tìm thấy kết quả cho "$_searchQuery"', style: TextStyle(color: Colors.grey.shade600)),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: searchResults.length,
+                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final post = searchResults[index];
+                            final hospitalName = post['fanpage']?['hospital']?['name'] ?? post['fanpage']?['name'] ?? 'Bệnh viện';
+                            return ListTile(
+                              leading: const Icon(Icons.article_outlined, color: Color(0xFF48A1F3)),
+                              title: Text(
+                                post['title'] != null && post['title'].toString().isNotEmpty 
+                                    ? post['title'] 
+                                    : (post['content']?.toString().substring(0, post['content'].toString().length > 30 ? 30 : post['content'].toString().length) ?? 'Bài viết'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(hospitalName, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                              onTap: () {
+                                // Navigate to the fanpage directly from search result
+                                if (post['fanpage'] != null && post['fanpage']['id'] != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FanpageDetailScreen(fanpageId: post['fanpage']['id']),
+                                    ),
+                                  );
+                                }
+                                // Hide search
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                                FocusScope.of(context).unfocus();
+                              },
+                            );
+                          },
+                        ),
+                ),
               ),
             ),
+        ],
+      ),
     );
   }
 }
+
 
 class _CommentsSheet extends StatefulWidget {
   final int postId;
@@ -292,7 +319,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.send, color: Colors.green),
+                  icon: const Icon(Icons.send, color: Color(0xFF48A1F3)),
                   onPressed: _sendComment,
                 )
               ],

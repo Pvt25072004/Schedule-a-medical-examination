@@ -46,7 +46,7 @@ class _SpecialtyDoctorsScreenState extends State<SpecialtyDoctorsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryThemeColor = Color(0xFF00A86B);
+    const Color primaryThemeColor = Color(0xFF48A1F3);
     final String catName = widget.category['name'] ?? 'Chuyên khoa';
 
     return Scaffold(
