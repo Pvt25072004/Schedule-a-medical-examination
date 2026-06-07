@@ -1,10 +1,16 @@
+import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../service/auth_service.dart';
 import '../service/doctor_service.dart';
 import '../service/appointment_service.dart';
 import '../welcome/welcome.dart';
 import '../dashboard.dart';
+
+const Color primaryColor = Color(0xFF48A1F3); // Xanh lam
+const Color primaryDarkColor = Color(0xFF143250); // Xanh navy đậm cho chữ
+const Color primaryLightColor = Color(0xFFEBF5FF); // Xanh lam nhạt
 
 class DoctorDashboardScreen extends StatefulWidget {
   const DoctorDashboardScreen({super.key});
@@ -27,6 +33,16 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   void initState() {
     super.initState();
     _loadDoctorData();
+    _setupFCM();
+  }
+
+  void _setupFCM() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (mounted) {
+        showAppSnackBar(context, '🔔 Có thông báo mới: ${message.notification?.title ?? "Cập nhật lịch khám"}');
+        _loadAppointments();
+      }
+    });
   }
 
   Future<void> _loadDoctorData() async {
@@ -74,117 +90,10 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     }
   }
 
-  Future<void> _updateStatus(int id, String newStatus) async {
-    final success = await _appointmentService.updateAppointmentStatus(
-      appointmentId: id, 
-      status: newStatus,
-    );
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🎯 Đã chuyển trạng thái sang: $newStatus'),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      await _loadAppointments();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🔥 Cập nhật thất bại!'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  void _showActionDialog(Map<String, dynamic> appt) {
-    final int id = appt['id'];
-    final String currentStatus = appt['status'] ?? 'pending';
-    final String patientName = appt['user'] != null ? appt['user']['full_name'] : 'Khách hàng';
-    final String time = appt['appointment_time'] ?? '00:00';
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Xử lý Lịch hẹn',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Bệnh nhân: $patientName ($time)',
-              style: TextStyle(color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            
-            if (currentStatus == 'pending')
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _updateStatus(id, 'confirmed');
-                },
-                icon: const Icon(Icons.check_circle_outline, color: Colors.white),
-                label: const Text('Chấp nhận lịch khám', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade600,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            const SizedBox(height: 12),
-            
-            if (currentStatus == 'confirmed')
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _updateStatus(id, 'completed');
-                },
-                icon: const Icon(Icons.done_all, color: Colors.white),
-                label: const Text('Hoàn thành khám bệnh', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            const SizedBox(height: 12),
-            
-            if (currentStatus != 'cancelled' && currentStatus != 'completed')
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _updateStatus(id, 'cancelled');
-                },
-                icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-                label: const Text('Hủy lịch khám', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Removed _showActionDialog and _updateStatus as the app is view-only for doctors
 
   @override
   Widget build(BuildContext context) {
-    final Color themeColor = Colors.teal.shade600;
 
     if (_isLoadingProfile) {
       return const Scaffold(
@@ -238,14 +147,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.teal.shade700, Colors.teal.shade500],
+                colors: [primaryColor, primaryColor.withOpacity(0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.teal.withOpacity(0.3),
+                  color: primaryColor.withOpacity(0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -262,7 +171,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                         (_doctorProfile!['name'] != null && (_doctorProfile!['name'] as String).isNotEmpty)
                             ? (_doctorProfile!['name'] as String).substring(0, 1)
                             : 'D',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: themeColor),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -345,7 +254,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                         duration: const Duration(milliseconds: 250),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? themeColor : Colors.white,
+                          color: isSelected ? primaryDarkColor : Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             if (!isSelected)
@@ -483,11 +392,15 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
 
     if (status == 'confirmed') {
       statusColor = Colors.blue;
-      statusLabel = 'Đã xác nhận';
+      statusLabel = 'Chờ khám';
       statusIcon = Icons.check_circle_outline;
+    } else if (status == 'checked_in') {
+      statusColor = Colors.teal;
+      statusLabel = 'Đã đến';
+      statusIcon = Icons.how_to_reg;
     } else if (status == 'completed') {
       statusColor = Colors.green;
-      statusLabel = 'Hoàn thành';
+      statusLabel = 'Đã khám xong';
       statusIcon = Icons.done_all;
     } else if (status == 'cancelled') {
       statusColor = Colors.red;
@@ -530,18 +443,18 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.teal.shade50,
+                              color: primaryLightColor,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.watch_later_outlined, size: 14, color: Colors.teal.shade700),
+                                const Icon(Icons.watch_later_outlined, size: 14, color: primaryDarkColor),
                                 const SizedBox(width: 4),
                                 Text(
                                   time,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold, 
-                                    color: Colors.teal.shade700,
+                                    color: primaryDarkColor,
                                     fontSize: 13
                                   ),
                                 ),
@@ -582,26 +495,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                       const SizedBox(height: 16),
                       const Divider(height: 1),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (status != 'cancelled' && status != 'completed')
-                            TextButton.icon(
-                              onPressed: () => _showActionDialog(appt),
-                              icon: const Icon(Icons.settings),
-                              label: const Text('XỬ LÝ LỊCH'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.teal.shade700,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                            )
-                          else
-                            Text(
-                              'Đã đóng hồ sơ',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade400, fontStyle: FontStyle.italic),
-                            )
-                        ],
-                      )
+                      // Removed action buttons
                     ],
                   ),
                 ),

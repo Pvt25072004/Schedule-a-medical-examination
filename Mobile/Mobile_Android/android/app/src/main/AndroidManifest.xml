@@ -35,6 +35,12 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+            <!-- Cấu hình nhận sự kiện khi bấm vào thông báo FCM (Background/Terminated) -->
+            <intent-filter>
+                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
         </activity>
 
         <meta-data android:name="flutterEmbedding" android:value="2" />

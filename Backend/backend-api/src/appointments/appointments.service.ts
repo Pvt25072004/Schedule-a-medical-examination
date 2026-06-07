@@ -13,6 +13,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Notification } from '../notifications/entities/notification.entity';
 import { ServicePackage } from '../service-packages/entities/service-package.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AppointmentsService {
@@ -221,6 +222,25 @@ export class AppointmentsService {
           type: 'appointment_pending',
         });
         await queryRunner.manager.save(Notification, notification);
+        
+        // --- NEW: Bắn FCM cho Bệnh nhân và Bác sĩ ---
+        const patient = await queryRunner.manager.findOne(User, { where: { id: savedAppointment.user_id } });
+        if (patient?.fcm_token) {
+           this.firebaseService.sendPushNotification(
+             patient.fcm_token, 
+             '🎉 Đặt lịch thành công!', 
+             'Lịch khám của bạn đã được ghi nhận và đang chờ xác nhận.', 
+             { appointmentId: String(savedAppointment.id), status: 'pending' }
+           ).catch(e => console.error('FCM Patient err:', e));
+        }
+        if (doctor?.user?.fcm_token) {
+           this.firebaseService.sendPushNotification(
+             doctor.user.fcm_token, 
+             '🔔 Có lịch hẹn mới', 
+             `Bệnh nhân ${patient?.full_name || 'mới'} vừa đặt lịch vào lúc ${savedAppointment.appointment_time} ngày ${savedAppointment.appointment_date}.`, 
+             { appointmentId: String(savedAppointment.id), status: 'pending' }
+           ).catch(e => console.error('FCM Doctor err:', e));
+        }
       } catch (err) {
         console.error('🔥 Lỗi tạo thông báo in-app (đặt lịch):', err);
       }
@@ -466,10 +486,29 @@ export class AppointmentsService {
       console.error('🔥 Lỗi tạo thông báo in-app (cập nhật status):', err);
     }
 
-    // Gửi thông báo qua FCM nếu có user và fcm_token
-    if (saved.user && saved.user.fcm_token) {
-      // Kiểm tra cấu hình cài đặt thông báo của user (nếu có)
-      const settings = saved.user.notification_settings;
+    // Gửi thông báo qua FCM
+    const patientFCM = saved.user?.fcm_token;
+
+    if (status === 'checked_in') {
+      // 1. Gửi FCM cho Bác sĩ báo bệnh nhân đã đến
+      if (saved.doctor_id) {
+        const doctorData = await this.doctorsRepository.findOne({
+          where: { id: saved.doctor_id },
+          relations: ['user']
+        });
+        const doctorFCM = doctorData?.user?.fcm_token;
+        if (doctorFCM) {
+          this.firebaseService.sendPushNotification(
+            doctorFCM, 
+            '🔔 Bệnh nhân đã check-in', 
+            `Bệnh nhân ${saved.user?.full_name || 'Khách hàng'} đã có mặt tại phòng khám.`, 
+            { appointmentId: String(saved.id), status }
+          ).catch(e => console.error(e));
+        }
+      }
+    } else if (patientFCM) {
+      // 2. Gửi FCM cho Bệnh nhân các trạng thái còn lại
+      const settings = saved.user?.notification_settings;
       const isPushEnabled = settings ? (settings.enabled !== false && settings.push_confirmation !== false) : true;
 
       if (isPushEnabled) {
@@ -482,10 +521,13 @@ export class AppointmentsService {
         } else if (status === 'rejected' || status === 'cancelled') {
           title = '⚠️ Lịch hẹn khám đã bị hủy';
           body = `Lịch khám của bạn lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã bị hủy.${reason ? ` Lý do: ${reason}` : ''}`;
+        } else if (status === 'completed') {
+          title = '✅ Buổi khám hoàn tất';
+          body = `Cảm ơn bạn đã sử dụng dịch vụ! Buổi khám lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã hoàn thành tốt đẹp.`;
         }
 
         try {
-          await this.firebaseService.sendPushNotification(saved.user.fcm_token, title, body, {
+          await this.firebaseService.sendPushNotification(patientFCM, title, body, {
             appointmentId: String(saved.id),
             status: saved.status,
           });

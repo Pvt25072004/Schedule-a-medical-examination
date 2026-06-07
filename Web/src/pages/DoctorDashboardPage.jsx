@@ -165,6 +165,47 @@ export default function DoctorDashboardPage({ navigate }) {
   const [viewOnlyMedicalRecord, setViewOnlyMedicalRecord] = useState(false);
   const [medicalRecordData, setMedicalRecordData] = useState(null);
 
+  // === QR CHECK-IN STATES & HANDLERS ===
+  const [qrInput, setQrInput] = useState("");
+
+  const fetchDoctorAppointments = async (id, isSilent = false) => {
+    try {
+      if (!isSilent) setLoadingAppointments(true);
+      const apps = await getAppointmentsByDoctor(id || doctorProfile?.id);
+      setDoctorAppointments(Array.isArray(apps) ? apps : []);
+    } catch (e) {
+      console.error("Load doctor appointments error:", e);
+    } finally {
+      if (!isSilent) setLoadingAppointments(false);
+    }
+  };
+
+  const handleQrScanSubmit = async (e) => {
+    e.preventDefault();
+    if (!qrInput.trim()) return;
+
+    const aptId = Number(qrInput.trim());
+    const foundApt = doctorAppointments.find((a) => a.id === aptId);
+
+    if (foundApt) {
+      if (foundApt.status === "completed" || foundApt.status === "cancelled") {
+        showError(`Lịch hẹn #${aptId} đã kết thúc hoặc đã hủy!`);
+        return;
+      }
+      try {
+        await updateAppointmentStatus(aptId, { status: "checked_in" });
+        showSuccess(`Check-in thành công cho lịch hẹn #${aptId}!`);
+        setQrInput("");
+        await fetchDoctorAppointments(doctorProfile?.id, true);
+      } catch (err) {
+        showError("Có lỗi xảy ra khi Check-in.");
+      }
+    } else {
+      showError(`Không tìm thấy lịch hẹn #${qrInput} trong danh sách của bác sĩ!`);
+      setQrInput("");
+    }
+  };
+
   // === FETCHING LOGIC ===
   const loadProfile = async () => {
     try {
@@ -269,19 +310,12 @@ export default function DoctorDashboardPage({ navigate }) {
 
   useEffect(() => {
     if (!doctorProfile?.id) return;
-    void loadSchedules(doctorProfile.id);
+    void fetchDoctorAppointments(doctorProfile.id);
 
-    (async () => {
-      try {
-        setLoadingAppointments(true);
-        const apps = await getAppointmentsByDoctor(doctorProfile.id);
-        setDoctorAppointments(Array.isArray(apps) ? apps : []);
-      } catch (e) {
-        console.error("Load doctor appointments error:", e);
-      } finally {
-        setLoadingAppointments(false);
-      }
-    })();
+    // Auto-refresh (Polling) every 10 seconds for check-ins
+    const interval = setInterval(() => {
+      fetchDoctorAppointments(doctorProfile.id, true);
+    }, 10000);
 
     (async () => {
       try {
@@ -366,11 +400,10 @@ export default function DoctorDashboardPage({ navigate }) {
             <button
               key={date}
               onClick={() => setSelectedDate(date)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
-                isSelected
+              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${isSelected
                   ? "bg-[#143250] text-white border-[#143250] shadow-md"
                   : "bg-white text-slate-600 border-slate-200 hover:border-[#48a1f3] hover:text-[#48a1f3]"
-              }`}
+                }`}
             >
               {label}
             </button>
@@ -618,7 +651,7 @@ export default function DoctorDashboardPage({ navigate }) {
       if (schedule.start_time && schedule.end_time) {
         const [startH, startM] = schedule.start_time.split(':').map(Number);
         const [endH, endM] = schedule.end_time.split(':').map(Number);
-        totalHours += (endH + endM/60) - (startH + startM/60);
+        totalHours += (endH + endM / 60) - (startH + startM / 60);
       }
     });
 
@@ -641,7 +674,7 @@ export default function DoctorDashboardPage({ navigate }) {
 
     const incomeGrowth = incomeLastMonth > 0 ? (((incomeThisMonth - incomeLastMonth) / incomeLastMonth) * 100).toFixed(0) : 100;
     const incomeGrowthText = incomeThisMonth === 0 ? '0%' : (incomeLastMonth === 0 ? '+100%' : (incomeGrowth > 0 ? `+${incomeGrowth}%` : `${incomeGrowth}%`));
-    
+
     const formatIncome = (amount) => {
       if (amount >= 1000000) return (amount / 1000000).toFixed(amount % 1000000 === 0 ? 0 : 1) + ' triệu';
       if (amount >= 1000) return (amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1) + 'k';
@@ -952,34 +985,65 @@ export default function DoctorDashboardPage({ navigate }) {
               Xác nhận hoặc từ chối bệnh nhân đặt khám
             </p>
           </div>
-          <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
-            <button
-              onClick={() => setAppointmentFilter("all")}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "all"
+
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Hộp quét QR Check-in */}
+            <form onSubmit={handleQrScanSubmit} className="flex items-center gap-2">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  placeholder="Quét QR hoặc nhập mã lịch..."
+                  value={qrInput}
+                  onChange={(e) => setQrInput(e.target.value)}
+                  className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#48a1f3] focus:border-[#48a1f3] w-64 bg-slate-50 transition-all font-semibold"
+                />
+              </div>
+              <Button type="submit" size="sm" variant="primary" className="bg-[#143250] hover:bg-[#1e4a77] text-white">
+                Check-in
+              </Button>
+            </form>
+
+            <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setAppointmentFilter("all")}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "all"
                   ? "bg-white text-[#143250] shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-                }`}
-            >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setAppointmentFilter("confirmed")}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "confirmed"
+                  }`}
+              >
+                Tất cả
+              </button>
+              <button
+                onClick={() => setAppointmentFilter("confirmed")}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "confirmed"
                   ? "bg-white text-blue-600 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-                }`}
-            >
-              Chờ khám
-            </button>
-            <button
-              onClick={() => setAppointmentFilter("completed")}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "completed"
+                  }`}
+              >
+                Chờ khám
+              </button>
+              <button
+                onClick={() => setAppointmentFilter("checked_in")}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "checked_in"
                   ? "bg-white text-emerald-600 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-                }`}
-            >
-              Đã khám xong
-            </button>
+                  }`}
+              >
+                Đã đến
+              </button>
+              <button
+                onClick={() => setAppointmentFilter("completed")}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "completed"
+                  ? "bg-white text-emerald-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                Đã khám xong
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1834,8 +1898,8 @@ export default function DoctorDashboardPage({ navigate }) {
                   setIsMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${isActive
-                    ? "bg-[#48a1f3] text-white shadow-md shadow-[#48a1f3]/30"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-[#143250]"
+                  ? "bg-[#48a1f3] text-white shadow-md shadow-[#48a1f3]/30"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-[#143250]"
                   }`}
               >
                 <Icon

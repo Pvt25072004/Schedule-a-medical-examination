@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:clinic_booking_system/service/appointment_service.dart';
 import 'dart:io';
 
 class QRScanScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
 
   String? _scanResult;
   bool _isTorchOn = false;
+  bool _isProcessing = false;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -51,7 +53,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
       if (capture != null && capture.barcodes.isNotEmpty) {
         final barcode = capture.barcodes.first;
         if (barcode.rawValue != null) {
-          _showResult(barcode.rawValue!, _getFormatName(barcode.format));
+          _processQR(barcode.rawValue!, _getFormatName(barcode.format));
         }
       } else {
         showAppSnackBar(context, 'Không tìm thấy QR/BARCODE trong ảnh');
@@ -68,6 +70,54 @@ class _QRScanScreenState extends State<QRScanScreen> {
     setState(() {
       _scanResult = '$code\n($format)';
     });
+  }
+
+  Future<void> _processQR(String code, String format) async {
+    if (_isProcessing) return;
+
+    final aptId = int.tryParse(code);
+    if (aptId == null) {
+      _showResult(code, format);
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      showAppSnackBar(context, 'Đang Check-in lịch hẹn #$aptId...');
+      bool success = await AppointmentService().updateAppointmentStatus(
+        appointmentId: aptId,
+        status: 'checked_in',
+      );
+      if (success) {
+        showAppSnackBar(context, 'Check-in thành công cho lịch #$aptId!');
+        setState(() {
+          _scanResult = '✅ CHECK-IN THÀNH CÔNG\nMã lịch: $aptId';
+        });
+      } else {
+        showAppSnackBar(context, 'Check-in thất bại cho lịch #$aptId');
+        setState(() {
+          _scanResult = '❌ CHECK-IN THẤT BẠI\nMã lịch: $aptId';
+        });
+      }
+    } catch (e) {
+      showAppSnackBar(context, 'Lỗi kết nối khi Check-in!');
+      setState(() {
+        _scanResult = '⚠️ LỖI KẾT NỐI\nMã lịch: $aptId';
+      });
+    } finally {
+      // Cho phép quét lại sau 3 giây
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _isProcessing = false;
+            _scanResult = null;
+          });
+        }
+      });
+    }
   }
 
   String _getFormatName(BarcodeFormat format) {
@@ -94,8 +144,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
             onDetect: (capture) {
               for (final barcode in capture.barcodes) {
                 if (barcode.rawValue != null) {
-                  _showResult(
-                      barcode.rawValue!, _getFormatName(barcode.format));
+                  _processQR(barcode.rawValue!, _getFormatName(barcode.format));
                   break;
                 }
               }

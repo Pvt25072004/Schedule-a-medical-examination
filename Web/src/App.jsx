@@ -37,6 +37,7 @@ import ApplyDoctorPage from "./pages/ApplyDoctorPage";
 import HospitalRegistrationPage from "./pages/HospitalRegistrationPage";
 import ServicePackagesPage from "./pages/ServicePackagesPage";
 import VNPayReturnPage from "./pages/VNPayReturnPage";
+import DownloadAppPage from "./pages/DownloadAppPage";
 import Header from "./components/common/Header";
 import ScrollToTop from "./components/common/ScrollToTop";
 import FloatingWidgets from "./components/common/FloatingWidgets";
@@ -226,6 +227,10 @@ const AppRoutes = () => {
         <Route
           path={PAGES.SPECIALTIES}
           element={<SpecialtiesPage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.DOWNLOAD_APP}
+          element={<DownloadAppPage />}
         />
 
         <Route
