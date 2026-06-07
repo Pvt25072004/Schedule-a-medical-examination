@@ -98,10 +98,11 @@ export class AppointmentsController {
     @Query('limit') limit?: string,
     @Query('status') status?: string,
     @Query('hospital_id') hospitalId?: string,
+    @Query('search') search?: string,
   ) {
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 100;
-    return this.appointmentsService.findAll(req.user, pageNumber, limitNumber, status, hospitalId);
+    return this.appointmentsService.findAll(req.user, pageNumber, limitNumber, status, hospitalId, search);
   }
 
   @Get('/user/:userId')

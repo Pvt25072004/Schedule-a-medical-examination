@@ -48,11 +48,11 @@ export const AppointmentProvider = ({ children }) => {
           id: apt.id, // dùng luôn id backend
           backendId: apt.id,
           doctorId: apt.doctor_id,
-          doctorName: apt.doctor_name_snapshot || apt.doctor?.user?.full_name || apt.doctor?.name || "Bác sĩ",
+          doctorName: apt.doctor_name_snapshot || apt.doctor?.user?.full_name || apt.doctor?.name || apt.service_package?.name || "Bác sĩ",
           specialty:
             apt.doctor?.specialty ||
             apt.doctor?.category?.name ||
-            "Chuyên khoa",
+            (apt.service_package ? "Gói Khám" : "Chuyên khoa"),
           avatar_url: apt.doctor?.user?.avatar_url || apt.doctor?.avatar_url || "",
           date: rawDate,
           time: rawTime,

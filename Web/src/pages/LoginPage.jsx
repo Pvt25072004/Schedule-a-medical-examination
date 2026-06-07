@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Mail,
   Lock,
@@ -18,20 +19,28 @@ import { validateEmail } from "../utils/helpers";
 import { useGoogleLogin } from "@react-oauth/google";
 import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 import logo from "../assets/LOGOmain.jpg";
+import { requestReset, verifyReset } from "../services/api";
 
 const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
 
 const LoginPage = ({ navigate }) => {
   const { login, loginWithSocial } = useAuth();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Forgot password states
+  const [forgotStep, setForgotStep] = useState(0); // 0: login, 1: enter email, 2: enter otp
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,13 +80,15 @@ const LoginPage = ({ navigate }) => {
     setIsLoading(true);
 
     try {
-      const { user: loggedInUser } = await login(formData, rememberMe);
+      const { user: loggedInUser } = await login(formData, true);
       setShowSuccess(true);
 
       setTimeout(() => {
         const role = (loggedInUser?.role || "").toLowerCase();
         if (role === USER_ROLES.DOCTOR) {
           navigate(PAGES.DOCTOR_DASHBOARD);
+        } else if (location.state?.from) {
+          navigate(location.state.from, location.state.options);
         } else {
           navigate(PAGES.WELCOME);
         }
@@ -102,6 +113,8 @@ const LoginPage = ({ navigate }) => {
         const role = (loggedInUser?.role || "").toLowerCase();
         if (role === USER_ROLES.DOCTOR) {
           navigate(PAGES.DOCTOR_DASHBOARD);
+        } else if (location.state?.from) {
+          navigate(location.state.from, location.state.options);
         } else {
           navigate(PAGES.WELCOME);
         }
@@ -130,6 +143,48 @@ const LoginPage = ({ navigate }) => {
     onSuccess: (credentialResponse) =>
       handleSocialLogin(credentialResponse.access_token, "google"),
   });
+
+  const handleRequestReset = async (e) => {
+    e.preventDefault();
+    if (!validateEmail(forgotEmail)) {
+      setErrors({ general: "Email không hợp lệ" });
+      return;
+    }
+    setIsLoading(true);
+    setErrors({});
+    try {
+      await requestReset(forgotEmail);
+      setSuccessMsg("Mã OTP đã được gửi đến email của bạn");
+      setForgotStep(2);
+    } catch (err) {
+      setErrors({ general: err.message || "Gửi mã thất bại" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyReset = async (e) => {
+    e.preventDefault();
+    if (!forgotOtp || newPassword.length < 6) {
+      setErrors({ general: "Vui lòng nhập đủ OTP và Mật khẩu mới (ít nhất 6 ký tự)" });
+      return;
+    }
+    setIsLoading(true);
+    setErrors({});
+    try {
+      await verifyReset({ email: forgotEmail, otp: forgotOtp, newPassword });
+      setSuccessMsg("Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay.");
+      setForgotStep(0);
+      setFormData(prev => ({ ...prev, email: forgotEmail, password: newPassword }));
+      setForgotEmail("");
+      setForgotOtp("");
+      setNewPassword("");
+    } catch (err) {
+      setErrors({ general: err.message || "Xác thực thất bại" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f4f8fb] font-sans text-gray-800 selection:bg-[#48a1f3]/30 flex items-center justify-center p-4 md:p-8">
@@ -242,11 +297,19 @@ const LoginPage = ({ navigate }) => {
           {/* Top Bar: Back Button */}
           <div className="flex items-center justify-between mb-10 pb-6 border-b border-gray-100">
             <button
-              onClick={() => navigate(PAGES.WELCOME)}
+              onClick={() => {
+                if (forgotStep > 0) {
+                  setForgotStep(0);
+                  setErrors({});
+                  setSuccessMsg("");
+                } else {
+                  navigate(PAGES.WELCOME);
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-xl transition-all font-bold shadow-sm hover:shadow active:scale-95 text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Quay lại Trang chủ</span>
+              <span>{forgotStep > 0 ? "Quay lại Đăng nhập" : "Quay lại Trang chủ"}</span>
             </button>
           </div>
 
@@ -263,18 +326,27 @@ const LoginPage = ({ navigate }) => {
 
             <div className="hidden lg:block mb-10">
               <h2 className="text-4xl font-black text-[#143250] mb-3 tracking-tight">
-                Đăng nhập
+                {forgotStep === 0 ? "Đăng nhập" : "Quên mật khẩu"}
               </h2>
-              <p className="text-gray-500 font-medium text-lg">Chào mừng bạn quay trở lại hệ thống.</p>
+              <p className="text-gray-500 font-medium text-lg">
+                {forgotStep === 0 ? "Chào mừng bạn quay trở lại hệ thống." : "Khôi phục tài khoản của bạn"}
+              </p>
             </div>
 
             {/* Success Message */}
-            {showSuccess && (
+            {showSuccess && forgotStep === 0 && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                 <p className="text-green-800 text-sm">
                   Đăng nhập thành công! Đang chuyển hướng...
                 </p>
+              </div>
+            )}
+            
+            {successMsg && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <p className="text-green-800 text-sm">{successMsg}</p>
               </div>
             )}
 
@@ -286,100 +358,148 @@ const LoginPage = ({ navigate }) => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <Input
-                type="email"
-                name="email"
-                label="Email"
-                placeholder="example@email.com"
-                value={formData.email}
-                onChange={handleChange}
-                error={errors.email}
-                icon={Mail}
-                required
-              />
+            {forgotStep === 0 ? (
+              <>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <Input
+                    type="email"
+                    name="email"
+                    label="Email"
+                    placeholder="example@email.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    error={errors.email}
+                    icon={Mail}
+                    required
+                  />
 
-              <div className="relative">
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      label="Mật khẩu"
+                      placeholder="Nhập mật khẩu"
+                      value={formData.password}
+                      onChange={handleChange}
+                      error={errors.password}
+                      icon={Lock}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotStep(1);
+                        setErrors({});
+                        setSuccessMsg("");
+                      }}
+                      className="text-sm text-[#48a1f3] hover:text-[#f99b1c] font-semibold transition-colors"
+                    >
+                      Quên mật khẩu?
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] hover:from-[#3da3f5] hover:to-[#48a1f3] shadow-lg shadow-[#48a1f3]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? "Đang đăng nhập..." : "Đăng nhập ngay"}
+                  </button>
+                </form>
+
+                <p className="text-center text-gray-500 mt-10 font-medium text-base">
+                  Chưa có tài khoản?{" "}
+                  <button
+                    onClick={() => navigate(PAGES.REGISTER)}
+                    className="text-[#f99b1c] font-bold hover:text-[#e08915] transition-colors"
+                  >
+                    Đăng ký ngay
+                  </button>
+                </p>
+              </>
+            ) : forgotStep === 1 ? (
+              <form onSubmit={handleRequestReset} className="space-y-6">
                 <Input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  label="Mật khẩu"
-                  placeholder="Nhập mật khẩu"
-                  value={formData.password}
-                  onChange={handleChange}
-                  error={errors.password}
-                  icon={Lock}
+                  type="email"
+                  name="forgotEmail"
+                  label="Email của bạn"
+                  placeholder="Nhập email đã đăng ký"
+                  value={forgotEmail}
+                  onChange={(e) => {
+                    setForgotEmail(e.target.value);
+                    setErrors({});
+                  }}
+                  icon={Mail}
                   required
                 />
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
+                  type="submit"
+                  disabled={isLoading || !forgotEmail}
+                  className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-[#f99b1c] to-[#fbc374] hover:from-[#fbc374] hover:to-[#f99b1c] shadow-lg shadow-[#f99b1c]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {isLoading ? "Đang gửi..." : "Gửi mã xác nhận"}
                 </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-[#48a1f3] border-gray-300 rounded focus:ring-[#48a1f3] transition-all"
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyReset} className="space-y-6">
+                <Input
+                  type="text"
+                  name="forgotOtp"
+                  label="Mã xác nhận (OTP)"
+                  placeholder="Nhập mã 6 số"
+                  value={forgotOtp}
+                  onChange={(e) => {
+                    setForgotOtp(e.target.value);
+                    setErrors({});
+                  }}
+                  icon={CheckCircle}
+                  required
+                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    name="newPassword"
+                    label="Mật khẩu mới"
+                    placeholder="Ít nhất 6 ký tự"
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setErrors({});
+                    }}
+                    icon={Lock}
+                    required
                   />
-                  <span className="text-sm text-gray-600 font-medium group-hover:text-[#143250] transition-colors">
-                    Ghi nhớ đăng nhập
-                  </span>
-                </label>
-
-                <button
-                  type="button"
-                  className="text-sm text-[#48a1f3] hover:text-[#f99b1c] font-semibold transition-colors"
-                >
-                  Quên mật khẩu?
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] hover:from-[#3da3f5] hover:to-[#48a1f3] shadow-lg shadow-[#48a1f3]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Đang đăng nhập..." : "Đăng nhập ngay"}
-              </button>
-            </form>
-
-            {/* Demo Credentials */}
-            {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-semibold text-blue-900 mb-1">
-                    Demo: Đăng nhập nhanh
-                  </p>
-                  <p className="text-blue-700">Email: demo@stlclinic.com</p>
-                  <p className="text-blue-700">Mật khẩu: 123456</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
-              </div>
-            </div> */}
-
-
-
-            {/* Register Link */}
-            <p className="text-center text-gray-500 mt-10 font-medium text-base">
-              Chưa có tài khoản?{" "}
-              <button
-                onClick={() => navigate(PAGES.REGISTER)}
-                className="text-[#f99b1c] font-bold hover:text-[#e08915] transition-colors"
-              >
-                Đăng ký ngay
-              </button>
-            </p>
+                <button
+                  type="submit"
+                  disabled={isLoading || !forgotOtp || !newPassword}
+                  className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-[#10b981] to-[#34d399] hover:from-[#34d399] hover:to-[#10b981] shadow-lg shadow-[#10b981]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>

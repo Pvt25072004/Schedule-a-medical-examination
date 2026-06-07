@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsNumber,
   Matches,
   MinLength,
 } from 'class-validator';
@@ -68,4 +69,8 @@ export class CreateDoctorDto {
   @IsInt()
   @IsNotEmpty()
   hospital_id: number;
+
+  @IsNumber()
+  @IsOptional()
+  consultation_fee?: number;
 }

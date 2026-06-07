@@ -93,6 +93,7 @@ export default function DoctorDashboardPage({ navigate }) {
     category_id: "",
     old_password: "",
     password: "",
+    consultation_fee: "",
   });
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -182,6 +183,7 @@ export default function DoctorDashboardPage({ navigate }) {
           degree: profileData.degree || "",
           experience_years: profileData.experience_years || "",
           license_number: profileData.license_number || "",
+          consultation_fee: profileData.consultation_fee || "",
           category_id: profileData.category?.id || "",
           description: profileData.description || "",
           avatar_url: profileData.avatar_url || profileData.user?.avatar_url || user?.avatar_url || user?.avatar || "",
@@ -351,7 +353,7 @@ export default function DoctorDashboardPage({ navigate }) {
   const renderDateFilterBar = (dates, selectedDate, setSelectedDate) => {
     if (dates.length <= 1) return null;
     return (
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x hide-scrollbar">
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-4 snap-x custom-scrollbar">
         {dates.map((date) => {
           const isSelected = selectedDate === date;
           let label = "Tất cả ngày";
@@ -413,7 +415,7 @@ export default function DoctorDashboardPage({ navigate }) {
   };
 
   const handleDeleteSchedule = async (entry) => {
-    const isConfirm = await confirm("Xác nhận xóa", "Bạn có chắc muốn xóa ca làm việc này?");
+    const isConfirm = await confirm("Xác nhận xóa", "Bạn có chắc muốn xóa ca làm việc này?", { variant: "danger", confirmText: "Xóa" });
     if (!isConfirm) return;
     try {
       await deleteSchedule(entry.id);
@@ -887,7 +889,7 @@ export default function DoctorDashboardPage({ navigate }) {
 
         {renderDateFilterBar(uniqueScheduleDates, scheduleDateFilter, setScheduleDateFilter)}
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           {loadingSchedules && (
             <p className="text-sm text-slate-500 animate-pulse py-4">
               Đang tải lịch làm việc...
@@ -1051,6 +1053,14 @@ export default function DoctorDashboardPage({ navigate }) {
                       </span>{" "}
                       {apt.symptoms || "Không có thông tin"}
                     </div>
+                    {(apt.status === "cancelled" || apt.status === "rejected") && apt.cancel_reason && (
+                      <div className="text-sm text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100 italic mt-2">
+                        <span className="font-semibold not-italic text-red-700">
+                          Lý do hủy/từ chối:
+                        </span>{" "}
+                        {apt.cancel_reason}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1384,6 +1394,20 @@ export default function DoctorDashboardPage({ navigate }) {
                   value={profileForm.degree}
                   onChange={(e) =>
                     setProfileForm({ ...profileForm, degree: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none transition-all font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Phí khám bệnh (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Vd: 200000"
+                  value={profileForm.consultation_fee}
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, consultation_fee: e.target.value ? Number(e.target.value) : "" })
                   }
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none transition-all font-medium"
                 />

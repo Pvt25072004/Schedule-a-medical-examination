@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Query, Delete } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -42,5 +42,17 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Đánh dấu toàn bộ thông báo của user đã đọc' })
   markAllAsRead(@Param('userId') userId: string) {
     return this.notificationsService.markAllAsRead(+userId);
+  }
+
+  @Patch('/system/:id')
+  @ApiOperation({ summary: 'Cập nhật thông báo hệ thống (Broadcast)' })
+  updateSystemNotification(@Param('id') id: string, @Body() dto: Partial<CreateNotificationDto>) {
+    return this.notificationsService.updateSystemNotification(+id, dto);
+  }
+
+  @Delete('/system/:id')
+  @ApiOperation({ summary: 'Xóa thông báo hệ thống (Broadcast)' })
+  deleteSystemNotification(@Param('id') id: string) {
+    return this.notificationsService.deleteSystemNotification(+id);
   }
 }

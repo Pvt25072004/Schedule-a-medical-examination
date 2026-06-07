@@ -119,11 +119,9 @@ const WelcomePage = ({ navigate }) => {
     { number: "4.8/5", label: "Đánh giá trung bình" },
   ];
 
-  // Helper: yêu cầu đăng nhập trước khi dùng các dịch vụ
   const requireAuthAndNavigate = (page, options) => {
     if (!isAuthenticated) {
-      // Có thể điều hướng sang LOGIN hoặc REGISTER, ở đây ưu tiên LOGIN
-      navigate(PAGES.LOGIN);
+      navigate(PAGES.LOGIN, { state: { from: page, options } });
     } else {
       navigate(page, options);
     }
@@ -487,7 +485,7 @@ const WelcomePage = ({ navigate }) => {
                     } else if (feature.title === "Đội ngũ Bác sĩ") {
                       navigate(PAGES.DOCTORS);
                     } else if (feature.title === "An toàn - Bảo mật") {
-                      navigate(PAGES.PrivacyPolicyPage);
+                      navigate(PAGES.PRIVACY_POLICY);
                     }
                   }}
                 >
@@ -678,16 +676,38 @@ const WelcomePage = ({ navigate }) => {
                     <p className="text-[#f99b1c] font-semibold text-sm mb-1">
                       {doctor.specialty || doctor.category?.name || "Đa khoa"}
                     </p>
-                    <p className="text-gray-500 text-xs mb-3 flex items-center gap-1 line-clamp-1">
+                    <p
+                      className="text-gray-500 text-xs mb-3 flex items-center gap-1 line-clamp-1"
+                      title={
+                        doctor.hospitals && doctor.hospitals.length > 0
+                          ? doctor.hospitals
+                              .map(
+                                (h) =>
+                                  `${h.name}${h.address ? ` - ${h.address}` : ""}`,
+                              )
+                              .join(", ")
+                          : "Chưa cập nhật"
+                      }
+                    >
                       <MapPin className="w-3 h-3 flex-shrink-0" />
-                      {doctor.hospitals && doctor.hospitals.length > 0 ? doctor.hospitals.map(h => h.name).join(', ') : "Chưa cập nhật"}
+                      {doctor.hospitals && doctor.hospitals.length > 0
+                        ? doctor.hospitals
+                            .map(
+                              (h) =>
+                                `${h.name}${h.address ? ` - ${h.address}` : ""}`,
+                            )
+                            .join(", ")
+                        : "Chưa cập nhật"}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 font-medium bg-gray-50 w-fit px-3 py-1.5 rounded-lg">
                       <span className="flex items-center gap-1 text-yellow-500">
                         ⭐ {Number(doctor.rating || 5).toFixed(1)}
                       </span>
                       <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                      <span>{doctor.experience_years || doctor.experience || 5} năm KN</span>
+                      <span>
+                        {doctor.experience_years || doctor.experience || 5} năm
+                        KN
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -715,13 +735,13 @@ const WelcomePage = ({ navigate }) => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-16">
               <h2 className="text-4xl lg:text-5xl font-black text-[#143250] mb-4 tracking-tight">
-                Gói dịch vụ{" "}
+                Các gói dịch vụ{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f99b1c] to-[#fbc374]">
                   Nổi bật
                 </span>
               </h2>
               <p className="text-xl text-gray-500 max-w-2xl mx-auto">
-                Các gói khám sức khỏe toàn diện được lựa chọn nhiều nhất
+                Các gói khám sức khỏe toàn diện được lựa chọn nhiều nhất.
               </p>
             </div>
 
@@ -889,7 +909,7 @@ const WelcomePage = ({ navigate }) => {
             </h2>
             <p className="text-xl text-gray-500 max-w-2xl mx-auto">
               Đa dạng chuyên khoa đáp ứng mọi nhu cầu khám chữa bệnh của bạn và
-              gia đình
+              gia đình.
             </p>
           </div>
 
@@ -1005,13 +1025,41 @@ const WelcomePage = ({ navigate }) => {
               className="px-8 py-4 overflow-y-auto"
               style={{ maxHeight: "40vh" }}
             >
+              <div className="mb-4">
+                <h4 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wider flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#48a1f3]" /> Địa điểm áp dụng
+                </h4>
+                <div className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  {selectedPackage.hospitals &&
+                  selectedPackage.hospitals.length > 0 ? (
+                    <>
+                      <span className="font-semibold text-[#143250]">
+                        {selectedPackage.hospitals[0].name}
+                      </span>
+                      {selectedPackage.hospitals[0].address && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          {selectedPackage.hospitals[0].address}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500 italic">
+                      Chưa cập nhật địa điểm
+                    </span>
+                  )}
+                </div>
+              </div>
               <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">
                 Chi tiết gói dịch vụ
               </h4>
-              <div className="prose prose-sm text-gray-600 leading-relaxed max-w-none whitespace-pre-wrap">
-                {selectedPackage.description ||
-                  "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu."}
-              </div>
+              <div
+                className="prose prose-sm text-gray-600 leading-relaxed max-w-none whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    selectedPackage.description ||
+                    "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu.",
+                }}
+              />
             </div>
 
             {/* Bottom Sticky Footer */}
@@ -1047,9 +1095,9 @@ const WelcomePage = ({ navigate }) => {
                   onClick={() => {
                     const pkgId = selectedPackage.id;
                     setSelectedPackage(null);
-                    requireAuthAndNavigate(PAGES.BOOKING, {
-                      state: { packageId: pkgId },
-                    });
+                    requireAuthAndNavigate(
+                      PAGES.BOOK_PACKAGE.replace(":id", pkgId),
+                    );
                   }}
                 >
                   Đặt lịch ngay <ChevronRight className="w-5 h-5" />

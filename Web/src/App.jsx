@@ -143,13 +143,7 @@ const AppRoutes = () => {
         />
         <Route
           path={PAGES.SERVICE_PACKAGES}
-          element={
-            isAuthenticated ? (
-              <ServicePackagesPage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
-          }
+          element={<ServicePackagesPage navigate={navigateTo} />}
         />
         <Route
           path={PAGES.FANPAGE}

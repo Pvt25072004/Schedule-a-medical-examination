@@ -40,7 +40,7 @@ export const NotificationProvider = ({ children }) => {
         message,
         confirmText: options.confirmText || "Xác nhận",
         cancelText: options.cancelText || "Hủy",
-        variant: options.variant || "danger", // 'danger' or 'primary'
+        variant: options.variant || "primary", // 'danger' or 'primary'
         onConfirm: () => {
           setConfirmDialog(null);
           resolve(true);

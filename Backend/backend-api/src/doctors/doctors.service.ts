@@ -154,6 +154,7 @@ export class DoctorsService {
       cv_file: dto.cv_file,
       verification_status: 'active', // Trạng thái active do admin bệnh viện thêm
       hospitals: [hospital], // Liên kết vào bệnh viện
+      consultation_fee: dto.consultation_fee !== undefined ? dto.consultation_fee : 200000,
     };
 
     const doctor = this.doctorsRepository.create(doctorData);
@@ -317,6 +318,7 @@ export class DoctorsService {
     if (dto.license_file !== undefined) doctor.license_file = dto.license_file;
     if (dto.certificate_file !== undefined) doctor.certificate_file = dto.certificate_file;
     if (dto.cv_file !== undefined) doctor.cv_file = dto.cv_file;
+    if (dto.consultation_fee !== undefined) doctor.consultation_fee = dto.consultation_fee;
 
     if (dto.description !== undefined) {
       doctor.description = dto.description;

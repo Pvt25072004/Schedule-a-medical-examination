@@ -259,19 +259,9 @@ const PackageBookingFlowPage = () => {
                 </div>
               )}
 
-              <h3 className="text-xl font-bold text-gray-900 mb-6 pt-4">Lý do khám bệnh</h3>
-              <div className="space-y-6">
-                <Input
-                  label="Tình trạng hiện tại / Lý do đăng ký *"
-                  value={formData.type}
-                  onChange={(e) => handleChange("type", e.target.value)}
-                  error={errors.type}
-                  icon={FileText}
-                  disabled={true}
-                />
-                
+              <div className="pt-4">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Ghi chú thêm (Tùy chọn)</h3>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú thêm (Tùy chọn)</label>
                   <textarea
                     placeholder="Bạn có đang dùng thuốc gì không? Tiền sử bệnh gia đình..."
                     value={formData.notes}
