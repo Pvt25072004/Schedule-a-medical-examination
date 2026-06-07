@@ -93,7 +93,7 @@ npm run dev
 Trang Admin sẽ chạy tại `http://localhost:5174`.
 
 ## 🧑‍💻 Đội ngũ phát triển
-Dự án được phát triển và quản lý bởi Hậu Nguyễn (reactjs_haunguyen).
+Dự án được phát triển và quản lý bởi STL Team.
 
 ## 📄 Giấy phép
 Dự án được cấp phép theo giấy phép MIT. Xem file LICENSE để biết thêm chi tiết.
