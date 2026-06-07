@@ -1,173 +1,99 @@
-# Hệ thống Đặt lịch Khám bệnh (BookingCare Project)
+# Hệ thống Đặt lịch Khám bệnh (Medical Examination Scheduling System)
 
-Dự án Xây dựng Hệ thống Đặt lịch Khám bệnh, cho phép bệnh nhân dễ dàng tìm kiếm bác sĩ, chuyên khoa và đặt lịch hẹn trực tuyến. Hệ thống cũng cung cấp trang quản trị cho phòng khám/bác sĩ để quản lý lịch hẹn, bệnh nhân và các nghiệp vụ liên quan.
+Dự án Xây dựng Hệ thống Đặt lịch Khám bệnh đa cơ sở, cho phép bệnh nhân dễ dàng tìm kiếm bác sĩ, chuyên khoa, bệnh viện và đặt lịch hẹn trực tuyến. Hệ thống cung cấp các portal quản trị riêng biệt cho Bệnh nhân, Bác sĩ, Quản trị viên Bệnh viện (Hospital Admin) và Quản trị viên Hệ thống (System Admin).
 
-Mục lục
-Tính năng chính
+## 📌 Tính năng chính
 
-Công nghệ sử dụng
+Hệ thống được chia làm 3 phân hệ chính: Backend API, Web Client (Bệnh nhân & Bác sĩ) và Web Admin (Admin Bệnh viện & Admin Hệ thống).
 
-Cấu trúc dự án
+### 🧑‍⚕️ Phân hệ Bệnh nhân & Bác sĩ (Web Client)
+- **Bệnh nhân:** 
+  - Tìm kiếm bác sĩ, bệnh viện, chuyên khoa.
+  - Đặt lịch hẹn khám trực tuyến.
+  - Theo dõi lịch sử khám bệnh, hồ sơ bệnh án.
+  - Yêu cầu hoàn tiền, quản lý lịch hẹn.
+  - Đánh giá bác sĩ, bệnh viện.
+- **Bác sĩ:**
+  - Đăng ký hồ sơ bác sĩ trực tuyến.
+  - Quản lý lịch làm việc cá nhân (Schedules).
+  - Cập nhật hồ sơ, thông tin liên hệ và phí khám.
+  - Xem danh sách cuộc hẹn, tạo hồ sơ bệnh án cho bệnh nhân.
 
-Hướng dẫn cài đặt
+### 🏢 Phân hệ Quản trị (Web Admin)
+- **Admin Bệnh viện (Hospital Admin):**
+  - Quản lý thông tin chung của Bệnh viện (Phí cơ sở, thông tin liên hệ).
+  - Quản lý danh sách bác sĩ thuộc bệnh viện (thêm, sửa, khóa tài khoản).
+  - Xem và quản lý tất cả lịch hẹn khám trong bệnh viện.
+  - Thống kê doanh thu theo bệnh viện.
+- **Admin Hệ thống (System Admin):**
+  - Xét duyệt yêu cầu đăng ký mở bệnh viện, bác sĩ mới.
+  - Quản lý danh mục chuyên khoa, người dùng toàn hệ thống.
+  - Quản trị nội dung (Bài viết/Cẩm nang sức khỏe).
+  - Thống kê doanh thu tổng.
 
-Tài liệu API
+## 🛠 Công nghệ sử dụng
 
-Đội ngũ phát triển
+- **Backend (API):** 🚀 NestJS (Node.js, TypeScript)
+- **Frontend (Web & Web Admin):** ⚛️ ReactJS, Vite, TailwindCSS
+- **Database:** 🐬 MySQL (quản lý bằng TypeORM)
+- **Xác thực:** JWT (JSON Web Token), Passport.js, Bcrypt
+- **Lưu trữ ảnh/file:** Cloudinary
+- **AI/Chatbot:** GROQ API (Tích hợp trợ lý ảo - đang phát triển)
 
-Giấy phép
+## 📁 Cấu trúc dự án
 
-Tính năng chính
-Hệ thống bao gồm 3 sản phẩm chính: Web Client, Web Admin, và Mobile App, tất cả đều sử dụng chung một hệ thống API.
+Dự án được tổ chức theo mô hình Monorepo với 3 thư mục chính:
 
-🧑‍💼 Dành cho Bệnh nhân (Client)
-Xác thực: Đăng ký, Đăng nhập (local, Google, Facebook).
+```
+/Schedule-a-medical-examination
+├── 📂 Backend/backend-api/   # (Backend API - NestJS)
+├── 📂 Web/                   # (Frontend Client & Doctor - ReactJS/Vite)
+└── 📂 web-admin/             # (Frontend Admin - ReactJS/Vite)
+```
 
-Tìm kiếm: Tìm kiếm thông tin bác sĩ, chuyên khoa, phòng khám.
+## ⚙️ Hướng dẫn cài đặt và chạy dự án
 
-Đặt lịch: Đặt lịch hẹn trực tuyến theo ngày giờ mong muốn.
+### Yêu cầu hệ thống
+- Node.js (v18.x trở lên)
+- MySQL
+- NPM hoặc Yarn
 
-Thanh toán: Tích hợp thanh toán qua VNPAY, Momo.
-
-Quản lý tài khoản: Quản lý thông tin cá nhân, hồ sơ bệnh nhân.
-
-Lịch sử: Xem lại lịch sử khám, các lịch hẹn sắp tới.
-
-Đánh giá: Để lại đánh giá, bình luận cho bác sĩ/phòng khám.
-
-🔒 Dành cho Quản trị viên (Admin)
-Dashboard: Biểu đồ, thống kê tổng quan về doanh thu, lịch hẹn.
-
-Quản lý Lịch hẹn: Xác nhận, từ chối, sắp xếp lịch hẹn của bệnh nhân.
-
-Quản lý Bác sĩ: Thêm, xóa, sửa thông tin và lịch làm việc của bác sĩ.
-
-Quản lý Bệnh nhân: Quản lý danh sách, thông tin chi tiết của bệnh nhân.
-
-Quản lý Chuyên khoa: Thêm, xóa, sửa các chuyên khoa của phòng khám.
-
-Quản lý Tin tức: Viết và đăng tải các bài viết, cẩm nang sức khỏe.
-
-Công nghệ sử dụng
-Dự án được xây dựng theo kiến trúc Monorepo, tách biệt rõ ràng Backend và Frontend.
-
-Backend (API): 🚀 NestJS (Node.js, TypeScript)
-
-Frontend (Web Client & Admin): ⚛️ ReactJS (TypeScript)
-
-Mobile App: 📱 Flutter
-
-Database: 🐬 MySQL
-
-Quản lý Database: TypeORM
-
-Xác thực: JWT (JSON Web Token), Passport.js
-
-Thanh toán: VNPAY, Momo
-
-DevOps (Dự kiến): Docker, AWS
-
-Cấu trúc dự án
-Dự án được tổ chức theo mô hình Monorepo với 4 thư mục chính, giúp dễ dàng quản lý và triển khai độc lập.
-
-/booking-project
-├── 📂 api/ (Backend - NestJS - Phụ trách: Tiến)
-├── 📂 web-admin/ (Frontend Admin - ReactJS - Phụ trách: Tiến)
-├── 📂 web-client/ (Frontend Client - ReactJS - Phụ trách: Lương)
-└── 📂 app/ (Mobile App - Flutter - Phụ trách: Sang)
-Hướng dẫn Cài đặt và Chạy dự án
-Yêu cầu chung
-Node.js (v18.x trở lên)
-
-[liên kết đáng ngờ đã bị xóa] (v8.x)
-
-Git
-
-1. Tải dự án về máy
-   Bash
-
-git clone https://github.com/your-username/booking-project.git
-cd booking-project 2. Cài đặt Backend (API)
-Phần này sẽ khởi chạy máy chủ API tại http://localhost:3000.
-
-Bash
-
-# Di chuyển vào thư mục API
-
-cd api
-
-# Cài đặt các thư viện
-
+### 1. Cài đặt Backend (API)
+```bash
+cd Backend/backend-api
 npm install
+```
+- Copy file `.env.example` thành `.env` và cấu hình kết nối MySQL, JWT, Cloudinary.
+- Tự tạo database trong MySQL theo cấu hình trong `.env`.
+```bash
+npm run start:dev
+```
+API sẽ chạy tại: `http://localhost:3000`
 
-# Tạo file .env để lưu cấu hình
-
-# (Copy nội dung từ file .env.example và chỉnh sửa lại)
-
-cp .env.example .env
-Mở file .env và cập nhật thông tin kết nối Database MySQL của bạn:
-
-Ini, TOML
-
-# .env
-
-DB_HOST=localhost
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD=your_mysql_password
-DB_DATABASE=booking_db
-JWT_SECRET=your_super_secret_key
-Lưu ý: Bạn cần tự tạo database booking_db trong MySQL trước.
-
-Bash
-
-# Chạy server ở chế độ development (tự động reload khi code thay đổi)
-
-npm run start:dev 3. Cài đặt Frontend (Web Admin / Web Client)
-Các bước tương tự cho cả web-admin và web-client. (Ví dụ cho web-admin)
-
-Bash
-
-# Mở một terminal mới, di chuyển vào thư mục web-admin
-
-cd web-admin
-
-# Cài đặt các thư viện
-
+### 2. Cài đặt Web Client (Bệnh nhân & Bác sĩ)
+```bash
+cd Web
 npm install
+```
+- Copy file `.env.example` thành `.env` và trỏ `VITE_API_URL` tới `http://localhost:3000/api`.
+```bash
+npm run dev
+```
+Trang Client sẽ chạy tại `http://localhost:5173`.
 
-# Tạo file .env
+### 3. Cài đặt Web Admin (Quản trị viên)
+```bash
+cd ../web-admin
+npm install
+```
+- Copy file `.env.example` thành `.env` và thiết lập `VITE_API_URL`.
+```bash
+npm run dev
+```
+Trang Admin sẽ chạy tại `http://localhost:5174`.
 
-cp .env.example .env
-Cập nhật file .env để trỏ đến địa chỉ API:
+## 🧑‍💻 Đội ngũ phát triển
+Dự án được phát triển và quản lý bởi Hậu Nguyễn (reactjs_haunguyen).
 
-Ini, TOML
-
-# .env
-
-REACT_APP_API_URL=http://localhost:3000
-Bash
-
-# Khởi chạy trang web
-
-npm start
-Web Admin sẽ chạy tại http://localhost:3001 (hoặc cổng khác do React chỉ định).
-
-Tài liệu API
-Dự án sử dụng Swagger để tự động tạo tài liệu API.
-
-Sau khi khởi động server API, bạn có thể truy cập tài liệu và thử nghiệm các endpoint tại:
-
-http://localhost:3000/api
-
-Đội ngũ phát triển
-Dự án được thực hiện bởi:
-
-Phạm Văn Tiền (@tienphamvan) - Project Leader - Backend (NestJS) & Web Admin (ReactJS)
-
-[Tên thành viên Lương] (@username-luong) - Frontend (Web Client)
-
-[Tên thành viên Sang] (@username-sang) - Mobile App (Flutter)
-
-Giấy phép
-Dự án này được cấp phép theo Giấy phép MIT. Xem file LICENSE để biết thêm chi tiết.
+## 📄 Giấy phép
+Dự án được cấp phép theo giấy phép MIT. Xem file LICENSE để biết thêm chi tiết.

@@ -3,6 +3,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsNumber,
   MaxLength,
 } from 'class-validator';
 
@@ -65,4 +66,8 @@ export class UpdateDoctorProfileDto {
   @IsOptional()
   @IsString()
   old_password?: string;
+
+  @IsOptional()
+  @IsNumber()
+  consultation_fee?: number;
 }

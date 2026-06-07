@@ -20,23 +20,8 @@ const SettingsPage = ({ navigate }) => {
   const [activeSection, setActiveSection] = useState("account");
   const [selectedFiles, setSelectedFiles] = useState({
     avatarUrl: null,
-    idCardFrontUrl: null,
-    idCardBackUrl: null,
   });
   const [settings, setSettings] = useState({
-    notifications: {
-      email: true,
-      push: true,
-      sms: false,
-      appointments: true,
-      promotions: false,
-    },
-    privacy: {
-      profileVisibility: "public",
-      showEmail: false,
-      showPhone: true,
-    },
-    language: "vi",
     // Giá trị mặc định, sẽ được override từ localStorage (nếu có)
     theme: "light",
   });
@@ -54,10 +39,7 @@ const SettingsPage = ({ navigate }) => {
     gender: user?.gender || "",
     address: user?.address || "",
     // Thông tin bổ sung
-    idCardNumber: user?.id_card_number || "",
     avatarUrl: user?.avatar_url || "",
-    idCardFrontUrl: user?.id_card_front_url || "",
-    idCardBackUrl: user?.id_card_back_url || "",
   });
 
   const [savingProfile, setSavingProfile] = useState(false);
@@ -72,8 +54,6 @@ const SettingsPage = ({ navigate }) => {
 
   // File input refs để chọn ảnh thật từ máy
   const avatarFileInputRef = useRef(null);
-  const idCardFrontFileInputRef = useRef(null);
-  const idCardBackFileInputRef = useRef(null);
 
   // Đọc theme từ localStorage khi load lần đầu
   useEffect(() => {
@@ -104,59 +84,18 @@ const SettingsPage = ({ navigate }) => {
       desc: "Quản lý thông tin cá nhân",
     },
     {
-      id: "notifications",
-      icon: Bell,
-      label: "Thông báo",
-      desc: "Cài đặt thông báo",
-    },
-    {
       id: "security",
       icon: Lock,
       label: "Bảo mật",
       desc: "Mật khẩu và xác thực",
     },
     {
-      id: "privacy",
-      icon: Globe,
-      label: "Quyền riêng tư",
-      desc: "Kiểm soát dữ liệu",
-    },
-    {
       id: "appearance",
       icon: Moon,
       label: "Giao diện",
-      desc: "Chủ đề và ngôn ngữ",
-    },
-    {
-      id: "billing",
-      icon: CreditCard,
-      label: "Thanh toán",
-      desc: "Phương thức thanh toán",
+      desc: "Chủ đề sáng tối",
     },
   ];
-
-  const toggleNotification = (key) => {
-    setSettings((prev) => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
-        [key]: !prev.notifications[key],
-      },
-    }));
-  };
-
-  const ToggleSwitch = ({ enabled, onChange }) => (
-    <button
-      onClick={onChange}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? "bg-green-500" : "bg-gray-300"
-        }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"
-          }`}
-      />
-    </button>
-  );
 
   // Đọc file ảnh và convert sang data URL để lưu vào profileForm (MySQL lưu text)
   const handleImageFileChange = (event, field) => {
@@ -298,88 +237,24 @@ const SettingsPage = ({ navigate }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Số CCCD / CMND
+              Ảnh đại diện
             </label>
-            <input
-              type="text"
-              value={profileForm.idCardNumber}
-              onChange={(e) =>
-                setProfileForm((prev) => ({
-                  ...prev,
-                  idCardNumber: e.target.value,
-                }))
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="VD: 012345678901"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ảnh đại diện
-              </label>
-              <div
-                className="w-24 h-24 rounded-full border border-gray-300 bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden"
-                title="Bấm để chọn ảnh đại diện từ file"
-                onClick={() => avatarFileInputRef.current?.click()}
-              >
-                {profileForm.avatarUrl ? (
-                  <img
-                    src={profileForm.avatarUrl}
-                    alt="Avatar preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs text-gray-500 text-center px-2">
-                    Chọn ảnh đại diện
-                  </span>
-                )}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                CCCD mặt trước
-              </label>
-              <div
-                className="w-full max-w-[160px] h-24 border border-gray-300 bg-gray-50 rounded flex items-center justify-center cursor-pointer overflow-hidden"
-                title="Bấm để chọn ảnh CCCD mặt trước từ file"
-                onClick={() => idCardFrontFileInputRef.current?.click()}
-              >
-                {profileForm.idCardFrontUrl ? (
-                  <img
-                    src={profileForm.idCardFrontUrl}
-                    alt="CCCD mặt trước"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs text-gray-500 text-center px-2">
-                    Chọn ảnh CCCD mặt trước
-                  </span>
-                )}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                CCCD mặt sau
-              </label>
-              <div
-                className="w-full max-w-[160px] h-24 border border-gray-300 bg-gray-50 rounded flex items-center justify-center cursor-pointer overflow-hidden"
-                title="Bấm để chọn ảnh CCCD mặt sau từ file"
-                onClick={() => idCardBackFileInputRef.current?.click()}
-              >
-                {profileForm.idCardBackUrl ? (
-                  <img
-                    src={profileForm.idCardBackUrl}
-                    alt="CCCD mặt sau"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs text-gray-500 text-center px-2">
-                    Chọn ảnh CCCD mặt sau
-                  </span>
-                )}
-              </div>
+            <div
+              className="w-24 h-24 rounded-full border border-gray-300 bg-gray-50 flex items-center justify-center cursor-pointer overflow-hidden"
+              title="Bấm để chọn ảnh đại diện từ file"
+              onClick={() => avatarFileInputRef.current?.click()}
+            >
+              {profileForm.avatarUrl ? (
+                <img
+                  src={profileForm.avatarUrl}
+                  alt="Avatar preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs text-gray-500 text-center px-2">
+                  Chọn ảnh đại diện
+                </span>
+              )}
             </div>
           </div>
 
@@ -402,20 +277,10 @@ const SettingsPage = ({ navigate }) => {
                 setProfileMessage(null);
 
                 let finalAvatarUrl = profileForm.avatarUrl;
-                let finalIdCardFrontUrl = profileForm.idCardFrontUrl;
-                let finalIdCardBackUrl = profileForm.idCardBackUrl;
 
                 if (selectedFiles.avatarUrl) {
                   const res = await uploadUserImage(selectedFiles.avatarUrl);
                   if (res?.image_url) finalAvatarUrl = res.image_url;
-                }
-                if (selectedFiles.idCardFrontUrl) {
-                  const res = await uploadUserImage(selectedFiles.idCardFrontUrl);
-                  if (res?.image_url) finalIdCardFrontUrl = res.image_url;
-                }
-                if (selectedFiles.idCardBackUrl) {
-                  const res = await uploadUserImage(selectedFiles.idCardBackUrl);
-                  if (res?.image_url) finalIdCardBackUrl = res.image_url;
                 }
 
                 // Cập nhật qua AuthContext (tự gọi API + lưu localStorage)
@@ -426,17 +291,12 @@ const SettingsPage = ({ navigate }) => {
                   dateOfBirth: profileForm.dateOfBirth,
                   gender: profileForm.gender,
                   address: profileForm.address,
-                  id_card_number: profileForm.idCardNumber,
                   avatar_url: finalAvatarUrl,
-                  id_card_front_url: finalIdCardFrontUrl,
-                  id_card_back_url: finalIdCardBackUrl,
                 });
 
                 setProfileMessage("Cập nhật thông tin thành công");
                 setSelectedFiles({
                   avatarUrl: null,
-                  idCardFrontUrl: null,
-                  idCardBackUrl: null,
                 });
               } catch (e) {
                 setProfileMessage(e.message || "Cập nhật thất bại");
@@ -449,7 +309,6 @@ const SettingsPage = ({ navigate }) => {
           </button>
         </div>
       </div>
-      {/* Hidden file inputs cho ảnh */}
       <input
         type="file"
         accept="image/*"
@@ -457,90 +316,6 @@ const SettingsPage = ({ navigate }) => {
         className="hidden"
         onChange={(e) => handleImageFileChange(e, "avatarUrl")}
       />
-      <input
-        type="file"
-        accept="image/*"
-        ref={idCardFrontFileInputRef}
-        className="hidden"
-        onChange={(e) => handleImageFileChange(e, "idCardFrontUrl")}
-      />
-      <input
-        type="file"
-        accept="image/*"
-        ref={idCardBackFileInputRef}
-        className="hidden"
-        onChange={(e) => handleImageFileChange(e, "idCardBackUrl")}
-      />
-    </div>
-  );
-
-  const renderNotificationsSection = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Kênh nhận thông báo
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
-            <div>
-              <p className="font-medium text-gray-800">Email</p>
-              <p className="text-sm text-gray-500">Nhận thông báo qua email</p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.notifications.email}
-              onChange={() => toggleNotification("email")}
-            />
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
-            <div>
-              <p className="font-medium text-gray-800">Push notification</p>
-              <p className="text-sm text-gray-500">Thông báo trên thiết bị</p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.notifications.push}
-              onChange={() => toggleNotification("push")}
-            />
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
-            <div>
-              <p className="font-medium text-gray-800">SMS</p>
-              <p className="text-sm text-gray-500">Nhận tin nhắn SMS</p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.notifications.sms}
-              onChange={() => toggleNotification("sms")}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Loại thông báo
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
-            <div>
-              <p className="font-medium text-gray-800">Lịch khám</p>
-              <p className="text-sm text-gray-500">Nhắc nhở về lịch hẹn</p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.notifications.appointments}
-              onChange={() => toggleNotification("appointments")}
-            />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-gray-800">Khuyến mãi</p>
-              <p className="text-sm text-gray-500">Ưu đãi và chương trình</p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.notifications.promotions}
-              onChange={() => toggleNotification("promotions")}
-            />
-          </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -657,113 +432,11 @@ const SettingsPage = ({ navigate }) => {
           </button>
         </div>
       </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Xác thực hai yếu tố
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Tăng cường bảo mật tài khoản của bạn
-        </p>
-        <button className="w-full border-2 border-green-500 text-green-600 hover:bg-green-50 font-medium py-2.5 rounded-lg transition-colors">
-          Kích hoạt 2FA
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderPrivacySection = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Quyền riêng tư
-        </h3>
-        <div className="space-y-4">
-          <div className="py-3 border-b border-gray-100">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Hiển thị hồ sơ
-            </label>
-            <select
-              value={settings.privacy.profileVisibility}
-              onChange={(e) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  privacy: {
-                    ...prev.privacy,
-                    profileVisibility: e.target.value,
-                  },
-                }))
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="public">Công khai</option>
-              <option value="private">Riêng tư</option>
-              <option value="friends">Bạn bè</option>
-            </select>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
-            <div>
-              <p className="font-medium text-gray-800">Hiển thị email</p>
-              <p className="text-sm text-gray-500">
-                Cho phép người khác xem email
-              </p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.privacy.showEmail}
-              onChange={() =>
-                setSettings((prev) => ({
-                  ...prev,
-                  privacy: {
-                    ...prev.privacy,
-                    showEmail: !prev.privacy.showEmail,
-                  },
-                }))
-              }
-            />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-gray-800">
-                Hiển thị số điện thoại
-              </p>
-              <p className="text-sm text-gray-500">
-                Cho phép người khác xem SĐT
-              </p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.privacy.showPhone}
-              onChange={() =>
-                setSettings((prev) => ({
-                  ...prev,
-                  privacy: {
-                    ...prev.privacy,
-                    showPhone: !prev.privacy.showPhone,
-                  },
-                }))
-              }
-            />
-          </div>
-        </div>
-      </div>
     </div>
   );
 
   const renderAppearanceSection = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Ngôn ngữ</h3>
-        <select
-          value={settings.language}
-          onChange={(e) =>
-            setSettings((prev) => ({ ...prev, language: e.target.value }))
-          }
-          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-        >
-          <option value="vi">Tiếng Việt</option>
-          <option value="en">English</option>
-        </select>
-      </div>
-
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Chủ đề</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -798,49 +471,15 @@ const SettingsPage = ({ navigate }) => {
     </div>
   );
 
-  const renderBillingSection = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Phương thức thanh toán
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
-                VISA
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">•••• 4242</p>
-                <p className="text-sm text-gray-500">Hết hạn 12/25</p>
-              </div>
-            </div>
-            <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">
-              Mặc định
-            </span>
-          </div>
-        </div>
-        <button className="w-full mt-4 border-2 border-green-500 text-green-600 hover:bg-green-50 font-medium py-2.5 rounded-lg transition-colors">
-          Thêm thẻ mới
-        </button>
-      </div>
-    </div>
-  );
 
   const renderContent = () => {
     switch (activeSection) {
       case "account":
         return renderAccountSection();
-      case "notifications":
-        return renderNotificationsSection();
       case "security":
         return renderSecuritySection();
-      case "privacy":
-        return renderPrivacySection();
       case "appearance":
         return renderAppearanceSection();
-      case "billing":
-        return renderBillingSection();
       default:
         return renderAccountSection();
     }

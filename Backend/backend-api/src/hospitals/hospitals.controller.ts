@@ -8,6 +8,8 @@ import {
   Post,
   Query,
   UseGuards,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -39,11 +41,14 @@ export class HospitalsController {
     return this.hospitalsService.findOne(+id);
   }
 
-  // Admin: cập nhật thông tin bệnh viện
+  // Admin, Admin Hospital: cập nhật thông tin bệnh viện
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  update(@Param('id') id: string, @Body() dto: UpdateHospitalDto) {
+  @Roles('admin', 'admin_hospital')
+  update(@Param('id') id: string, @Body() dto: UpdateHospitalDto, @Req() req: any) {
+    if (req.user.role === 'admin_hospital' && req.user.hospital_id !== +id) {
+      throw new ForbiddenException('Bạn không có quyền cập nhật bệnh viện khác');
+    }
     return this.hospitalsService.update(+id, dto);
   }
 

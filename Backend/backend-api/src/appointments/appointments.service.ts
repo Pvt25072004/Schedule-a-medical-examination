@@ -6,7 +6,7 @@ import { Appointment } from './entities/appointment.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Doctor } from '../doctors/doctor.entity';
 import { Hospital } from '../hospitals/entities/hospital.entity';
-import { Repository, MoreThanOrEqual, In, DataSource, LessThan } from 'typeorm';
+import { Repository, MoreThanOrEqual, In, DataSource, LessThan, Brackets } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PricingService } from '../pricing/pricing.service';
 import { FirebaseService } from '../firebase/firebase.service';
@@ -245,7 +245,7 @@ export class AppointmentsService {
     }
   }
 
-  async findAll(user?: any, page: number = 1, limit: number = 100, status?: string, hospitalId?: string): Promise<{ data: Appointment[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(user?: any, page: number = 1, limit: number = 100, status?: string, hospitalId?: string, search?: string): Promise<{ data: Appointment[]; total: number; page: number; limit: number; totalPages: number }> {
     const qb = this.appointmentsRepository.createQueryBuilder('appointment')
       .leftJoinAndSelect('appointment.user', 'user')
       .leftJoinAndSelect('appointment.doctor', 'doctor')
@@ -267,6 +267,20 @@ export class AppointmentsService {
 
     if (hospitalId && hospitalId !== 'all') {
       qb.andWhere('appointment.hospital_id = :filterHospitalId', { filterHospitalId: hospitalId });
+    }
+
+    if (search) {
+      qb.andWhere(new Brackets(sqb => {
+        sqb.where('appointment.patient_name LIKE :search', { search: `%${search}%` })
+           .orWhere('appointment.patient_phone LIKE :search', { search: `%${search}%` })
+           .orWhere('appointment.doctor_name_snapshot LIKE :search', { search: `%${search}%` })
+           .orWhere('user.full_name LIKE :search', { search: `%${search}%` })
+           .orWhere('user.phone LIKE :search', { search: `%${search}%` });
+           
+        if (!isNaN(Number(search))) {
+          sqb.orWhere('appointment.id = :searchId', { searchId: Number(search) });
+        }
+      }));
     }
 
     qb.skip((page - 1) * limit).take(limit);
@@ -370,7 +384,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where: { user_id: userId },
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'review', 'payment'],
+      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'review', 'payment', 'service_package'],
     });
   }
 
@@ -414,7 +428,7 @@ export class AppointmentsService {
     }
 
     appointment.status = status;
-    if (status === 'rejected') {
+    if (status === 'rejected' || status === 'cancelled') {
       appointment.cancel_reason = reason || null;
     } else if (status === 'confirmed' || status === 'completed') {
       // Khi xác nhận / hoàn thành thì xóa lý do hủy trước đó (nếu có)
@@ -538,6 +552,12 @@ export class AppointmentsService {
     const currentTotalMins = currentHour * 60 + currentMinute;
 
     for (const schedule of schedules) {
+      // Check if this schedule is already full
+      const scheduleAppointments = appointments.filter(a => a.schedule_id === schedule.id);
+      if (scheduleAppointments.length >= schedule.max_patients) {
+        continue; // Skip this schedule, it's full
+      }
+
       const start = schedule.start_time.slice(0, 5); // "HH:mm"
       const end = schedule.end_time.slice(0, 5);
 

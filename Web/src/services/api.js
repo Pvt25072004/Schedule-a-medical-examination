@@ -77,6 +77,26 @@ export const socialLogin = async (payload) => {
   return handleResponse(response, "Đăng nhập mạng xã hội thất bại");
 };
 
+export const requestReset = async (email) => {
+  const response = await fetch(`${API_BASE_URL}/auth/request-reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+    credentials: "include",
+  });
+  return handleResponse(response, "Gửi mã OTP quên mật khẩu thất bại");
+};
+
+export const verifyReset = async (payload) => {
+  const response = await fetch(`${API_BASE_URL}/auth/verify-reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    credentials: "include",
+  });
+  return handleResponse(response, "Khôi phục mật khẩu thất bại");
+};
+
 // Cập nhật thông tin user (dựa trên id trong URL)
 export const updateUser = async (userId, payload) => {
   const response = await fetch(`${API_BASE_URL}/users/${userId}`, {

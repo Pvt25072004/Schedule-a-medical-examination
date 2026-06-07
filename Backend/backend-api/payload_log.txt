@@ -1,0 +1,1 @@
+2026-06-07T03:17:11.912Z PAYLOAD: {"user_id":8,"doctor_id":9,"hospital_id":1,"schedule_id":18,"appointment_date":"2026-06-09","appointment_time":"15:30","examination_type":"offline","symptoms":"r","relationship":"Bản thân"}

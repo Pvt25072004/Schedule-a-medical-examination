@@ -321,9 +321,12 @@ const ServicePackagesPage = () => {
                     {pkg.name}
                   </h3>
                   
-                  <p className="text-gray-600 mb-6 flex-grow line-clamp-3 leading-relaxed">
-                    {pkg.description || "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu được các chuyên gia khuyên dùng định kỳ hàng năm."}
-                  </p>
+                  <div 
+                    className="text-gray-600 mb-6 flex-grow line-clamp-3 leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: pkg.description || "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu được các chuyên gia khuyên dùng định kỳ hàng năm."
+                    }}
+                  />
                   
                   <div className="space-y-3 mb-8 bg-gray-50 p-4 rounded-xl">
                     <div className="flex items-center justify-between text-gray-700">

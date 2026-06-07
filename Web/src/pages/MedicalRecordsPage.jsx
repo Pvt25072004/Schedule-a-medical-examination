@@ -67,6 +67,12 @@ const MedicalRecordsPage = ({ navigate: injectedNavigate }) => {
     );
   });
 
+  useEffect(() => {
+    if (selectedRecord && !filteredRecords.find(r => r.id === selectedRecord.id)) {
+      setSelectedRecord(null);
+    }
+  }, [filteredRecords, selectedRecord]);
+
   return (
     <div className="min-h-screen bg-[#f8fbff] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

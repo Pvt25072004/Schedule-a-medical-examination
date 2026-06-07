@@ -51,4 +51,21 @@ export class NotificationsService {
       { is_read: true },
     );
   }
+
+  async updateSystemNotification(id: number, dto: Partial<CreateNotificationDto>): Promise<Notification> {
+    const notification = await this.notificationsRepository.findOneBy({ id, user_id: IsNull() });
+    if (!notification) {
+      throw new Error(`System Notification #${id} not found`);
+    }
+    Object.assign(notification, dto);
+    return await this.notificationsRepository.save(notification);
+  }
+
+  async deleteSystemNotification(id: number): Promise<void> {
+    const notification = await this.notificationsRepository.findOneBy({ id, user_id: IsNull() });
+    if (!notification) {
+      throw new Error(`System Notification #${id} not found`);
+    }
+    await this.notificationsRepository.remove(notification);
+  }
 }

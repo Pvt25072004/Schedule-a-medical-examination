@@ -214,18 +214,30 @@ const RegisterPage = ({ navigate }) => {
             <div>
               <div className="flex items-center gap-4 mb-2">
                 <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-white/10 border border-white/20 overflow-hidden shrink-0">
-                  <img src={logo} alt="STL Clinic Logo" className="w-full h-full object-cover" />
+                  <img
+                    src={logo}
+                    alt="STL Clinic Logo"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black tracking-tight drop-shadow-md">STL Clinic</h1>
-                  <p className="text-[#48a1f3] font-medium text-lg">Nền tảng y tế hàng đầu</p>
+                  <h1 className="text-4xl font-black tracking-tight drop-shadow-md">
+                    STL Clinic
+                  </h1>
+                  <p className="text-[#48a1f3] font-medium text-lg">
+                    Nền tảng y tế hàng đầu
+                  </p>
                 </div>
               </div>
               <h1 className="text-4xl font-black text-white leading-tight">
-                Đăng ký <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#fbc374]">Tài khoản mới</span>
+                Đăng ký <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#48a1f3] to-[#fbc374]">
+                  Tài khoản mới
+                </span>
               </h1>
               <p className="text-blue-100/80 font-medium mt-4 text-lg">
-                Tham gia nền tảng y tế để quản lý sức khỏe thông minh và tiện lợi nhất.
+                Tham gia nền tảng y tế để quản lý sức khỏe thông minh và tiện
+                lợi nhất.
               </p>
 
               <ul className="space-y-6 pt-8 text-sm font-medium">
@@ -233,19 +245,25 @@ const RegisterPage = ({ navigate }) => {
                   <span className="w-8 h-8 rounded-full bg-[#48a1f3] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-[#48a1f3]/30">
                     1
                   </span>
-                  <span className="pt-1.5 text-white/90 text-base">Khai báo thông tin cá nhân bảo mật</span>
+                  <span className="pt-1.5 text-white/90 text-base">
+                    Khai báo thông tin cá nhân bảo mật
+                  </span>
                 </li>
                 <li className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
                   <span className="w-8 h-8 rounded-full bg-[#f99b1c] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-[#f99b1c]/30">
                     2
                   </span>
-                  <span className="pt-1.5 text-white/90 text-base">Xác thực OTP qua email nhanh chóng</span>
+                  <span className="pt-1.5 text-white/90 text-base">
+                    Xác thực OTP qua email nhanh chóng
+                  </span>
                 </li>
                 <li className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
                   <span className="w-8 h-8 rounded-full bg-[#10b981] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-[#10b981]/30">
                     3
                   </span>
-                  <span className="pt-1.5 text-white/90 text-base">Sẵn sàng đặt lịch khám mọi lúc mọi nơi</span>
+                  <span className="pt-1.5 text-white/90 text-base">
+                    Sẵn sàng đặt lịch khám mọi lúc mọi nơi
+                  </span>
                 </li>
               </ul>
             </div>
@@ -253,7 +271,9 @@ const RegisterPage = ({ navigate }) => {
             <div className="mt-auto pt-8">
               {/* Social Login */}
               <div className="pt-6 border-t border-white/10 mb-6">
-                <p className="text-sm text-blue-200/80 font-medium mb-4">Hoặc đăng ký nhanh bằng mạng xã hội</p>
+                <p className="text-sm text-blue-200/80 font-medium mb-4">
+                  Hoặc đăng ký nhanh bằng mạng xã hội
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     variant="outline"
@@ -309,7 +329,6 @@ const RegisterPage = ({ navigate }) => {
 
         {/* Right Side - Form */}
         <div className="w-full lg:w-8/12 p-8 md:p-12 bg-white relative">
-
           {/* Top Bar: Back Button & Step */}
           <div className="flex items-center justify-between mb-10 pb-6 border-b border-gray-100">
             <button
@@ -327,13 +346,18 @@ const RegisterPage = ({ navigate }) => {
           {/* Mobile Header Intro (Only shows on mobile since left side is hidden) */}
           <div className="lg:hidden mb-8 text-center">
             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4 border border-gray-100 overflow-hidden">
-              <img src={logo} alt="STL Clinic Logo" className="w-full h-full object-cover" />
+              <img
+                src={logo}
+                alt="STL Clinic Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <h1 className="text-3xl font-black text-[#143250] leading-tight mb-2">
               Đăng ký tài khoản
             </h1>
             <p className="text-gray-500 font-medium">
-              Tham gia nền tảng y tế để quản lý sức khỏe thông minh và tiện lợi nhất.
+              Tham gia nền tảng y tế để quản lý sức khỏe thông minh và tiện lợi
+              nhất.
             </p>
           </div>
 
@@ -415,9 +439,7 @@ const RegisterPage = ({ navigate }) => {
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
                   >
                     {showConfirmPassword ? (
@@ -449,10 +471,11 @@ const RegisterPage = ({ navigate }) => {
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.gender
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                      errors.gender
                         ? "border-red-300 focus:border-red-500 focus:ring-red-200"
                         : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
-                      }`}
+                    }`}
                   >
                     <option value="">Chọn giới tính</option>
                     <option value="male">Nam</option>
@@ -460,9 +483,7 @@ const RegisterPage = ({ navigate }) => {
                     <option value="other">Khác</option>
                   </select>
                   {errors.gender && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {errors.gender}
-                    </p>
+                    <p className="text-red-600 text-sm mt-1">{errors.gender}</p>
                   )}
                 </div>
               </div>
@@ -489,10 +510,11 @@ const RegisterPage = ({ navigate }) => {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.city
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                      errors.city
                         ? "border-red-300 focus:border-red-500 focus:ring-red-200"
                         : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
-                      }`}
+                    }`}
                   >
                     <option value="">Chọn khu vực</option>
                     {REGIONS.map((region) => (
@@ -510,7 +532,7 @@ const RegisterPage = ({ navigate }) => {
                   type="text"
                   name="address"
                   label="Địa chỉ chi tiết"
-                  placeholder="Số nhà, đường, phường/xã"
+                  placeholder="Số nhà, đường, phường/xã, thành phố/tỉnh"
                   value={formData.address}
                   onChange={handleChange}
                   error={errors.address}
@@ -526,8 +548,6 @@ const RegisterPage = ({ navigate }) => {
               >
                 {isLoading ? "Đang xử lý..." : "Tiếp tục"}
               </button>
-
-
 
               <p className="text-center text-gray-500 text-sm mt-6 font-medium">
                 Đã có tài khoản?{" "}
@@ -552,7 +572,9 @@ const RegisterPage = ({ navigate }) => {
                 <p className="text-gray-500 font-medium">
                   Mã OTP gồm 6 chữ số đã được gửi đến
                   <br />
-                  <span className="font-bold text-[#48a1f3] text-lg mt-1 block">{formData.email}</span>
+                  <span className="font-bold text-[#48a1f3] text-lg mt-1 block">
+                    {formData.email}
+                  </span>
                 </p>
               </div>
 

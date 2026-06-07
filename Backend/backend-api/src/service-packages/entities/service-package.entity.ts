@@ -68,7 +68,7 @@ export class ServicePackage {
   })
   categories: Category[];
 
-  @ManyToMany(() => Hospital, (hospital) => hospital.service_packages)
+  @ManyToMany(() => Hospital, (hospital) => hospital.service_packages, { cascade: true })
   @JoinTable({
     name: 'hospital_service_packages',
     joinColumn: { name: 'service_package_id', referencedColumnName: 'id' },
