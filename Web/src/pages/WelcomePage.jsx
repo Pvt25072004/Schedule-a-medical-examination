@@ -51,6 +51,7 @@ const WelcomePage = ({ navigate }) => {
   const [doctorsList, setDoctorsList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [banners, setBanners] = useState([]);
   const [popularPackages, setPopularPackages] = useState([]);
   const packagesScrollRef = useRef(null);
@@ -647,10 +648,11 @@ const WelcomePage = ({ navigate }) => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {doctorsList.slice(0, 10).map((doctor) => (
+            {doctorsList.slice(0, 6).map((doctor) => (
               <div
                 key={doctor.id}
-                className="group relative bg-white rounded-[2rem] p-6 transition-all duration-500 hover:-translate-y-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] border border-gray-100 flex flex-col"
+                onClick={() => setSelectedDoctor(doctor)}
+                className="group relative bg-white rounded-[2rem] p-6 transition-all duration-500 hover:-translate-y-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] border border-gray-100 flex flex-col cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-b from-[#48a1f3]/0 to-[#48a1f3]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[2rem]"></div>
                 <div className="flex items-start gap-5 relative z-10">
@@ -680,47 +682,26 @@ const WelcomePage = ({ navigate }) => {
                       className="text-gray-500 text-xs mb-3 flex items-center gap-1 line-clamp-1"
                       title={
                         doctor.hospitals && doctor.hospitals.length > 0
-                          ? doctor.hospitals
-                              .map(
-                                (h) =>
-                                  `${h.name}${h.address ? ` - ${h.address}` : ""}`,
-                              )
-                              .join(", ")
+                          ? doctor.hospitals.map((h) => h.name).join(", ")
                           : "Chưa cập nhật"
                       }
                     >
                       <MapPin className="w-3 h-3 flex-shrink-0" />
                       {doctor.hospitals && doctor.hospitals.length > 0
-                        ? doctor.hospitals
-                            .map(
-                              (h) =>
-                                `${h.name}${h.address ? ` - ${h.address}` : ""}`,
-                            )
-                            .join(", ")
+                        ? doctor.hospitals.map((h) => h.name).join(", ")
                         : "Chưa cập nhật"}
                     </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 font-medium bg-gray-50 w-fit px-3 py-1.5 rounded-lg">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 font-medium bg-gray-50 w-fit px-3 py-1.5 rounded-lg">
                       <span className="flex items-center gap-1 text-yellow-500">
-                        ⭐ {Number(doctor.rating || 5).toFixed(1)}
+                        ⭐ {Number(doctor.rating || 5).toFixed(1)} ({doctor.review_count || 0})
                       </span>
                       <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                       <span>
-                        {doctor.experience_years || doctor.experience || 5} năm
-                        KN
+                        {doctor.experience_years || 0} năm KN
                       </span>
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() =>
-                    requireAuthAndNavigate(PAGES.BOOK_DOCTOR, {
-                      state: { doctorId: doctor.id },
-                    })
-                  }
-                  className="mt-6 w-full py-3.5 bg-gray-50 text-[#143250] group-hover:bg-[#48a1f3] group-hover:text-white rounded-xl font-bold transition-colors duration-300 relative z-10 flex items-center justify-center gap-2"
-                >
-                  <Calendar className="w-5 h-5" /> Đặt lịch khám
-                </button>
               </div>
             ))}
           </div>
@@ -770,11 +751,17 @@ const WelcomePage = ({ navigate }) => {
                       {/* Decorative top border gradient */}
                       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#48a1f3] to-[#f99b1c] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="w-16 h-16 bg-gradient-to-br from-[#48a1f3]/10 to-[#48a1f3]/5 rounded-2xl flex items-center justify-center text-[#48a1f3] group-hover:bg-[#48a1f3] group-hover:text-white transition-colors duration-500 shadow-inner">
-                          <Shield className="w-8 h-8" />
-                        </div>
-                        <div className="bg-orange-50 text-[#f99b1c] border border-orange-100 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-sm">
+                      <div className="flex justify-between items-start gap-2 mb-6">
+                        {pkg.image_url ? (
+                          <div className="h-16 w-auto rounded-2xl overflow-hidden shadow-sm border border-gray-100 shrink">
+                            <img src={pkg.image_url} alt={pkg.name} className="h-full w-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 shrink-0 bg-gradient-to-br from-[#48a1f3]/10 to-[#48a1f3]/5 rounded-2xl flex items-center justify-center text-[#48a1f3] group-hover:bg-[#48a1f3] group-hover:text-white transition-colors duration-500 shadow-inner">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                        )}
+                        <div className="bg-orange-50 shrink-0 text-[#f99b1c] border border-orange-100 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-sm">
                           🔥 {pkg.booking_count} lượt
                         </div>
                       </div>
@@ -929,7 +916,7 @@ const WelcomePage = ({ navigate }) => {
                     <img
                       src={specialty.image_url}
                       alt={specialty.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 mix-blend-multiply group-hover:mix-blend-normal group-hover:brightness-0 group-hover:invert"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
                     <span className="text-3xl group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-0 group-hover:invert">
@@ -1007,9 +994,15 @@ const WelcomePage = ({ navigate }) => {
             </button>
 
             <div className="p-8 pb-4 flex items-start gap-5 shrink-0">
-              <div className="w-16 h-16 shrink-0 bg-gradient-to-br from-[#48a1f3]/10 to-[#48a1f3]/5 rounded-2xl flex items-center justify-center text-[#48a1f3] shadow-inner">
-                <Shield className="w-8 h-8" />
-              </div>
+              {selectedPackage.image_url ? (
+                <div className="h-16 w-auto max-w-[120px] shrink-0 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                  <img src={selectedPackage.image_url} alt={selectedPackage.name} className="h-full w-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 shrink-0 bg-gradient-to-br from-[#48a1f3]/10 to-[#48a1f3]/5 rounded-2xl flex items-center justify-center text-[#48a1f3] shadow-inner">
+                  <Shield className="w-8 h-8" />
+                </div>
+              )}
               <div>
                 <div className="inline-flex bg-orange-50 text-[#f99b1c] border border-orange-100 px-3 py-1 rounded-full text-xs font-bold items-center gap-1 shadow-sm mb-2">
                   🔥 {selectedPackage.booking_count} lượt đặt
@@ -1103,6 +1096,88 @@ const WelcomePage = ({ navigate }) => {
                   Đặt lịch ngay <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Doctor Details Popup Modal */}
+      {selectedDoctor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-[#143250]/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setSelectedDoctor(null)}
+          ></div>
+          <div className="relative bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.15)] flex flex-col animate-in fade-in zoom-in-95 duration-300">
+            <div className="h-2 bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] w-full shrink-0"></div>
+            <button
+              onClick={() => setSelectedDoctor(null)}
+              className="absolute top-6 right-6 w-10 h-10 bg-gray-50 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="p-8 pb-4 flex items-start gap-5 shrink-0">
+              <div className="w-20 h-20 shrink-0 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
+                {selectedDoctor.user?.avatar_url || selectedDoctor.avatar_url ? (
+                  <img src={selectedDoctor.user?.avatar_url || selectedDoctor.avatar_url} alt="Doctor avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl">👨‍⚕️</div>
+                )}
+              </div>
+              <div>
+                <div className="inline-flex bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold items-center gap-1 shadow-sm mb-2">
+                  <Shield className="w-3 h-3" /> {selectedDoctor.specialty || selectedDoctor.category?.name || "Đa khoa"}
+                </div>
+                <h2 className="text-2xl font-black text-[#143250] leading-tight pr-8">
+                  {selectedDoctor.user?.full_name || selectedDoctor.name}
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                  <span className="flex items-center gap-1 text-yellow-500 font-medium">
+                    ⭐ {Number(selectedDoctor.rating || 5).toFixed(1)} ({selectedDoctor.review_count || 0} đánh giá)
+                  </span>
+                  <span>•</span>
+                  <span>{selectedDoctor.experience_years || 0} năm kinh nghiệm</span>
+                </div>
+              </div>
+            </div>
+            <div className="px-8 py-4 overflow-y-auto" style={{ maxHeight: "40vh" }}>
+              <div className="mb-4">
+                <h4 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wider flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#48a1f3]" /> Nơi công tác
+                </h4>
+                <div className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  {selectedDoctor.hospitals && selectedDoctor.hospitals.length > 0 ? (
+                    <div>
+                      {selectedDoctor.hospitals.map((h, i) => (
+                        <div key={h.id || i} className={i > 0 ? "mt-2 pt-2 border-t border-gray-200" : ""}>
+                          <span className="font-semibold text-[#143250]">{h.name}</span>
+                          {h.address && <p className="text-sm text-gray-500 mt-1">{h.address}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500 italic">Chưa cập nhật địa điểm</span>
+                  )}
+                </div>
+              </div>
+              {selectedDoctor.description && (
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Giới thiệu</h4>
+                  <p className="text-gray-600 leading-relaxed text-sm whitespace-pre-wrap">{selectedDoctor.description}</p>
+                </div>
+              )}
+            </div>
+            <div className="p-8 pt-6 border-t border-gray-100 bg-gray-50/50 mt-auto shrink-0 flex justify-end">
+              <button
+                className="px-8 py-4 bg-gradient-to-r from-[#48a1f3] to-[#3da3f5] text-white rounded-xl font-bold transition-all duration-300 shadow-lg shadow-[#48a1f3]/30 hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2 w-full sm:w-auto"
+                onClick={() => {
+                  const docId = selectedDoctor.id;
+                  setSelectedDoctor(null);
+                  requireAuthAndNavigate(PAGES.BOOK_DOCTOR, { state: { doctorId: docId } });
+                }}
+              >
+                Đặt lịch khám <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>

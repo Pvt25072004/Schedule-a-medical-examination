@@ -601,8 +601,12 @@ const BookingFlowPage = ({ navigate }) => {
                         : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 hover:shadow-sm text-gray-700'
                     }`}
                   >
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl transition-colors ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                      {cat.icon || getCategoryIcon(cat.name)}
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl transition-colors ${isSelected ? 'bg-blue-100' : 'bg-gray-100'} overflow-hidden`}>
+                      {cat.image_url ? (
+                        <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" />
+                      ) : (
+                        cat.icon || getCategoryIcon(cat.name)
+                      )}
                     </div>
                     <span className="font-semibold text-sm sm:text-base leading-tight">{cat.name}</span>
                     
@@ -652,9 +656,9 @@ const BookingFlowPage = ({ navigate }) => {
                     >
                       <div className="flex gap-4">
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
-                          {doctor.avatar_url ? (
+                          {doctor.user?.avatar_url || doctor.avatar_url ? (
                             <img
-                              src={doctor.avatar_url}
+                              src={doctor.user?.avatar_url || doctor.avatar_url}
                               alt={doctor.name}
                               className="w-full h-full object-cover"
                             />

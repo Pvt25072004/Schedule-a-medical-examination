@@ -2,8 +2,8 @@ import { createConnection } from 'typeorm';
 import { City } from './src/cities/entities/city.entity';
 import * as dotenv from 'dotenv';
 
-// Load .env
-dotenv.config();
+// Load đúng env production
+dotenv.config({ path: '.env.production' });
 
 const citiesData = [
   // Miền Bắc
@@ -77,6 +77,8 @@ const citiesData = [
 ];
 
 async function seed() {
+  console.log('Connecting to production database...');
+
   const connection = await createConnection({
     type: 'mysql',
     host: process.env.DB_HOST,
@@ -86,27 +88,45 @@ async function seed() {
     database: process.env.DB_DATABASE,
     entities: [__dirname + '/src/**/*.entity{.ts,.js}'],
     synchronize: false,
+
+    // Aiven MySQL thường cần SSL
+    ssl:
+      process.env.DB_SSL === 'true'
+        ? {
+          rejectUnauthorized: false,
+        }
+        : false,
   });
 
-  const cityRepo = connection.getRepository(City);
+  try {
+    const cityRepo = connection.getRepository(City);
 
-  console.log('Seeding 63 provinces and cities...');
+    console.log('Checking existing cities...');
 
-  const count = await cityRepo.count();
-  if (count > 0) {
-    console.log(`Database already has ${count} cities. Skipping seed.`);
+    const count = await cityRepo.count();
+
+    if (count > 0) {
+      console.log(`Database already has ${count} cities. Skipping seed.`);
+      return;
+    }
+
+    console.log('Seeding provinces and cities...');
+
+    const entities = cityRepo.create(citiesData);
+    await cityRepo.save(entities);
+
+    console.log(
+      `Seeding completed successfully! Inserted ${citiesData.length} cities.`,
+    );
+  } catch (error) {
+    console.error('Seed failed:', error);
+    throw error;
+  } finally {
     await connection.close();
-    return;
+    console.log('Database connection closed.');
   }
-
-  const entities = cityRepo.create(citiesData);
-  await cityRepo.save(entities);
-
-  console.log('Seeding completed successfully!');
-  await connection.close();
 }
 
-seed().catch((err) => {
-  console.error('Seed failed:', err);
+seed().catch(() => {
   process.exit(1);
 });

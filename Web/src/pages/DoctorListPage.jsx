@@ -337,8 +337,8 @@ const DoctorListPage = () => {
                     {/* Avatar */}
                     <div className="flex-shrink-0 mx-auto sm:mx-0">
                       <div className="w-28 h-28 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-3xl flex items-center justify-center text-5xl shadow-sm overflow-hidden border-2 border-blue-50">
-                        {doctor.avatar_url ? (
-                          <img src={doctor.avatar_url} alt={doctor.name} className="w-full h-full object-cover" />
+                        {doctor.user?.avatar_url || doctor.avatar_url ? (
+                          <img src={doctor.user?.avatar_url || doctor.avatar_url} alt={doctor.name} className="w-full h-full object-cover" />
                         ) : (
                           doctor.avatar || "👨‍⚕️"
                         )}
@@ -378,14 +378,15 @@ const DoctorListPage = () => {
                             <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0" />
                             <span className="font-medium">Nơi công tác</span>
                           </div>
-                          <span className="font-semibold text-right max-w-[50%] truncate" title={doctor.hospitals[0].name}>
-                            {doctor.hospitals[0].name}
+                          <span className="font-semibold text-right max-w-[50%] truncate" title={doctor.hospitals.map(h => h.name).join(', ')}>
+                            {doctor.hospitals.map(h => h.name).join(', ')}
                           </span>
                         </div>
-                        {doctor.hospitals[0].address && (
+                        {doctor.hospitals.length > 0 && doctor.hospitals[0].address && (
                           <div className="text-xs text-gray-500 text-right mt-1 truncate" title={`${doctor.hospitals[0].address}${doctor.hospitals[0].city ? ` - ${typeof doctor.hospitals[0].city === 'string' ? doctor.hospitals[0].city : doctor.hospitals[0].city?.name}` : ''}`}>
                             {doctor.hospitals[0].address}
                             {doctor.hospitals[0].city ? ` - ${typeof doctor.hospitals[0].city === 'string' ? doctor.hospitals[0].city : doctor.hospitals[0].city?.name}` : ''}
+                            {doctor.hospitals.length > 1 ? ' và các cơ sở khác...' : ''}
                           </div>
                         )}
                       </div>
