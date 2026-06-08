@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { PAGES } from "../../utils/constants";
 import { useAuth } from "../../contexts/AuthContext";
 import Button from "./Button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Smartphone } from "lucide-react";
 
 import logo from "../../assets/LOGOmain.jpg";
 
@@ -176,7 +176,15 @@ const Header = () => {
           </nav>
 
           {/* Auth Buttons / User Menu */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => navigate(PAGES.DOWNLOAD_APP)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e8f3fe] text-[#48a1f3] hover:bg-[#48a1f3] hover:text-white rounded-lg font-semibold transition-colors duration-300"
+              title="Tải ứng dụng Mobile"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span className="hidden lg:block text-sm">Tải App</span>
+            </button>
             {isAuthenticated ? (
               <div className="relative group">
                 <button className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded-lg transition-colors">

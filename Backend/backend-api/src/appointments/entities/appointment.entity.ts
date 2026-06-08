@@ -71,12 +71,12 @@ export class Appointment {
 
   @ApiProperty({
     example: 'pending',
-    enum: ['pending', 'confirmed', 'cancelled', 'completed', 'rejected'],
+    enum: ['pending', 'confirmed', 'checked_in', 'cancelled', 'completed', 'rejected'],
     description: 'Trạng thái lịch hẹn',
   })
   @Column({
     type: 'enum',
-    enum: ['pending', 'confirmed', 'cancelled', 'completed', 'rejected'],
+    enum: ['pending', 'confirmed', 'checked_in', 'cancelled', 'completed', 'rejected'],
     default: 'pending',
   })
   status: string;

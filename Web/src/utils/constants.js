@@ -28,6 +28,7 @@ export const PAGES = {
   PRIVACY_POLICY: "/privacy-policy",
   TERMS: "/terms",
   SPECIALTIES: "/specialties",
+  DOWNLOAD_APP: "/download-app",
 };
 
 // Appointment Status

@@ -51,6 +51,8 @@ const AppointmentsPage = ({ navigate }) => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrAppointment, setQrAppointment] = useState(null);
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(location.state?.tab || "upcoming");
 
@@ -502,6 +504,20 @@ const AppointmentsPage = ({ navigate }) => {
 
           {/* Nút hành động */}
           <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
+            {apt.status === "confirmed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setQrAppointment(apt);
+                  setShowQrModal(true);
+                }}
+                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 font-semibold"
+              >
+                Mã QR Check-in
+              </Button>
+            )}
+
             {(apt.status === "pending" || apt.status === "confirmed") && apt.payment?.payment_status === 'completed' && (
               <Button
                 variant="outline"
@@ -760,6 +776,68 @@ const AppointmentsPage = ({ navigate }) => {
           )}
         </div>
       </main>
+
+      {/* QR Code Modal */}
+      {showQrModal && qrAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <Card className="max-w-xs w-full animate-scale-in text-center p-6 bg-white rounded-2xl shadow-xl">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+              <h3 className="text-lg font-bold text-gray-900">
+                Mã QR Check-in
+              </h3>
+              <button
+                onClick={() => {
+                  setShowQrModal(false);
+                  setQrAppointment(null);
+                }}
+                className="p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center justify-center my-4">
+              <div className="bg-white p-3 rounded-2xl border-2 border-dashed border-indigo-100 shadow-inner">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${qrAppointment.backendId || qrAppointment.id}`}
+                  alt="QR Code Lịch Hẹn"
+                  className="w-44 h-44 mx-auto"
+                />
+              </div>
+              <p className="mt-3 text-xs text-gray-500 font-semibold">Mã lịch hẹn: #{qrAppointment.backendId || qrAppointment.id}</p>
+            </div>
+
+            <Button
+              variant="primary"
+              className="w-full mb-4 font-bold bg-indigo-600 hover:bg-indigo-700"
+              onClick={async () => {
+                try {
+                  const url = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${qrAppointment.backendId || qrAppointment.id}`;
+                  const response = await fetch(url);
+                  const blob = await response.blob();
+                  const blobUrl = window.URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = blobUrl;
+                  link.download = `QR_CheckIn_${qrAppointment.backendId || qrAppointment.id}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(blobUrl);
+                } catch (err) {
+                  showError("Không thể tải mã QR lúc này. Bạn vui lòng chụp màn hình!");
+                }
+              }}
+            >
+              ⬇️ Tải mã QR về máy
+            </Button>
+
+            <div className="text-sm text-gray-600 bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-left">
+              <p className="font-semibold text-indigo-900 mb-1">Hướng dẫn tại cơ sở:</p>
+              <p className="text-xs">Đưa mã QR này cho nhân viên tiếp đón hoặc quét tại máy Check-in để bắt đầu khám bệnh nhanh chóng.</p>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Cancel Modal */}
       {showCancelModal && (
