@@ -416,9 +416,17 @@ const AppointmentsPage = ({ navigate }) => {
                 <p className="text-blue-600 font-medium text-sm">
                   {apt.specialty}
                 </p>
-                <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{apt.hospitalName || "Phòng khám nội bộ"}</span>
+                <div className="flex flex-col gap-0.5 text-gray-500 text-sm mt-1">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="font-medium text-gray-700">{apt.hospitalName || "Phòng khám nội bộ"}</span>
+                  </div>
+                  {apt.hospitalAddress && (
+                    <div className="pl-4.5 text-xs text-gray-500 line-clamp-1">
+                      {apt.hospitalAddress}
+                      {apt.hospitalCity ? ` - ${typeof apt.hospitalCity === 'string' ? apt.hospitalCity : apt.hospitalCity.name}` : ''}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

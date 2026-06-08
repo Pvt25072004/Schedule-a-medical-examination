@@ -12,7 +12,8 @@ dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
 const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modalOnly = false, onClose }) => {
-  const { hospital, title, content, image_url, created_at, id: postId } = post;
+  const { title, content, image_url, created_at, id: postId } = post;
+  const hospital = post.hospital || post.fanpage?.hospital;
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(defaultOpenCommentModal);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState([]);
@@ -177,7 +178,7 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src={hospital?.avatar_url || 'https://via.placeholder.com/50'} 
+              src={hospital?.avatar_url || hospital?.logo_url || 'https://via.placeholder.com/50'} 
               alt={hospital?.name || 'Hospital'} 
               className="w-12 h-12 rounded-full object-cover border border-gray-100 group-hover:border-blue-200 transition-colors"
             />
@@ -287,7 +288,7 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
               <div className="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
                   <img 
-                    src={hospital?.avatar_url || 'https://via.placeholder.com/50'} 
+                    src={hospital?.avatar_url || hospital?.logo_url || 'https://via.placeholder.com/50'} 
                     alt={hospital?.name || 'Hospital'} 
                     className="w-10 h-10 rounded-full object-cover border border-gray-100"
                   />

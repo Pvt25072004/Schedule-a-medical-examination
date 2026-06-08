@@ -477,9 +477,17 @@ const BookingPage = ({ navigate }) => {
                       </p>
 
                       {Array.isArray(selectedDoctor.hospitals) && selectedDoctor.hospitals.length > 0 && (
-                        <div className="inline-flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl backdrop-blur-md text-sm w-full sm:w-auto">
-                          <MapPin className="w-4 h-4 text-blue-200 flex-shrink-0" />
-                          <span className="truncate">{selectedDoctor.hospitals[0].name} {selectedDoctor.hospitals[0].city ? `- ${typeof selectedDoctor.hospitals[0].city === 'string' ? selectedDoctor.hospitals[0].city : selectedDoctor.hospitals[0].city?.name}` : ''}</span>
+                        <div className="flex flex-col gap-1 bg-black/20 px-4 py-2 rounded-xl backdrop-blur-md text-sm w-full sm:w-auto text-left">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-blue-200 flex-shrink-0" />
+                            <span className="font-semibold">{selectedDoctor.hospitals[0].name}</span>
+                          </div>
+                          {selectedDoctor.hospitals[0].address && (
+                            <span className="text-blue-100 text-xs pl-6">
+                              {selectedDoctor.hospitals[0].address}
+                              {selectedDoctor.hospitals[0].city ? ` - ${typeof selectedDoctor.hospitals[0].city === 'string' ? selectedDoctor.hospitals[0].city : selectedDoctor.hospitals[0].city?.name}` : ''}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>

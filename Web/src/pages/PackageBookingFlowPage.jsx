@@ -295,10 +295,21 @@ const PackageBookingFlowPage = () => {
               )}
 
               <div className="bg-blue-50 rounded-xl p-6 border border-blue-100 space-y-4">
-                <div className="pb-4 border-b border-blue-200">
-                  <p className="text-sm text-gray-500">Gói Dịch Vụ</p>
-                  <p className="font-bold text-gray-900 text-lg">{servicePackage?.name}</p>
-                  <p className="text-sm text-blue-800 mt-2 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Bệnh viện sẽ liên hệ xếp lịch sau khi thanh toán.</p>
+                <div className="pb-4 border-b border-blue-200 flex items-start gap-4">
+                  {servicePackage?.image_url && (
+                    <img 
+                      src={servicePackage.image_url} 
+                      alt={servicePackage.name} 
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border border-blue-100 shrink-0" 
+                    />
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-500">Gói Dịch Vụ</p>
+                    <p className="font-bold text-gray-900 text-lg">{servicePackage?.name}</p>
+                    <p className="text-sm text-blue-800 mt-2 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 shrink-0" /> Bệnh viện sẽ liên hệ xếp lịch.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 py-2 border-b border-blue-200">

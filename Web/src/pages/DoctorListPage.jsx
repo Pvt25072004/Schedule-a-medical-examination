@@ -372,14 +372,22 @@ const DoctorListPage = () => {
 
                   <div className="space-y-3 mb-8 bg-gray-50 p-4 rounded-xl mt-auto">
                     {Array.isArray(doctor.hospitals) && doctor.hospitals.length > 0 && (
-                      <div className="flex items-center justify-between text-gray-700 pb-3 border-b border-gray-200">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-blue-500" />
-                          <span className="font-medium">Nơi công tác</span>
+                      <div className="flex flex-col text-gray-700 pb-3 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                            <span className="font-medium">Nơi công tác</span>
+                          </div>
+                          <span className="font-semibold text-right max-w-[50%] truncate" title={doctor.hospitals[0].name}>
+                            {doctor.hospitals[0].name}
+                          </span>
                         </div>
-                        <span className="font-semibold text-right max-w-[50%] truncate" title={`${doctor.hospitals[0].name} ${doctor.hospitals[0].city ? `- ${typeof doctor.hospitals[0].city === 'string' ? doctor.hospitals[0].city : doctor.hospitals[0].city?.name}` : ''}`}>
-                          {doctor.hospitals[0].name}
-                        </span>
+                        {doctor.hospitals[0].address && (
+                          <div className="text-xs text-gray-500 text-right mt-1 truncate" title={`${doctor.hospitals[0].address}${doctor.hospitals[0].city ? ` - ${typeof doctor.hospitals[0].city === 'string' ? doctor.hospitals[0].city : doctor.hospitals[0].city?.name}` : ''}`}>
+                            {doctor.hospitals[0].address}
+                            {doctor.hospitals[0].city ? ` - ${typeof doctor.hospitals[0].city === 'string' ? doctor.hospitals[0].city : doctor.hospitals[0].city?.name}` : ''}
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="flex items-center justify-between text-gray-700 pt-1">

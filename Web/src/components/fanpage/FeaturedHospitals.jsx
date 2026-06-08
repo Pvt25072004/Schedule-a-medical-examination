@@ -21,7 +21,7 @@ const FeaturedHospitals = ({ hospitals }) => {
             className="flex items-center gap-3 group"
           >
               <img 
-                src={hospital.avatar_url || 'https://via.placeholder.com/48'} 
+                src={hospital.avatar_url || hospital.logo_url || 'https://via.placeholder.com/48'} 
                 alt={hospital.name} 
                 className="w-12 h-12 rounded-full object-cover border border-gray-100 group-hover:border-blue-200 transition-colors"
               />

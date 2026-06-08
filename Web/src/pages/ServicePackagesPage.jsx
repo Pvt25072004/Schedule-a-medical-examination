@@ -298,11 +298,24 @@ const ServicePackagesPage = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredPackages.map((pkg) => (
               <Card key={pkg.id} hover className="flex flex-col h-full overflow-hidden border-2 border-transparent hover:border-blue-100 transition-colors bg-white">
+                {pkg.image_url && (
+                  <div className="relative h-48 bg-gray-100 overflow-hidden shrink-0 border-b border-gray-100">
+                    <img 
+                      src={pkg.image_url} 
+                      alt={pkg.name} 
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                )}
                 <div className="p-6 flex flex-col flex-grow">
                   <div className="flex justify-between items-start mb-6">
-                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                      <Shield className="w-8 h-8" />
-                    </div>
+                    {!pkg.image_url ? (
+                      <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
+                        <Shield className="w-8 h-8" />
+                      </div>
+                    ) : (
+                      <div></div>
+                    )}
                     <div className="flex flex-col items-end gap-2">
                       {pkg.code && (
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-bold border border-gray-200 shadow-sm">
