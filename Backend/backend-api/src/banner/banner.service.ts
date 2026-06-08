@@ -13,6 +13,7 @@ import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
 import { Category } from 'src/categories/entities/category.entity';
 import { Doctor } from 'src/doctors/doctor.entity';
+import { Hospital } from 'src/hospitals/entities/hospital.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
@@ -27,6 +28,9 @@ export class BannerService {
 
     @InjectRepository(Doctor)
     private readonly doctorRepository: Repository<Doctor>,
+
+    @InjectRepository(Hospital)
+    private readonly hospitalRepository: Repository<Hospital>,
 
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -88,6 +92,18 @@ export class BannerService {
       }
     }
 
+    if (dto.hospital_id) {
+      const hospital = await this.hospitalRepository.findOne({
+        where: { id: dto.hospital_id },
+      });
+
+      if (!hospital) {
+        throw new NotFoundException(
+          `Không tìm thấy bệnh viện với ID ${dto.hospital_id}`,
+        );
+      }
+    }
+
     if (
       dto.start_date &&
       dto.end_date &&
@@ -107,7 +123,7 @@ export class BannerService {
 
   async findAll(): Promise<Banner[]> {
     return this.bannerRepository.find({
-      relations: ['category', 'doctor'],
+      relations: ['category', 'doctor', 'hospital'],
       order: {
         priority: 'DESC',
         created_at: 'DESC',
@@ -122,6 +138,7 @@ export class BannerService {
       .createQueryBuilder('banner')
       .leftJoinAndSelect('banner.category', 'category')
       .leftJoinAndSelect('banner.doctor', 'doctor')
+      .leftJoinAndSelect('banner.hospital', 'hospital')
       .where('banner.is_active = :isActive', { isActive: true })
       .andWhere('(banner.start_date IS NULL OR banner.start_date <= :now)', {
         now,
@@ -137,7 +154,7 @@ export class BannerService {
   async findOne(id: number): Promise<Banner> {
     const banner = await this.bannerRepository.findOne({
       where: { id },
-      relations: ['category', 'doctor'],
+      relations: ['category', 'doctor', 'hospital'],
     });
 
     if (!banner) {
@@ -208,6 +225,18 @@ export class BannerService {
       if (!doctor) {
         throw new NotFoundException(
           `Không tìm thấy bác sĩ với ID ${dto.doctor_id}`,
+        );
+      }
+    }
+
+    if (dto.hospital_id) {
+      const hospital = await this.hospitalRepository.findOne({
+        where: { id: dto.hospital_id },
+      });
+
+      if (!hospital) {
+        throw new NotFoundException(
+          `Không tìm thấy bệnh viện với ID ${dto.hospital_id}`,
         );
       }
     }

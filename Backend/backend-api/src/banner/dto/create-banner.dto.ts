@@ -61,4 +61,9 @@ export class CreateBannerDto {
   @IsInt()
   @IsOptional()
   doctor_id?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  hospital_id?: number;
 }
