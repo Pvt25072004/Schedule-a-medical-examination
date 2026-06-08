@@ -34,15 +34,15 @@ export class Review {
   created_at: Date;
 
   // Relations
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Doctor)
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'doctor_id' })
   doctor: Doctor;
 
-  @ManyToOne(() => Appointment)
+  @ManyToOne(() => Appointment, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'appointment_id' })
   appointment: Appointment;
 }

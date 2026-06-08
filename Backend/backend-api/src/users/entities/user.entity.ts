@@ -95,7 +95,7 @@ export class User {
   @Column({ nullable: true, unique: true })
   hospital_id: number;
 
-  @OneToOne(() => Hospital, { nullable: true })
+  @OneToOne(() => Hospital, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'hospital_id' })
   hospital: Hospital;
 

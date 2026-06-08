@@ -45,19 +45,25 @@ export class UsersController {
   ) {
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 100;
-    return this.usersService.findAll(pageNumber, limitNumber, req.user, { role, status, search, region });
+    return this.usersService.findAll(pageNumber, limitNumber, req.user, {
+      role,
+      status,
+      search,
+      region,
+    });
   }
 
   @Get('/:id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string, @Req() req: any) {
     if (req.user.role !== 'admin' && req.user.id !== +id) {
-      throw new ForbiddenException('Bạn không có quyền xem thông tin người dùng khác');
+      throw new ForbiddenException(
+        'Bạn không có quyền xem thông tin người dùng khác',
+      );
     }
     return this.usersService.findOne(+id);
   }
   @Post('upload')
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -68,7 +74,10 @@ export class UsersController {
       throw new BadRequestException('Vui lòng chọn ảnh');
     }
 
-    if (!file.mimetype.startsWith('image/') && file.mimetype !== 'application/pdf') {
+    if (
+      !file.mimetype.startsWith('image/') &&
+      file.mimetype !== 'application/pdf'
+    ) {
       throw new BadRequestException('File phải là hình ảnh hoặc PDF');
     }
 
@@ -92,9 +101,15 @@ export class UsersController {
 
   @Patch('/:id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: any,
+  ) {
     if (req.user.role !== 'admin' && req.user.id !== +id) {
-      throw new ForbiddenException('Bạn không có quyền cập nhật người dùng khác');
+      throw new ForbiddenException(
+        'Bạn không có quyền cập nhật người dùng khác',
+      );
     }
     return this.usersService.update(+id, updateUserDto);
   }

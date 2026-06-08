@@ -194,11 +194,11 @@ export class Appointment {
   @JoinColumn({ name: 'user_id' })
   user?: User | null;
 
-  @ManyToOne(() => Doctor, (doctor) => doctor.appointments)
+  @ManyToOne(() => Doctor, (doctor) => doctor.appointments, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor | null;
 
-  @ManyToOne(() => Hospital, (hospital) => hospital.appointments)
+  @ManyToOne(() => Hospital, (hospital) => hospital.appointments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'hospital_id' })
   hospital?: Hospital | null;
 

@@ -28,11 +28,11 @@ export class DoctorHospitalRequest {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne(() => Doctor)
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'doctor_id' })
   doctor: Doctor;
 
-  @ManyToOne(() => Hospital)
+  @ManyToOne(() => Hospital, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'hospital_id' })
   hospital: Hospital;
 }

@@ -47,7 +47,7 @@ export class MedicalRecord {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @OneToOne(() => Appointment)
+  @OneToOne(() => Appointment, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'appointment_id' })
   appointment: Appointment;
 }

@@ -49,7 +49,7 @@ export class Payment {
   @CreateDateColumn()
   created_at: Date;
 
-  @OneToOne(() => Appointment, (appointment) => appointment.payment)
+  @OneToOne(() => Appointment, (appointment) => appointment.payment, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'appointment_id' })
   appointment: Appointment;
 }

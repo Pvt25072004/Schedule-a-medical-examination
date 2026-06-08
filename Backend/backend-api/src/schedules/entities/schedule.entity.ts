@@ -13,7 +13,7 @@ export class Schedule {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ type: 'int' })
   doctor_id: number;
 
   @Column()
@@ -44,11 +44,13 @@ export class Schedule {
   @CreateDateColumn()
   created_at: Date;
 
-  @ManyToOne(() => Doctor, (doctor) => doctor.schedules)
+  @ManyToOne(() => Doctor, (doctor) => doctor.schedules, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'doctor_id' })
   doctor?: Doctor | null;
 
-  @ManyToOne(() => Hospital)
+  @ManyToOne(() => Hospital, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'hospital_id' })
   hospital?: Hospital | null;
 }

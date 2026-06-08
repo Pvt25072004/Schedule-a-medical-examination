@@ -514,6 +514,14 @@ export class DoctorsService {
       }
     } else if (dto.status === 'rejected') {
       application.rejection_reason = dto.rejection_reason || '';
+      
+      if (application.doctor.user?.email) {
+        this.emailService.sendRejectionEmail(
+          application.doctor.user.email,
+          application.doctor.user.full_name || 'Bác sĩ',
+          application.rejection_reason
+        ).catch(err => console.error(err));
+      }
     }
 
     return this.applicationsRepository.save(application);

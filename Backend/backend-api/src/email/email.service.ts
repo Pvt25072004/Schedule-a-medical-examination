@@ -148,7 +148,7 @@ export class EmailService {
       user_id: this.publicKey,
       template_params: {
         to_email: email,
-        message: `Rất tiếc, đơn đăng ký của bạn đã bị từ chối.\nLý do: ${reason}`,
+        message: `Rất tiếc, yêu cầu của bạn đã bị từ chối.\nLý do: ${reason}`,
         password: '',
         name: name,
         login_url: `${this.frontendUrl}/login`,

@@ -84,14 +84,14 @@ async function seed() {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    entities: [City],
+    entities: [__dirname + '/src/**/*.entity{.ts,.js}'],
     synchronize: false,
   });
 
   const cityRepo = connection.getRepository(City);
 
   console.log('Seeding 63 provinces and cities...');
-  
+
   const count = await cityRepo.count();
   if (count > 0) {
     console.log(`Database already has ${count} cities. Skipping seed.`);
@@ -106,7 +106,7 @@ async function seed() {
   await connection.close();
 }
 
-seed().catch(err => {
+seed().catch((err) => {
   console.error('Seed failed:', err);
   process.exit(1);
 });

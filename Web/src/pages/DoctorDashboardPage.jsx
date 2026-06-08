@@ -311,6 +311,7 @@ export default function DoctorDashboardPage({ navigate }) {
   useEffect(() => {
     if (!doctorProfile?.id) return;
     void fetchDoctorAppointments(doctorProfile.id);
+    void loadSchedules(doctorProfile.id);
 
     // Auto-refresh (Polling) every 10 seconds for check-ins
     const interval = setInterval(() => {
