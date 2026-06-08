@@ -299,7 +299,7 @@ const ServicePackagesPage = () => {
             {filteredPackages.map((pkg) => (
               <Card key={pkg.id} hover className="flex flex-col h-full overflow-hidden border-2 border-transparent hover:border-blue-100 transition-colors bg-white">
                 {pkg.image_url && (
-                  <div className="relative h-48 bg-gray-100 overflow-hidden shrink-0 border-b border-gray-100">
+                  <div className="relative h-32 bg-gray-100 overflow-hidden shrink-0 border-b border-gray-100">
                     <img 
                       src={pkg.image_url} 
                       alt={pkg.name} 
@@ -308,20 +308,20 @@ const ServicePackagesPage = () => {
                   </div>
                 )}
                 <div className="p-6 flex flex-col flex-grow">
-                  <div className="flex justify-between items-start mb-6">
-                    {!pkg.image_url ? (
-                      <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
-                        <Shield className="w-8 h-8" />
-                      </div>
-                    ) : (
-                      <div></div>
-                    )}
-                    <div className="flex flex-col items-end gap-2">
+                  {!pkg.image_url && (
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0 mb-4">
+                      <Shield className="w-8 h-8" />
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center mb-6 w-full gap-2">
+                    <div className="flex-shrink-0">
                       {pkg.code && (
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-bold border border-gray-200 shadow-sm">
                           Mã: {pkg.code}
                         </span>
                       )}
+                    </div>
+                    <div className="flex-shrink-0">
                       {pkg.booking_count > 0 && (
                         <div className="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1 border border-orange-100">
                           🔥 {pkg.booking_count} lượt đặt

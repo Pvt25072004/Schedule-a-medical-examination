@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicNews } from '../services/news.api';
 import { normalizeForSearch } from '../utils/helpers';
+import { getActiveHospitalBanners } from '../services/admin.hospital.banner.api';
 
 const BannerCarousel = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -17,17 +18,9 @@ const BannerCarousel = () => {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const newsData = await getPublicNews();
-        const newsArray = Array.isArray(newsData) ? newsData : (newsData?.data || []);
-        const rssNews = newsArray.filter(n => n.source && n.image_url).slice(0, 5).map(n => ({
-          id: n.id,
-          image_url: n.image_url,
-          title: n.title,
-          description: n.summary,
-          redirect_url: n.source
-        }));
-        if (rssNews.length > 0) {
-          setBanners(rssNews);
+        const bannersData = await getActiveHospitalBanners();
+        if (Array.isArray(bannersData) && bannersData.length > 0) {
+          setBanners(bannersData);
         }
       } catch (err) {
         console.error('Failed to fetch banners:', err);
@@ -46,7 +39,7 @@ const BannerCarousel = () => {
 
   return (
     <div 
-      className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[450px] rounded-2xl overflow-hidden mb-8 shadow-sm group cursor-pointer bg-slate-900"
+      className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 rounded-2xl overflow-hidden mb-8 shadow-sm group cursor-pointer bg-slate-900"
       onClick={() => {
         const banner = banners[currentIdx];
         if (!banner) return;
@@ -54,7 +47,7 @@ const BannerCarousel = () => {
           if (!isAuthenticated) navigate('/login');
           else navigate('/book-doctor', { state: { doctorId: banner.doctor_id }});
         }
-        else if (banner.hospital_id) navigate(`/doctors`);
+        else if (banner.hospital_id) navigate(`/fanpage/${banner.hospital_id}`);
         else if (banner.redirect_url) window.open(banner.redirect_url, "_blank");
       }}
     >
@@ -62,17 +55,17 @@ const BannerCarousel = () => {
         <img
           key={banner.id || idx}
           src={banner.image_url}
-          alt={`Banner ${idx + 1}`}
+          alt={banner.title || `Banner ${idx + 1}`}
           className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 group-hover:scale-105 ease-in-out ${
             idx === currentIdx ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
         />
       ))}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6 z-20">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white drop-shadow-md">
+        <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md">
           {banners[currentIdx]?.title || "Cập nhật tin tức Y tế"}
         </h2>
-        <p className="text-white/90 drop-shadow">
+        <p className="text-white/90 drop-shadow text-sm">
           {banners[currentIdx]?.description || "Những thông tin mới nhất từ các bệnh viện hàng đầu"}
         </p>
       </div>
@@ -138,60 +131,18 @@ const FanpagePage = () => {
           setHospitals(validHospitals);
         }
 
-        // Fetch news for sidebar search and feed
-        let customNewsArray = [];
+        // Fetch news for sidebar search
         try {
           const newsData = await getPublicNews();
           const newsArray = Array.isArray(newsData) ? newsData : (newsData?.data || []);
           setNewsList(newsArray);
-          
-          // Inject custom news into feed (exclude google medical news which have source)
-          customNewsArray = newsArray.filter(n => !n.source).map(n => ({
-            id: `news_${n.id}`,
-            isNews: true,
-            title: n.title,
-            content: n.summary || '',
-            image_url: n.image_url,
-            created_at: n.published_at || n.created_at,
-            hospital: { name: "adminClinic", avatar_url: "https://cdn-icons-png.flaticon.com/512/2965/2965879.png" },
-            likes_count: 0,
-            comments_count: 0,
-            shares_count: 0,
-            originalNewsId: n.id,
-          }));
         } catch (err) {
           console.error('Error fetching news:', err);
-        }
-
-        // Fetch system notifications for feed
-        let notificationsArray = [];
-        try {
-          const notifRes = await fetch(`${API_BASE_URL}/notifications/system`);
-          if (notifRes.ok) {
-            const notifData = await notifRes.json();
-            const notifs = Array.isArray(notifData) ? notifData : [];
-            notificationsArray = notifs.map(n => ({
-              id: `notif_${n.id}`,
-              isNotification: true,
-              title: `[${n.type === 'alert' ? 'Cảnh báo khẩn cấp' : n.type === 'promotion' ? 'Khuyến mãi' : 'Hệ thống'}] ${n.title}`,
-              content: n.body,
-              created_at: n.created_at,
-              hospital: { name: "adminClinic", avatar_url: "https://cdn-icons-png.flaticon.com/512/2965/2965879.png" },
-              likes_count: 0,
-              comments_count: 0,
-              shares_count: 0,
-              type: n.type,
-            }));
-          }
-        } catch (err) {
-          console.error('Error fetching notifications:', err);
         }
 
         // Merge and sort
         const combined = [
           ...(initialPostsData ? (initialPostsData.data || initialPostsData) : []),
-          ...customNewsArray,
-          ...notificationsArray
         ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         
         setPosts(combined);
