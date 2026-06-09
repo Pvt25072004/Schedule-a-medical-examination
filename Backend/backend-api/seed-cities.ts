@@ -1,8 +1,7 @@
+import 'reflect-metadata';
 import { createConnection } from 'typeorm';
-import { City } from './src/cities/entities/city.entity';
 import * as dotenv from 'dotenv';
 
-// Load đúng env production
 dotenv.config({ path: '.env.production' });
 
 const citiesData = [
@@ -77,56 +76,48 @@ const citiesData = [
 ];
 
 async function seed() {
-  console.log('Connecting to production database...');
-
   const connection = await createConnection({
     type: 'mysql',
     host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || '3306', 10),
+    port: Number(process.env.DB_PORT || 3306),
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    entities: [__dirname + '/src/**/*.entity{.ts,.js}'],
     synchronize: false,
-
-    // Aiven MySQL thường cần SSL
-    ssl:
-      process.env.DB_SSL === 'true'
-        ? {
-            rejectUnauthorized: false,
-          }
-        : false,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   });
 
   try {
-    const cityRepo = connection.getRepository(City);
+    console.log('Connecting to production database...');
 
-    console.log('Checking existing cities...');
-
-    const count = await cityRepo.count();
+    const result = await connection.query(
+      `SELECT COUNT(*) as count FROM cities`,
+    );
+    const count = Number(result[0].count);
 
     if (count > 0) {
       console.log(`Database already has ${count} cities. Skipping seed.`);
       return;
     }
 
-    console.log('Seeding provinces and cities...');
+    for (const city of citiesData) {
+      await connection.query(
+        `
+        INSERT INTO cities 
+        (name, code, area, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, NOW(), NOW())
+        `,
+        [city.name, city.code, city.area, true],
+      );
+    }
 
-    const entities = cityRepo.create(citiesData);
-    await cityRepo.save(entities);
-
-    console.log(
-      `Seeding completed successfully! Inserted ${citiesData.length} cities.`,
-    );
+    console.log(`Inserted ${citiesData.length} cities successfully.`);
   } catch (error) {
     console.error('Seed failed:', error);
-    throw error;
   } finally {
     await connection.close();
     console.log('Database connection closed.');
   }
 }
 
-seed().catch(() => {
-  process.exit(1);
-});
+seed();
