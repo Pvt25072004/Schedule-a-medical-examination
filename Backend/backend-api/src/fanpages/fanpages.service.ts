@@ -58,13 +58,26 @@ export class FanpagesService {
   }
 
   async findByHospitalId(hospital_id: number): Promise<Fanpage> {
-    const fanpage = await this.fanpageRepository.findOne({
+    let fanpage = await this.fanpageRepository.findOne({
       where: { hospital_id },
       relations: ['hospital'],
     });
 
     if (!fanpage) {
-      throw new NotFoundException('Bệnh viện này chưa có Fanpage');
+      const hospital = await this.hospitalRepository.findOne({
+        where: { id: hospital_id },
+      });
+
+      if (!hospital) {
+        throw new NotFoundException('Không tìm thấy Bệnh viện');
+      }
+
+      const newFanpage = this.fanpageRepository.create({
+        hospital_id,
+      });
+
+      fanpage = await this.fanpageRepository.save(newFanpage);
+      fanpage.hospital = hospital;
     }
 
     return fanpage;
