@@ -22,13 +22,13 @@ const FanpageDetailPage = () => {
       try {
         setIsLoading(true);
         // Fetch fanpage detail
-        const fanpageRes = await fetch(`${API_BASE_URL}/fanpages/${id}`);
+        const fanpageRes = await fetch(`${API_BASE_URL}/fanpages/hospital/${id}`);
         if (fanpageRes.ok) {
           const fanpageData = await fanpageRes.json();
           setFanpage(fanpageData);
           
           // Fetch posts for this fanpage (page 1)
-          const postsRes = await fetch(`${API_BASE_URL}/posts/fanpage/${id}?page=1&limit=10`);
+          const postsRes = await fetch(`${API_BASE_URL}/posts/hospital/${id}?page=1&limit=10`);
           if (postsRes.ok) {
             const postsData = await postsRes.json();
             setPosts(postsData.data || postsData);
@@ -52,7 +52,7 @@ const FanpageDetailPage = () => {
     try {
       setIsLoadingMore(true);
       const nextPage = page + 1;
-      const postsRes = await fetch(`${API_BASE_URL}/posts/fanpage/${id}?page=${nextPage}&limit=10`);
+      const postsRes = await fetch(`${API_BASE_URL}/posts/hospital/${id}?page=${nextPage}&limit=10`);
       if (postsRes.ok) {
         const postsData = await postsRes.json();
         setPosts(prev => [...prev, ...(postsData.data || postsData)]);
