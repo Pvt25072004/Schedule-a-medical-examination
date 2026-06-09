@@ -32,6 +32,7 @@ import TermsPage from "./pages/TermsPage";
 import SpecialtiesPage from "./pages/SpecialtiesPage";
 import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 import FanpagePage from "./pages/FanpagePage";
+import FanpageDetailPage from "./pages/FanpageDetailPage";
 import NewsPage from "./pages/NewsPage";
 import ApplyDoctorPage from "./pages/ApplyDoctorPage";
 import HospitalRegistrationPage from "./pages/HospitalRegistrationPage";
@@ -149,6 +150,10 @@ const AppRoutes = () => {
         <Route
           path={PAGES.FANPAGE}
           element={<FanpagePage navigate={navigateTo} />}
+        />
+        <Route
+          path={PAGES.FANPAGE_DETAIL}
+          element={<FanpageDetailPage />}
         />
         <Route
           path="/payment/vnpay-return"
