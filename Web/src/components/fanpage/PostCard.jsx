@@ -176,11 +176,14 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 hover:shadow-md transition-shadow">
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer group/header"
+            onClick={() => hospital?.id && navigate(`/fanpage/${hospital.id}`)}
+          >
             <img 
               src={hospital?.avatar_url || hospital?.logo_url || 'https://via.placeholder.com/50'} 
               alt={hospital?.name || 'Hospital'} 
-              className="w-12 h-12 rounded-full object-cover border border-gray-100 group-hover:border-blue-200 transition-colors"
+              className="w-12 h-12 rounded-full object-cover border border-gray-100 group-hover/header:border-blue-200 transition-colors"
             />
             <div>
               <div className="flex items-center gap-1.5">
@@ -286,11 +289,20 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
               
               {/* Header */}
               <div className="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
+                <div 
+                  className="flex items-center gap-3 cursor-pointer group/header"
+                  onClick={() => {
+                    if (hospital?.id) {
+                      setIsCommentModalOpen(false);
+                      if (onClose) onClose();
+                      navigate(`/fanpage/${hospital.id}`);
+                    }
+                  }}
+                >
                   <img 
                     src={hospital?.avatar_url || hospital?.logo_url || 'https://via.placeholder.com/50'} 
                     alt={hospital?.name || 'Hospital'} 
-                    className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-100 group-hover/header:border-blue-200 transition-colors"
                   />
                   <div>
                     <div className="flex items-center gap-1.5">

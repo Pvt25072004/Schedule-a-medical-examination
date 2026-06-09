@@ -1,7 +1,9 @@
 import React from 'react';
 import { TrendingUp, BadgeCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const FeaturedHospitals = ({ hospitals }) => {
+  const navigate = useNavigate();
   // Sort hospitals by rating (descending), then take top 5
   const displayHospitals = [...hospitals]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
@@ -18,7 +20,8 @@ const FeaturedHospitals = ({ hospitals }) => {
         {displayHospitals.map((hospital) => (
           <div 
             key={hospital.id} 
-            className="flex items-center gap-3 group"
+            onClick={() => navigate(`/fanpage/${hospital.id}`)}
+            className="flex items-center gap-3 group cursor-pointer"
           >
               <img 
                 src={hospital.avatar_url || hospital.logo_url || 'https://via.placeholder.com/48'} 
