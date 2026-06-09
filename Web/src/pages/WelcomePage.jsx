@@ -1015,14 +1015,14 @@ const WelcomePage = ({ navigate }) => {
 
             {/* Scrollable Description */}
             <div
-              className="px-8 py-4 overflow-y-auto"
+              className="px-8 py-4 overflow-y-auto overflow-x-hidden w-full"
               style={{ maxHeight: "40vh" }}
             >
               <div className="mb-4">
                 <h4 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wider flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#48a1f3]" /> Địa điểm áp dụng
                 </h4>
-                <div className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <div className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100 break-words">
                   {selectedPackage.hospitals &&
                   selectedPackage.hospitals.length > 0 ? (
                     <>
@@ -1046,7 +1046,7 @@ const WelcomePage = ({ navigate }) => {
                 Chi tiết gói dịch vụ
               </h4>
               <div
-                className="prose prose-sm text-gray-600 leading-relaxed max-w-none whitespace-pre-wrap"
+                className="prose prose-sm text-gray-600 leading-relaxed max-w-none break-words w-full"
                 dangerouslySetInnerHTML={{
                   __html:
                     selectedPackage.description ||

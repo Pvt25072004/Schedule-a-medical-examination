@@ -131,7 +131,7 @@ export class AppointmentsService {
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
           .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
           .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
-          .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: appointmentTime })
+          .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: appointmentTime })
           .getCount();
 
         if (overlapConflict > 0) {
@@ -353,8 +353,8 @@ export class AppointmentsService {
         .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
         .andWhere('appt.id != :id', { id: appointment.id }) // trừ chính nó ra
         // Giả sử mỗi lịch khám kéo dài 30 phút
-        .andWhere('appt.appointment_time < ADDTIME(:newTime, "00:30:00")', { newTime })
-        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newTime', { newTime })
+        .andWhere("appt.appointment_time < ADDTIME(:newTime, '00:30:00')", { newTime })
+        .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newTime", { newTime })
         .getCount();
 
       if (overlapConflict > 0) {
@@ -699,7 +699,7 @@ export class AppointmentsService {
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
           .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
           .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
-          .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
+          .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: time })
           .getCount();
 
         // Also check if end time exceeds hospital schedule (assume max 17:00 = 17*60 = 1020)
@@ -781,7 +781,7 @@ export class AppointmentsService {
         .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
         .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
         .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
-        .andWhere('COALESCE(appt.end_time, ADDTIME(appt.appointment_time, "00:30:00")) > :newStartTime', { newStartTime: time })
+        .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: time })
         .getCount();
 
       if (overlapConflict === 0) {
