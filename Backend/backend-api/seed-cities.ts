@@ -84,34 +84,48 @@ async function seed() {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     synchronize: false,
+    charset: 'utf8mb4',
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   });
 
   try {
     console.log('Connecting to production database...');
-
-    const result = await connection.query(
-      `SELECT COUNT(*) as count FROM cities`,
-    );
-    const count = Number(result[0].count);
-
-    if (count > 0) {
-      console.log(`Database already has ${count} cities. Skipping seed.`);
-      return;
-    }
+    console.log('Syncing cities data...');
 
     for (const city of citiesData) {
-      await connection.query(
+      const updateResult = await connection.query(
         `
-        INSERT INTO cities 
-        (name, code, area, is_active, created_at, updated_at)
-        VALUES (?, ?, ?, ?, NOW(), NOW())
+        UPDATE cities
+        SET
+          name = ?,
+          area = ?,
+          is_active = ?,
+          updated_at = NOW()
+        WHERE code = ?
         `,
-        [city.name, city.code, city.area, true],
+        [city.name, city.area, true, city.code],
       );
+
+      const affectedRows =
+        updateResult?.affectedRows ?? updateResult?.[0]?.affectedRows ?? 0;
+
+      if (affectedRows === 0) {
+        await connection.query(
+          `
+          INSERT INTO cities
+          (name, code, area, is_active, created_at, updated_at)
+          VALUES (?, ?, ?, ?, NOW(), NOW())
+          `,
+          [city.name, city.code, city.area, true],
+        );
+
+        console.log(`Inserted: ${city.name}`);
+      } else {
+        console.log(`Updated: ${city.name}`);
+      }
     }
 
-    console.log(`Inserted ${citiesData.length} cities successfully.`);
+    console.log(`Synced ${citiesData.length} cities successfully.`);
   } catch (error) {
     console.error('Seed failed:', error);
   } finally {
