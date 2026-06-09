@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { PAGES } from '../utils/constants';
+import { PAGES, API_BASE_URL } from '../utils/constants';
 import { useAppointments } from '../contexts/AppointmentContext';
 
 const VNPayReturnPage = () => {
@@ -27,7 +27,7 @@ const VNPayReturnPage = () => {
         // Nếu dùng searchParams.toString() của React Router sẽ làm thay đổi mã hóa URL -> Sai chữ ký (Invalid Signature)
         const rawQueryStr = window.location.search.substring(1);
         
-        const response = await fetch(`http://localhost:8080/api/v1/payments/vnpay/vnpay-return?${rawQueryStr}`);
+        const response = await fetch(`${API_BASE_URL}/payments/vnpay/vnpay-return?${rawQueryStr}`);
         const result = await response.json();
         
         // Kiểm tra xem Backend có xác thực chữ ký thành công không

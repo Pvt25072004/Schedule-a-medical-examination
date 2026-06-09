@@ -184,6 +184,15 @@ const BookingFlowPage = ({ navigate }) => {
     return result;
   }, [doctorsWithRatings, formData.hospitalId, formData.specialty, searchQuery]);
 
+  const availableCategories = useMemo(() => {
+    if (!formData.hospitalId) return categories;
+    const doctorsInHospital = doctorsWithRatings.filter(d => 
+      d.hospitals?.some(h => String(h.id) === String(formData.hospitalId))
+    );
+    const hospitalSpecialties = [...new Set(doctorsInHospital.map(d => d.specialty).filter(Boolean))];
+    return categories.filter(cat => hospitalSpecialties.includes(cat.name));
+  }, [categories, doctorsWithRatings, formData.hospitalId]);
+
   const selectedDoctor = doctorsWithRatings.find(d => d.id === formData.doctorId);
   const selectedHospital = hospitals.find(h => String(h.id) === String(formData.hospitalId));
   const totalPrice = (Number(selectedDoctor?.consultationFee) || 0) + (Number(selectedHospital?.facility_fee) || 0);
@@ -589,7 +598,7 @@ const BookingFlowPage = ({ navigate }) => {
               <p className="text-gray-500 mb-6">Tại {selectedHospital?.name}</p>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {categories.map(cat => {
+                {availableCategories.length > 0 ? availableCategories.map(cat => {
                   const isSelected = formData.specialty === cat.name;
                   return (
                   <button
@@ -616,7 +625,9 @@ const BookingFlowPage = ({ navigate }) => {
                       </div>
                     )}
                   </button>
-                )})}
+                )}) : (
+                  <div className="col-span-full py-8 text-center text-gray-500 bg-gray-50 rounded-xl">Không có chuyên khoa nào khả dụng tại cơ sở này.</div>
+                )}
               </div>
               <div className="mt-8 flex justify-between">
                 <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="w-4 h-4 mr-2"/> Quay lại</Button>
