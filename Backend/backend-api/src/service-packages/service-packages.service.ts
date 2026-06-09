@@ -10,11 +10,21 @@ export class ServicePackagesService {
     private readonly servicePackageRepo: Repository<ServicePackage>,
   ) {}
 
-  async findAll(): Promise<ServicePackage[]> {
-    return this.servicePackageRepo.find({
+  async findAll(hospital_id?: number): Promise<ServicePackage[]> {
+    const options: any = {
       relations: ['categories', 'hospitals', 'doctors'],
       order: { created_at: 'DESC' },
-    });
+    };
+
+    if (hospital_id) {
+      options.where = {
+        hospitals: {
+          id: hospital_id,
+        },
+      };
+    }
+
+    return this.servicePackageRepo.find(options);
   }
 
   async findOne(id: number): Promise<ServicePackage> {

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Put, Delete, Query } from '@nestjs/common';
 import { ServicePackagesService } from './service-packages.service';
 
 @Controller('service-packages')
@@ -6,8 +6,8 @@ export class ServicePackagesController {
   constructor(private readonly servicePackagesService: ServicePackagesService) {}
 
   @Get()
-  findAll() {
-    return this.servicePackagesService.findAll();
+  findAll(@Query('hospital_id') hospital_id?: string) {
+    return this.servicePackagesService.findAll(hospital_id ? +hospital_id : undefined);
   }
 
   @Get('popular')

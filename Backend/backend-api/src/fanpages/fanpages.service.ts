@@ -47,7 +47,7 @@ export class FanpagesService {
   async findOne(id: number): Promise<Fanpage> {
     const fanpage = await this.fanpageRepository.findOne({
       where: { id },
-      relations: ['hospital', 'posts'],
+      relations: ['hospital'],
     });
 
     if (!fanpage) {
@@ -60,7 +60,7 @@ export class FanpagesService {
   async findByHospitalId(hospital_id: number): Promise<Fanpage> {
     const fanpage = await this.fanpageRepository.findOne({
       where: { hospital_id },
-      relations: ['hospital', 'posts'],
+      relations: ['hospital'],
     });
 
     if (!fanpage) {
