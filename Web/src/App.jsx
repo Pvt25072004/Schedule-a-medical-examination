@@ -77,7 +77,10 @@ const AppRoutes = () => {
       )?.toLowerCase() ?? "patient";
 
     if (!roles.map((r) => r.toLowerCase()).includes(normalizedRole)) {
-      return <Navigate to={PAGES.HOME} replace />;
+      if (normalizedRole === "doctor") {
+        return <Navigate to={PAGES.DOCTOR_DASHBOARD} replace />;
+      }
+      return <Navigate to={PAGES.WELCOME} replace />;
     }
 
     return children;
@@ -102,41 +105,33 @@ const AppRoutes = () => {
         <Route
           path={PAGES.HOME}
           element={
-            isAuthenticated ? (
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
               <HomePage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
+            </RoleProtectedRoute>
           }
         />
         <Route
           path={PAGES.BOOKING}
           element={
-            isAuthenticated ? (
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
               <BookingFlowPage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
+            </RoleProtectedRoute>
           }
         />
         <Route
           path={PAGES.BOOK_DOCTOR}
           element={
-            isAuthenticated ? (
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
               <BookingPage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
+            </RoleProtectedRoute>
           }
         />
         <Route
           path={PAGES.BOOK_PACKAGE}
           element={
-            isAuthenticated ? (
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
               <PackageBookingFlowPage />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
+            </RoleProtectedRoute>
           }
         />
         <Route
@@ -182,31 +177,25 @@ const AppRoutes = () => {
         <Route
           path={PAGES.APPOINTMENTS}
           element={
-            isAuthenticated ? (
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
               <AppointmentsPage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
+            </RoleProtectedRoute>
           }
         />
         <Route
           path={PAGES.CHAT}
           element={
-            isAuthenticated ? (
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
               <ChatPage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
+            </RoleProtectedRoute>
           }
         />
         <Route
           path={PAGES.SETTINGS}
           element={
-            isAuthenticated ? (
+            <RoleProtectedRoute roles={[USER_ROLES.PATIENT]}>
               <SettingsPage navigate={navigateTo} />
-            ) : (
-              <Navigate to={PAGES.WELCOME} replace />
-            )
+            </RoleProtectedRoute>
           }
         />
         <Route
