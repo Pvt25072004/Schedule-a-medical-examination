@@ -157,9 +157,7 @@ export class HospitalRegistrationsService {
         full_name: registration.admin_name || 'Admin Hospital',
         phone: registration.admin_phone,
         role: 'admin_hospital',
-        // In reality, we should link the user to the hospital entity.
-        // Assuming hospitalsService has logic or we just link it if User entity supports it.
-        // For now, this grants them login access.
+        hospital_id: newHospital.id,
       });
 
       // 3. Send Email with credentials
