@@ -153,6 +153,8 @@ class _AllDoctorsScreenState extends State<AllDoctorsScreen> {
     final int reviewCount = doctor['review_count'] ?? 0;
     final double rating = (doctor['rating'] ?? 5.0).toDouble();
 
+    final String avatarUrl = (doctor['avatar_url'] ?? doctor['user']?['avatar'] ?? '').toString();
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -179,12 +181,28 @@ class _AllDoctorsScreenState extends State<AllDoctorsScreen> {
         child: Row(
           children: [
             // Avatar
-            CircleAvatar(
-              radius: 36,
-              backgroundColor: const Color(0xFF48A1F3).withOpacity(0.1),
-              child: Text(
-                name.isNotEmpty ? name.substring(0, 1) : 'D',
-                style: const TextStyle(color: Color(0xFF48A1F3), fontSize: 24, fontWeight: FontWeight.bold),
+            ClipOval(
+              child: Container(
+                width: 72,
+                height: 72,
+                color: const Color(0xFF48A1F3).withOpacity(0.1),
+                child: avatarUrl.isNotEmpty
+                    ? Image.network(
+                        avatarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => Center(
+                          child: Text(
+                            name.isNotEmpty ? name.substring(0, 1) : 'D',
+                            style: const TextStyle(color: Color(0xFF48A1F3), fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          name.isNotEmpty ? name.substring(0, 1) : 'D',
+                          style: const TextStyle(color: Color(0xFF48A1F3), fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 16),

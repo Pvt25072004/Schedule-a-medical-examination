@@ -158,7 +158,17 @@ class _Step2HospitalSelectionState extends State<Step2HospitalSelection> {
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.local_hospital, color: cardColor, size: 24),
+                                        (hospital['logo_url'] != null && hospital['logo_url'].toString().isNotEmpty)
+                                            ? ClipOval(
+                                                child: Image.network(
+                                                  hospital['logo_url'].toString(),
+                                                  width: 32,
+                                                  height: 32,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (c, e, s) => Icon(Icons.local_hospital, color: cardColor, size: 24),
+                                                ),
+                                              )
+                                            : Icon(Icons.local_hospital, color: cardColor, size: 24),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(

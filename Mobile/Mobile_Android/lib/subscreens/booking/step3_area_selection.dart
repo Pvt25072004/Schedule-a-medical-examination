@@ -172,7 +172,17 @@ class _Step3SpecialtySelectionState extends State<Step3SpecialtySelection> {
                                       color: specColor.withOpacity(0.15),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: Icon(specIcon, size: 36, color: specColor),
+                                    child: (category['image_url'] != null && category['image_url'].toString().isNotEmpty)
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              category['image_url'].toString(),
+                                              width: 36,
+                                              height: 36,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (c, e, s) => Icon(specIcon, size: 36, color: specColor),
+                                            ),
+                                          )
+                                        : Icon(specIcon, size: 36, color: specColor),
                                   ),
                                   const SizedBox(height: 12),
                                   Padding(

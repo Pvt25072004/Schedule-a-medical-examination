@@ -405,7 +405,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               height: 70,
               width: double.infinity,
               color: primaryLightColor,
-              child: const Icon(Icons.medical_services_outlined, size: 36, color: primaryColor),
+              child: (pkg['image_url'] != null && pkg['image_url'].toString().isNotEmpty)
+                  ? Image.network(
+                      pkg['image_url'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => const Icon(Icons.medical_services_outlined, size: 36, color: primaryColor),
+                    )
+                  : const Icon(Icons.medical_services_outlined, size: 36, color: primaryColor),
             ),
           ),
           Padding(
@@ -635,44 +641,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 if (_hasUnreadNotifications)
                   Positioned(
                     right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+                    top: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 12.0, left: 4.0),
-              child: Center(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const profile_screen.ProfileScreen(),
-                      ),
-                    );
-                  },
-                  child: CircleAvatar(
-                    radius: 16,
-                    backgroundImage: AuthService.currentUser?.photoURL != null
-                        ? NetworkImage(AuthService.currentUser!.photoURL!)
-                        : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
-                    backgroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(width: 8),
           ],
         ),
         // --- Kết thúc AppBar ---
+        
 
         // --- BODY (Dùng SingleChildScrollView + Transform để chồng lớp) ---
         body: RefreshIndicator(
@@ -1079,11 +1064,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             color: primaryColor.withOpacity(0.1),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: Icon(
-                                            _getCategoryIcon(catName),
-                                            size: 24,
-                                            color: primaryColor,
-                                          ),
+                                          child: (specialty['image_url'] != null && specialty['image_url'].toString().isNotEmpty)
+                                            ? ClipOval(
+                                                child: Image.network(
+                                                  specialty['image_url'].toString(),
+                                                  width: 24,
+                                                  height: 24,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (c, e, s) => Icon(_getCategoryIcon(catName), size: 24, color: primaryColor),
+                                                ),
+                                              )
+                                            : Icon(
+                                                _getCategoryIcon(catName),
+                                                size: 24,
+                                                color: primaryColor,
+                                              ),
                                         ),
                                         const SizedBox(height: 4),
                                         Expanded(

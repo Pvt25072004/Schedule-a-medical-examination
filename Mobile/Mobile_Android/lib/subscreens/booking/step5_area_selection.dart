@@ -184,10 +184,19 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    CircleAvatar(
-                                      radius: 30,
-                                      backgroundColor: avatarBg,
-                                      child: const Icon(Icons.person, size: 30, color: Colors.black54),
+                                    ClipOval(
+                                      child: Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: avatarBg,
+                                        child: (doc['avatar_url'] != null || doc['user']?['avatar'] != null)
+                                            ? Image.network(
+                                                (doc['avatar_url'] ?? doc['user']?['avatar']).toString(),
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (c, e, s) => const Icon(Icons.person, size: 30, color: Colors.black54),
+                                              )
+                                            : const Icon(Icons.person, size: 30, color: Colors.black54),
+                                      ),
                                     ),
                                     const SizedBox(width: 12),
 

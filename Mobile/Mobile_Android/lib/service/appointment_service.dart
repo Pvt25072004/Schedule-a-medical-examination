@@ -206,6 +206,7 @@ class AppointmentService {
       if (response.statusCode == 200) {
         return true;
       }
+      print('🔥 updateAppointmentStatus Failed with status ${response.statusCode}: ${response.body}');
       return false;
     } catch (e) {
       print('🔥 updateAppointmentStatus Error: $e');

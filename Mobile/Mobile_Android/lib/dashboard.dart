@@ -1,4 +1,3 @@
-// main_screen.dart - Main screen with bottom navigation and draggable chatbot
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +5,6 @@ import 'package:clinic_booking_system/screens/profile.dart';
 import 'screens/appointments.dart';
 import 'screens/booking.dart';
 import 'screens/home.dart';
-import 'screens/qr_scan.dart';
 import 'screens/chatbot.dart';
 import 'screens/social_feed_screen.dart';
 import 'service/auth_service.dart';
@@ -53,17 +51,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     });
   }
 
+  bool _canScanQR = false;
+
   Future<void> _checkDoctorRole() async {
     final user = AuthService.currentUser;
     if (user != null) {
       try {
         final data = await AuthService().fetchUserData(user.uid);
         final role = data['role'] as String? ?? '';
-        if (role == 'Bác sĩ' || role.toLowerCase() == 'doctor') {
-          if (mounted) setState(() => _isDoctor = true);
+        if (mounted) {
+          setState(() {
+            _isDoctor = (role == 'Bác sĩ' || role.toLowerCase() == 'doctor');
+          });
         }
       } catch (e) {
-        debugPrint('⚠️ Lỗi kiểm tra quyền Bác sĩ: $e');
+        debugPrint('⚠️ Lỗi kiểm tra quyền: $e');
       }
     }
   }
@@ -409,12 +411,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             return Stack(
               alignment: Alignment.center,
               children: [
-                // 🌀 Hiệu ứng tia sáng quét dọc trong hình tròn
                 ClipOval(
                   child: ShaderMask(
                     shaderCallback: (rect) {
                       return LinearGradient(
-                        begin: Alignment(0, -1.0 + 2.0 * t), // Từ trên xuống
+                        begin: Alignment(0, -1.0 + 2.0 * t), 
                         end: Alignment(0, -0.8 + 2.0 * t),
                         colors: [
                           Colors.white.withOpacity(0.0),
@@ -431,17 +432,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       elevation: 10,
                       child: Transform.scale(
                         scale: 1 + 0.08 * (changed ? (1 - (t - 0.5) * 2) : t * 2),
-                        child: Icon(
-                          changed ? Icons.qr_code_2_outlined : Icons.qr_code_scanner,
-                          size: 28,
-                          color: Colors.white,
-                        ),
+                        child: (AuthService.currentUser?.photoURL != null && AuthService.currentUser!.photoURL!.isNotEmpty)
+                            ? ClipOval(
+                                child: Image.network(
+                                  AuthService.currentUser!.photoURL!,
+                                  width: 28,
+                                  height: 28,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => Icon(
+                                    changed ? Icons.person_outline : Icons.person,
+                                    size: 28,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                changed ? Icons.person_outline : Icons.person,
+                                size: 28,
+                                color: Colors.white,
+                              ),
                       ),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const QRScanScreen()),
-                        );
+                        setState(() => _selectedIndex = 4);
                       },
                     ),
                   ),
