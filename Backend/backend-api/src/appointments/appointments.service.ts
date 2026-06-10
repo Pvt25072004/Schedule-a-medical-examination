@@ -986,6 +986,10 @@ export class AppointmentsService {
 
     const currentCount = appointment.reschedule_count || 0;
 
+    if (!appointment.appointment_date || !appointment.appointment_time) {
+      throw new BadRequestException('Lịch hẹn gốc không có thông tin ngày giờ hợp lệ');
+    }
+
     // Tính thời gian của lịch khám gốc
     const appointmentDateStr = typeof appointment.appointment_date === 'string'
       ? appointment.appointment_date
