@@ -26,8 +26,9 @@ const handleResponse = async (response, defaultErrorMessage) => {
   throw new Error(message);
 };
 
-export const getCategories = async () => {
-  const response = await fetch(CATEGORIES_ENDPOINT, {
+export const getCategories = async (hospitalId) => {
+  const url = hospitalId ? `${CATEGORIES_ENDPOINT}?hospitalId=${hospitalId}` : CATEGORIES_ENDPOINT;
+  const response = await fetch(url, {
     headers: {
       ...getAuthHeaders(),
     },

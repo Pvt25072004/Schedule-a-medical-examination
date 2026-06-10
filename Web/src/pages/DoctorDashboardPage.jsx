@@ -145,7 +145,8 @@ export default function DoctorDashboardPage({ navigate }) {
   const [submittingLeave, setSubmittingLeave] = useState(false);
 
   const [showMedicalRecordModal, setShowMedicalRecordModal] = useState(false);
-  const [selectedAppointmentForRecord, setSelectedAppointmentForRecord] = useState(null);
+  const [selectedAppointmentForRecord, setSelectedAppointmentForRecord] =
+    useState(null);
   const [medicalRecordForm, setMedicalRecordForm] = useState({
     diagnosis: "",
     symptoms: "",
@@ -201,7 +202,9 @@ export default function DoctorDashboardPage({ navigate }) {
         showError("Có lỗi xảy ra khi Check-in.");
       }
     } else {
-      showError(`Không tìm thấy lịch hẹn #${qrInput} trong danh sách của bác sĩ!`);
+      showError(
+        `Không tìm thấy lịch hẹn #${qrInput} trong danh sách của bác sĩ!`,
+      );
       setQrInput("");
     }
   };
@@ -227,13 +230,22 @@ export default function DoctorDashboardPage({ navigate }) {
           consultation_fee: profileData.consultation_fee || "",
           category_id: profileData.category?.id || "",
           description: profileData.description || "",
-          avatar_url: profileData.avatar_url || profileData.user?.avatar_url || user?.avatar_url || user?.avatar || "",
-          avatar_public_id: profileData.avatar_public_id || profileData.user?.avatar_public_id || "",
+          avatar_url:
+            profileData.avatar_url ||
+            profileData.user?.avatar_url ||
+            user?.avatar_url ||
+            user?.avatar ||
+            "",
+          avatar_public_id:
+            profileData.avatar_public_id ||
+            profileData.user?.avatar_public_id ||
+            "",
           hospitalIds:
             profileData.hospitals?.map((h) => h.id || h.hospital_id) || [],
           old_password: "",
           password: "",
         });
+        void loadCategories(profileData.hospitals);
       }
     } catch (e) {
       console.error("Load doctor profile error:", e);
@@ -254,11 +266,30 @@ export default function DoctorDashboardPage({ navigate }) {
     }
   };
 
-  const loadCategories = async () => {
+  const loadCategories = async (hospitalsList) => {
     try {
       setLoadingCategories(true);
-      const data = await getCategories();
-      setCategories(Array.isArray(data) ? data : []);
+      const targetHospitals = hospitalsList || doctorProfile?.hospitals || [];
+      if (targetHospitals.length > 0) {
+        const promises = targetHospitals.map((h) => getCategories(h.id || h.hospital_id));
+        const results = await Promise.all(promises);
+        const uniqueCategories = [];
+        const seenIds = new Set();
+        for (const list of results) {
+          if (Array.isArray(list)) {
+            for (const cat of list) {
+              if (!seenIds.has(cat.id)) {
+                seenIds.add(cat.id);
+                uniqueCategories.push(cat);
+              }
+            }
+          }
+        }
+        setCategories(uniqueCategories);
+      } else {
+        const data = await getCategories();
+        setCategories(Array.isArray(data) ? data : []);
+      }
     } catch (e) {
       console.error("Load categories error:", e);
     } finally {
@@ -354,33 +385,42 @@ export default function DoctorDashboardPage({ navigate }) {
   const affiliations = useMemo(() => {
     return Array.isArray(doctorProfile?.hospitals)
       ? doctorProfile.hospitals.map((h) => ({
-        id: h.id,
-        hospital: h.name,
-        role: "Bác sĩ",
-        since: "",
-      }))
+          id: h.id,
+          hospital: h.name,
+          role: "Bác sĩ",
+          since: "",
+        }))
       : [];
   }, [doctorProfile?.hospitals]);
 
   const uniqueScheduleDates = useMemo(() => {
-    const dates = schedules.map((s) => s.work_date?.slice(0, 10)).filter(Boolean);
+    const dates = schedules
+      .map((s) => s.work_date?.slice(0, 10))
+      .filter(Boolean);
     return ["all", ...Array.from(new Set(dates)).sort()];
   }, [schedules]);
 
   const uniqueAppointmentDates = useMemo(() => {
-    const dates = doctorAppointments.map((a) => a.appointment_date).filter(Boolean);
+    const dates = doctorAppointments
+      .map((a) => a.appointment_date)
+      .filter(Boolean);
     return ["all", ...Array.from(new Set(dates)).sort()];
   }, [doctorAppointments]);
 
   const filteredSchedules = useMemo(() => {
     if (scheduleDateFilter === "all") return schedules;
-    return schedules.filter((s) => s.work_date?.slice(0, 10) === scheduleDateFilter);
+    return schedules.filter(
+      (s) => s.work_date?.slice(0, 10) === scheduleDateFilter,
+    );
   }, [schedules, scheduleDateFilter]);
 
   const filteredAppointments = useMemo(() => {
     return doctorAppointments.filter((apt) => {
-      const matchStatus = appointmentFilter === "all" || apt.status === appointmentFilter;
-      const matchDate = appointmentDateFilter === "all" || apt.appointment_date === appointmentDateFilter;
+      const matchStatus =
+        appointmentFilter === "all" || apt.status === appointmentFilter;
+      const matchDate =
+        appointmentDateFilter === "all" ||
+        apt.appointment_date === appointmentDateFilter;
       return matchStatus && matchDate;
     });
   }, [doctorAppointments, appointmentFilter, appointmentDateFilter]);
@@ -401,10 +441,11 @@ export default function DoctorDashboardPage({ navigate }) {
             <button
               key={date}
               onClick={() => setSelectedDate(date)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${isSelected
+              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                isSelected
                   ? "bg-[#143250] text-white border-[#143250] shadow-md"
                   : "bg-white text-slate-600 border-slate-200 hover:border-[#48a1f3] hover:text-[#48a1f3]"
-                }`}
+              }`}
             >
               {label}
             </button>
@@ -449,7 +490,11 @@ export default function DoctorDashboardPage({ navigate }) {
   };
 
   const handleDeleteSchedule = async (entry) => {
-    const isConfirm = await confirm("Xác nhận xóa", "Bạn có chắc muốn xóa ca làm việc này?", { variant: "danger", confirmText: "Xóa" });
+    const isConfirm = await confirm(
+      "Xác nhận xóa",
+      "Bạn có chắc muốn xóa ca làm việc này?",
+      { variant: "danger", confirmText: "Xóa" },
+    );
     if (!isConfirm) return;
     try {
       await deleteSchedule(entry.id);
@@ -502,7 +547,13 @@ export default function DoctorDashboardPage({ navigate }) {
     setMedicalRecordForm({
       diagnosis: "",
       symptoms: "",
-      vitals: { bloodPressure: "", heartRate: "", temperature: "", weight: "", height: "" },
+      vitals: {
+        bloodPressure: "",
+        heartRate: "",
+        temperature: "",
+        weight: "",
+        height: "",
+      },
       treatment: "",
       prescription: "",
       recommendations: "",
@@ -525,7 +576,13 @@ export default function DoctorDashboardPage({ navigate }) {
         setMedicalRecordForm({
           diagnosis: record.diagnosis || "",
           symptoms: record.symptoms || "",
-          vitals: record.vitals || { bloodPressure: "", heartRate: "", temperature: "", weight: "", height: "" },
+          vitals: record.vitals || {
+            bloodPressure: "",
+            heartRate: "",
+            temperature: "",
+            weight: "",
+            height: "",
+          },
           treatment: record.treatment || "",
           prescription: record.prescription || "",
           recommendations: record.recommendations || "",
@@ -562,7 +619,11 @@ export default function DoctorDashboardPage({ navigate }) {
 
       // Update local appointment status to 'completed'
       setDoctorAppointments((prev) =>
-        prev.map((apt) => (apt.id === selectedAppointmentForRecord.id ? { ...apt, status: "completed" } : apt)),
+        prev.map((apt) =>
+          apt.id === selectedAppointmentForRecord.id
+            ? { ...apt, status: "completed" }
+            : apt,
+        ),
       );
       showSuccess("Đã lưu hồ sơ bệnh án thành công!");
     } catch (e) {
@@ -635,51 +696,71 @@ export default function DoctorDashboardPage({ navigate }) {
     // 1. Cuộc hẹn tuần này
     let appsThisWeek = 0;
     let newAppsThisWeek = 0; // Assuming 'pending' as new
-    doctorAppointments.forEach(app => {
+    doctorAppointments.forEach((app) => {
       if (!app.appointment_date) return;
       const appDate = new Date(app.appointment_date);
       if (appDate >= startOfWeek && appDate <= endOfWeek) {
         appsThisWeek++;
-        if (app.status === 'pending' || app.status === 'confirmed') newAppsThisWeek++;
+        if (app.status === "pending" || app.status === "confirmed")
+          newAppsThisWeek++;
       }
     });
 
     // 2. Giờ làm việc
     let totalHours = 0;
     const uniqueHospitals = new Set();
-    schedules.forEach(schedule => {
+    schedules.forEach((schedule) => {
       if (schedule.hospital?.id) uniqueHospitals.add(schedule.hospital.id);
       if (schedule.start_time && schedule.end_time) {
-        const [startH, startM] = schedule.start_time.split(':').map(Number);
-        const [endH, endM] = schedule.end_time.split(':').map(Number);
-        totalHours += (endH + endM / 60) - (startH + startM / 60);
+        const [startH, startM] = schedule.start_time.split(":").map(Number);
+        const [endH, endM] = schedule.end_time.split(":").map(Number);
+        totalHours += endH + endM / 60 - (startH + startM / 60);
       }
     });
 
     // 3. Điểm đánh giá
     let totalRating = 0;
     let reviewCount = doctorReviews.length;
-    doctorReviews.forEach(r => totalRating += (Number(r.rating) || 0));
-    const avgRating = reviewCount > 0 ? (totalRating / reviewCount).toFixed(1) : '0.0';
+    doctorReviews.forEach((r) => (totalRating += Number(r.rating) || 0));
+    const avgRating =
+      reviewCount > 0 ? (totalRating / reviewCount).toFixed(1) : "0.0";
 
     // 4. Thu nhập tháng
     let incomeThisMonth = 0;
     let incomeLastMonth = 0;
-    doctorPayments.forEach(pay => {
-      if (pay.payment_status === 'completed') {
+    doctorPayments.forEach((pay) => {
+      if (pay.payment_status === "completed") {
         const payDate = new Date(pay.created_at);
         if (payDate >= startOfMonth) incomeThisMonth += Number(pay.amount || 0);
-        else if (payDate >= startOfLastMonth && payDate <= endOfLastMonth) incomeLastMonth += Number(pay.amount || 0);
+        else if (payDate >= startOfLastMonth && payDate <= endOfLastMonth)
+          incomeLastMonth += Number(pay.amount || 0);
       }
     });
 
-    const incomeGrowth = incomeLastMonth > 0 ? (((incomeThisMonth - incomeLastMonth) / incomeLastMonth) * 100).toFixed(0) : 100;
-    const incomeGrowthText = incomeThisMonth === 0 ? '0%' : (incomeLastMonth === 0 ? '+100%' : (incomeGrowth > 0 ? `+${incomeGrowth}%` : `${incomeGrowth}%`));
+    const incomeGrowth =
+      incomeLastMonth > 0
+        ? (
+            ((incomeThisMonth - incomeLastMonth) / incomeLastMonth) *
+            100
+          ).toFixed(0)
+        : 100;
+    const incomeGrowthText =
+      incomeThisMonth === 0
+        ? "0%"
+        : incomeLastMonth === 0
+          ? "+100%"
+          : incomeGrowth > 0
+            ? `+${incomeGrowth}%`
+            : `${incomeGrowth}%`;
 
     const formatIncome = (amount) => {
-      if (amount >= 1000000) return (amount / 1000000).toFixed(amount % 1000000 === 0 ? 0 : 1) + ' triệu';
-      if (amount >= 1000) return (amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1) + 'k';
-      return amount.toString() + ' đ';
+      if (amount >= 1000000)
+        return (
+          (amount / 1000000).toFixed(amount % 1000000 === 0 ? 0 : 1) + " triệu"
+        );
+      if (amount >= 1000)
+        return (amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1) + "k";
+      return amount.toString() + " đ";
     };
 
     return {
@@ -688,7 +769,7 @@ export default function DoctorDashboardPage({ navigate }) {
         detail: `+${newAppsThisWeek} mới`,
       },
       workingHours: {
-        value: Math.round(totalHours) + 'h',
+        value: Math.round(totalHours) + "h",
         detail: `${uniqueHospitals.size} cơ sở y tế`,
       },
       ratings: {
@@ -698,7 +779,7 @@ export default function DoctorDashboardPage({ navigate }) {
       income: {
         value: formatIncome(incomeThisMonth),
         detail: `${incomeGrowthText} so với tháng trước`,
-      }
+      },
     };
   }, [doctorAppointments, schedules, doctorReviews, doctorPayments]);
 
@@ -798,7 +879,11 @@ export default function DoctorDashboardPage({ navigate }) {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-slate-800">
-                        {apt.relationship && apt.relationship !== "Bản thân" ? apt.patient_name : (apt.user?.full_name || apt.patient_name || "Bệnh nhân")}
+                        {apt.relationship && apt.relationship !== "Bản thân"
+                          ? apt.patient_name
+                          : apt.user?.full_name ||
+                            apt.patient_name ||
+                            "Bệnh nhân"}
                       </h3>
                       {apt.relationship && apt.relationship !== "Bản thân" ? (
                         <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200">
@@ -917,11 +1002,16 @@ export default function DoctorDashboardPage({ navigate }) {
             Quản lý Lịch làm việc
           </h2>
           <p className="text-sm text-slate-500 font-medium">
-            Xem ca làm việc tại các bệnh viện bạn đã liên kết (Được quản lý bởi bệnh viện)
+            Xem ca làm việc tại các bệnh viện bạn đã liên kết (Được quản lý bởi
+            bệnh viện)
           </p>
         </div>
 
-        {renderDateFilterBar(uniqueScheduleDates, scheduleDateFilter, setScheduleDateFilter)}
+        {renderDateFilterBar(
+          uniqueScheduleDates,
+          scheduleDateFilter,
+          setScheduleDateFilter,
+        )}
 
         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           {loadingSchedules && (
@@ -932,9 +1022,7 @@ export default function DoctorDashboardPage({ navigate }) {
           {!loadingSchedules && filteredSchedules.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               <Calendar className="w-12 h-12 mb-3 opacity-30" />
-              <p className="text-sm font-medium">
-                Chưa có ca làm việc nào.
-              </p>
+              <p className="text-sm font-medium">Chưa có ca làm việc nào.</p>
             </div>
           )}
           {filteredSchedules.map((entry) => (
@@ -989,7 +1077,10 @@ export default function DoctorDashboardPage({ navigate }) {
 
           <div className="flex flex-wrap items-center gap-4">
             {/* Hộp quét QR Check-in */}
-            <form onSubmit={handleQrScanSubmit} className="flex items-center gap-2">
+            <form
+              onSubmit={handleQrScanSubmit}
+              className="flex items-center gap-2"
+            >
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
                   🔍
@@ -1002,7 +1093,12 @@ export default function DoctorDashboardPage({ navigate }) {
                   className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#48a1f3] focus:border-[#48a1f3] w-64 bg-slate-50 transition-all font-semibold"
                 />
               </div>
-              <Button type="submit" size="sm" variant="primary" className="bg-[#143250] hover:bg-[#1e4a77] text-white">
+              <Button
+                type="submit"
+                size="sm"
+                variant="primary"
+                className="bg-[#143250] hover:bg-[#1e4a77] text-white"
+              >
                 Check-in
               </Button>
             </form>
@@ -1010,37 +1106,41 @@ export default function DoctorDashboardPage({ navigate }) {
             <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setAppointmentFilter("all")}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "all"
-                  ? "bg-white text-[#143250] shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-                  }`}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                  appointmentFilter === "all"
+                    ? "bg-white text-[#143250] shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 Tất cả
               </button>
               <button
                 onClick={() => setAppointmentFilter("confirmed")}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "confirmed"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-                  }`}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                  appointmentFilter === "confirmed"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 Chờ khám
               </button>
               <button
                 onClick={() => setAppointmentFilter("checked_in")}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "checked_in"
-                  ? "bg-white text-emerald-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-                  }`}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                  appointmentFilter === "checked_in"
+                    ? "bg-white text-emerald-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 Đã đến
               </button>
               <button
                 onClick={() => setAppointmentFilter("completed")}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${appointmentFilter === "completed"
-                  ? "bg-white text-emerald-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-                  }`}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                  appointmentFilter === "completed"
+                    ? "bg-white text-emerald-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 Đã khám xong
               </button>
@@ -1048,7 +1148,11 @@ export default function DoctorDashboardPage({ navigate }) {
           </div>
         </div>
 
-        {renderDateFilterBar(uniqueAppointmentDates, appointmentDateFilter, setAppointmentDateFilter)}
+        {renderDateFilterBar(
+          uniqueAppointmentDates,
+          appointmentDateFilter,
+          setAppointmentDateFilter,
+        )}
 
         <div className="space-y-4">
           {loadingAppointments && (
@@ -1063,7 +1167,12 @@ export default function DoctorDashboardPage({ navigate }) {
             </div>
           )}
           {filteredAppointments.map((apt) => {
-            const isAwaitingPayment = apt.status === "pending" && apt.payment && (apt.payment.payment_method === "vnpay" || apt.payment.payment_method === "payos") && apt.payment.payment_status === "pending";
+            const isAwaitingPayment =
+              apt.status === "pending" &&
+              apt.payment &&
+              (apt.payment.payment_method === "vnpay" ||
+                apt.payment.payment_method === "payos") &&
+              apt.payment.payment_status === "pending";
 
             return (
               <div
@@ -1072,20 +1181,34 @@ export default function DoctorDashboardPage({ navigate }) {
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
-                    {((apt.relationship && apt.relationship !== "Bản thân" ? apt.patient_name : apt.user?.full_name) || "BN")
+                    {(
+                      (apt.relationship && apt.relationship !== "Bản thân"
+                        ? apt.patient_name
+                        : apt.user?.full_name) || "BN"
+                    )
                       .split(" ")
                       .map((p) => p[0])
-                      .join("").substring(0, 2).toUpperCase()}
+                      .join("")
+                      .substring(0, 2)
+                      .toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <h3 className="font-bold text-lg text-slate-900 truncate">
-                        {apt.relationship && apt.relationship !== "Bản thân" ? apt.patient_name : (apt.user?.full_name || apt.patient_name || "Bệnh nhân")}
+                        {apt.relationship && apt.relationship !== "Bản thân"
+                          ? apt.patient_name
+                          : apt.user?.full_name ||
+                            apt.patient_name ||
+                            "Bệnh nhân"}
                       </h3>
                       {apt.relationship && apt.relationship !== "Bản thân" ? (
-                        <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 whitespace-nowrap">Đặt giùm ({apt.relationship})</span>
+                        <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 whitespace-nowrap">
+                          Đặt giùm ({apt.relationship})
+                        </span>
                       ) : (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">Chính chủ</span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">
+                          Chính chủ
+                        </span>
                       )}
                       <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">
                         #{apt.id}
@@ -1093,16 +1216,33 @@ export default function DoctorDashboardPage({ navigate }) {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 mb-3">
-                      <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {apt.patient_phone || apt.user?.phone}</span>
-                      <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {apt.patient_gender === 'male' ? 'Nam' : apt.patient_gender === 'female' ? 'Nữ' : (apt.patient_gender || 'Không rõ')}</span>
-                      {apt.patient_dob && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {apt.patient_dob}</span>}
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5" />{" "}
+                        {apt.patient_phone || apt.user?.phone}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <User className="w-3.5 h-3.5" />{" "}
+                        {apt.patient_gender === "male"
+                          ? "Nam"
+                          : apt.patient_gender === "female"
+                            ? "Nữ"
+                            : apt.patient_gender || "Không rõ"}
+                      </span>
+                      {apt.patient_dob && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" /> {apt.patient_dob}
+                        </span>
+                      )}
                     </div>
 
                     {apt.relationship && apt.relationship !== "Bản thân" && (
                       <div className="text-xs text-slate-600 mb-3 bg-blue-50/50 border border-blue-100 rounded-lg p-2 flex items-start gap-2 max-w-sm">
                         <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                         <div>
-                          <span className="font-semibold text-slate-700">Người đặt hộ:</span> {apt.user?.full_name} ({apt.user?.phone})
+                          <span className="font-semibold text-slate-700">
+                            Người đặt hộ:
+                          </span>{" "}
+                          {apt.user?.full_name} ({apt.user?.phone})
                         </div>
                       </div>
                     )}
@@ -1118,14 +1258,16 @@ export default function DoctorDashboardPage({ navigate }) {
                       </span>{" "}
                       {apt.symptoms || "Không có thông tin"}
                     </div>
-                    {(apt.status === "cancelled" || apt.status === "rejected") && apt.cancel_reason && (
-                      <div className="text-sm text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100 italic mt-2">
-                        <span className="font-semibold not-italic text-red-700">
-                          Lý do hủy/từ chối:
-                        </span>{" "}
-                        {apt.cancel_reason}
-                      </div>
-                    )}
+                    {(apt.status === "cancelled" ||
+                      apt.status === "rejected") &&
+                      apt.cancel_reason && (
+                        <div className="text-sm text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100 italic mt-2">
+                          <span className="font-semibold not-italic text-red-700">
+                            Lý do hủy/từ chối:
+                          </span>{" "}
+                          {apt.cancel_reason}
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -1162,7 +1304,8 @@ export default function DoctorDashboardPage({ navigate }) {
                         </span>
                       )}
 
-                      {(apt.status === "pending" || apt.status === "confirmed") && (
+                      {(apt.status === "pending" ||
+                        apt.status === "confirmed") && (
                         <div className="flex flex-col gap-2 w-full mt-2">
                           <Button
                             size="sm"
@@ -1190,7 +1333,7 @@ export default function DoctorDashboardPage({ navigate }) {
                   )}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       </Card>
@@ -1472,7 +1615,12 @@ export default function DoctorDashboardPage({ navigate }) {
                   placeholder="Vd: 200000"
                   value={profileForm.consultation_fee}
                   onChange={(e) =>
-                    setProfileForm({ ...profileForm, consultation_fee: e.target.value ? Number(e.target.value) : "" })
+                    setProfileForm({
+                      ...profileForm,
+                      consultation_fee: e.target.value
+                        ? Number(e.target.value)
+                        : "",
+                    })
                   }
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none transition-all font-medium"
                 />
@@ -1632,7 +1780,7 @@ export default function DoctorDashboardPage({ navigate }) {
             </p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-xl border border-amber-100 text-amber-600 font-black text-lg">
-            <Star className="w-5 h-5 fill-amber-500 text-amber-500" /> 4.9{" "}
+            <Star className="w-5 h-5 fill-amber-500 text-amber-500" /> 5.0{" "}
             <span className="text-sm font-medium text-amber-600/70 ml-1">
               / 5.0
             </span>
@@ -1898,10 +2046,11 @@ export default function DoctorDashboardPage({ navigate }) {
                   setActiveTab(tab.id);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${isActive
-                  ? "bg-[#48a1f3] text-white shadow-md shadow-[#48a1f3]/30"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-[#143250]"
-                  }`}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                  isActive
+                    ? "bg-[#48a1f3] text-white shadow-md shadow-[#48a1f3]/30"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-[#143250]"
+                }`}
               >
                 <Icon
                   className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-400"}`}
@@ -2090,7 +2239,9 @@ export default function DoctorDashboardPage({ navigate }) {
           <div className="bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full p-8 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-black text-[#143250]">
-                {viewOnlyMedicalRecord ? "Xem Hồ sơ Bệnh án" : "Ghi Hồ sơ Bệnh án"}
+                {viewOnlyMedicalRecord
+                  ? "Xem Hồ sơ Bệnh án"
+                  : "Ghi Hồ sơ Bệnh án"}
               </h3>
               <button
                 onClick={() => setShowMedicalRecordModal(false)}
@@ -2103,10 +2254,13 @@ export default function DoctorDashboardPage({ navigate }) {
             {selectedAppointmentForRecord && (
               <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6">
                 <p className="font-bold text-blue-900 mb-1">
-                  Bệnh nhân: {selectedAppointmentForRecord.user?.full_name || "Không rõ"}
+                  Bệnh nhân:{" "}
+                  {selectedAppointmentForRecord.user?.full_name || "Không rõ"}
                 </p>
                 <p className="text-sm text-blue-700">
-                  Lý do khám: {selectedAppointmentForRecord.symptoms || "Không có thông tin"}
+                  Lý do khám:{" "}
+                  {selectedAppointmentForRecord.symptoms ||
+                    "Không có thông tin"}
                 </p>
               </div>
             )}
@@ -2122,7 +2276,12 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Nhập triệu chứng bệnh nhân khai báo..."
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
                     value={medicalRecordForm.symptoms}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, symptoms: e.target.value })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        symptoms: e.target.value,
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                 </div>
@@ -2138,7 +2297,15 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Huyết áp (mmHg)"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
                     value={medicalRecordForm.vitals?.bloodPressure || ""}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, bloodPressure: e.target.value } })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        vitals: {
+                          ...medicalRecordForm.vitals,
+                          bloodPressure: e.target.value,
+                        },
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                   <input
@@ -2146,7 +2313,15 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Nhịp tim (bpm)"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
                     value={medicalRecordForm.vitals?.heartRate || ""}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, heartRate: e.target.value } })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        vitals: {
+                          ...medicalRecordForm.vitals,
+                          heartRate: e.target.value,
+                        },
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                   <input
@@ -2154,7 +2329,15 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Nhiệt độ (°C)"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
                     value={medicalRecordForm.vitals?.temperature || ""}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, temperature: e.target.value } })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        vitals: {
+                          ...medicalRecordForm.vitals,
+                          temperature: e.target.value,
+                        },
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                   <input
@@ -2162,7 +2345,15 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Cân nặng (kg)"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
                     value={medicalRecordForm.vitals?.weight || ""}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, weight: e.target.value } })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        vitals: {
+                          ...medicalRecordForm.vitals,
+                          weight: e.target.value,
+                        },
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                   <input
@@ -2170,7 +2361,15 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Chiều cao (cm)"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium text-sm"
                     value={medicalRecordForm.vitals?.height || ""}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, vitals: { ...medicalRecordForm.vitals, height: e.target.value } })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        vitals: {
+                          ...medicalRecordForm.vitals,
+                          height: e.target.value,
+                        },
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                 </div>
@@ -2184,7 +2383,12 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Nhập kết quả chẩn đoán..."
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
                     value={medicalRecordForm.diagnosis}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, diagnosis: e.target.value })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        diagnosis: e.target.value,
+                      })
+                    }
                     required
                     disabled={viewOnlyMedicalRecord}
                   />
@@ -2198,7 +2402,12 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Nhập hướng điều trị..."
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
                     value={medicalRecordForm.treatment}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, treatment: e.target.value })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        treatment: e.target.value,
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                 </div>
@@ -2211,7 +2420,12 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Nhập đơn thuốc..."
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
                     value={medicalRecordForm.prescription}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, prescription: e.target.value })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        prescription: e.target.value,
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                 </div>
@@ -2224,7 +2438,12 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Nhập lời khuyên hoặc dặn dò tái khám..."
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
                     value={medicalRecordForm.recommendations}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, recommendations: e.target.value })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        recommendations: e.target.value,
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                 </div>
@@ -2237,7 +2456,12 @@ export default function DoctorDashboardPage({ navigate }) {
                     placeholder="Ghi chú nội bộ..."
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#48a1f3] outline-none font-medium"
                     value={medicalRecordForm.notes}
-                    onChange={(e) => setMedicalRecordForm({ ...medicalRecordForm, notes: e.target.value })}
+                    onChange={(e) =>
+                      setMedicalRecordForm({
+                        ...medicalRecordForm,
+                        notes: e.target.value,
+                      })
+                    }
                     disabled={viewOnlyMedicalRecord}
                   />
                 </div>
@@ -2269,4 +2493,4 @@ export default function DoctorDashboardPage({ navigate }) {
       )}
     </div>
   );
-};
+}
