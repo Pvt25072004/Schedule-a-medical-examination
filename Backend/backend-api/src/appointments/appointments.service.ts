@@ -986,12 +986,25 @@ export class AppointmentsService {
 
     const currentCount = appointment.reschedule_count || 0;
 
+    // Tính thời gian của lịch khám gốc
+    const appointmentDateStr = typeof appointment.appointment_date === 'string'
+      ? appointment.appointment_date
+      : appointment.appointment_date.toISOString().split('T')[0];
+    // Đảm bảo có đủ HH:mm:ss hoặc HH:mm
+    const timeStr = appointment.appointment_time.length === 5 ? `${appointment.appointment_time}:00` : appointment.appointment_time;
+    const originalAppointmentDateTime = new Date(`${appointmentDateStr}T${timeStr}`);
+    const now = new Date();
+    
+    // Tính khoảng cách thời gian (giờ)
+    const diffHours = (originalAppointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
     if (appointment.admin_cancelled_free_reschedule) {
       // Dời lịch miễn phí do lỗi từ viện
       appointment.status = 'pending';
       appointment.admin_cancelled_free_reschedule = false; // Dùng xong cờ này thì xóa
     } else {
-      if (currentCount >= 1) {
+      // Nếu dời lịch sát giờ (dưới 1 tiếng) hoặc đã dời >= 1 lần thì phải thanh toán
+      if (currentCount >= 1 || diffHours < 1) {
         appointment.status = 'awaiting_payment';
       } else {
         appointment.status = 'pending';
