@@ -30,7 +30,7 @@ export class AppointmentsService {
     private firebaseService: FirebaseService,
     private notificationsService: NotificationsService,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(AppointmentsService.name);
 
@@ -157,19 +157,15 @@ export class AppointmentsService {
         }
       }
 
-      // Check max pending cash appointments
-      if (createAppointmentDto.payment_method === 'cash') {
-        const cashAppointmentsCount = await queryRunner.manager
-          .createQueryBuilder(Appointment, 'appt')
-          .innerJoin('appt.payment', 'payment')
-          .where('appt.user_id = :userId', { userId: createAppointmentDto.user_id })
-          .andWhere('appt.status = :status', { status: 'pending' })
-          .andWhere('payment.payment_method = :paymentMethod', { paymentMethod: 'cash' })
-          .getCount();
+      // NEW: Khóa tài khoản không cho đặt nếu có đơn chưa thanh toán/chưa xử lý
+      const pendingAppointmentsCount = await queryRunner.manager
+        .createQueryBuilder(Appointment, 'appt')
+        .where('appt.user_id = :userId', { userId: createAppointmentDto.user_id })
+        .andWhere('appt.status = :status', { status: 'pending' })
+        .getCount();
 
-        if (cashAppointmentsCount >= 2) {
-          throw new BadRequestException('Bạn đang có 2 lịch hẹn thanh toán tại quầy chưa được xử lý. Vui lòng hoàn thành lịch hẹn cũ hoặc chọn phương thức thanh toán trực tuyến.');
-        }
+      if (pendingAppointmentsCount >= 1) {
+        throw new BadRequestException('Bạn đang có lịch hẹn chờ xử lý hoặc chưa thanh toán. Vui lòng thanh toán tiếp hoặc hủy lịch cũ trước khi đặt mới.');
       }
 
       hospital = await queryRunner.manager.findOneBy(Hospital, { id: createAppointmentDto.hospital_id });
@@ -222,24 +218,24 @@ export class AppointmentsService {
           type: 'appointment_pending',
         });
         await queryRunner.manager.save(Notification, notification);
-        
+
         // --- NEW: Bắn FCM cho Bệnh nhân và Bác sĩ ---
         const patient = await queryRunner.manager.findOne(User, { where: { id: savedAppointment.user_id } });
         if (patient?.fcm_token) {
-           this.firebaseService.sendPushNotification(
-             patient.fcm_token, 
-             '🎉 Đặt lịch thành công!', 
-             'Lịch khám của bạn đã được ghi nhận và đang chờ xác nhận.', 
-             { appointmentId: String(savedAppointment.id), status: 'pending' }
-           ).catch(e => console.error('FCM Patient err:', e));
+          this.firebaseService.sendPushNotification(
+            patient.fcm_token,
+            '🎉 Đặt lịch thành công!',
+            'Lịch khám của bạn đã được ghi nhận và đang chờ xác nhận.',
+            { appointmentId: String(savedAppointment.id), status: 'pending' }
+          ).catch(e => console.error('FCM Patient err:', e));
         }
         if (doctor?.user?.fcm_token) {
-           this.firebaseService.sendPushNotification(
-             doctor.user.fcm_token, 
-             '🔔 Có lịch hẹn mới', 
-             `Bệnh nhân ${patient?.full_name || 'mới'} vừa đặt lịch vào lúc ${savedAppointment.appointment_time} ngày ${savedAppointment.appointment_date}.`, 
-             { appointmentId: String(savedAppointment.id), status: 'pending' }
-           ).catch(e => console.error('FCM Doctor err:', e));
+          this.firebaseService.sendPushNotification(
+            doctor.user.fcm_token,
+            '🔔 Có lịch hẹn mới',
+            `Bệnh nhân ${patient?.full_name || 'mới'} vừa đặt lịch vào lúc ${savedAppointment.appointment_time} ngày ${savedAppointment.appointment_date}.`,
+            { appointmentId: String(savedAppointment.id), status: 'pending' }
+          ).catch(e => console.error('FCM Doctor err:', e));
         }
       } catch (err) {
         console.error('🔥 Lỗi tạo thông báo in-app (đặt lịch):', err);
@@ -292,11 +288,11 @@ export class AppointmentsService {
     if (search) {
       qb.andWhere(new Brackets(sqb => {
         sqb.where('appointment.patient_name LIKE :search', { search: `%${search}%` })
-           .orWhere('appointment.patient_phone LIKE :search', { search: `%${search}%` })
-           .orWhere('appointment.doctor_name_snapshot LIKE :search', { search: `%${search}%` })
-           .orWhere('user.full_name LIKE :search', { search: `%${search}%` })
-           .orWhere('user.phone LIKE :search', { search: `%${search}%` });
-           
+          .orWhere('appointment.patient_phone LIKE :search', { search: `%${search}%` })
+          .orWhere('appointment.doctor_name_snapshot LIKE :search', { search: `%${search}%` })
+          .orWhere('user.full_name LIKE :search', { search: `%${search}%` })
+          .orWhere('user.phone LIKE :search', { search: `%${search}%` });
+
         if (!isNaN(Number(search))) {
           sqb.orWhere('appointment.id = :searchId', { searchId: Number(search) });
         }
@@ -329,7 +325,7 @@ export class AppointmentsService {
   ): Promise<Appointment> {
     const appointment = (await this.findOne(id)) as Appointment;
     if (!appointment) throw new BadRequestException('Không tìm thấy lịch hẹn');
-    
+
     if (user?.role === 'admin_hospital' && appointment.hospital_id !== user.hospital_id) {
       throw new ForbiddenException('Bạn không có quyền sửa lịch hẹn của cơ sở khác');
     }
@@ -345,7 +341,7 @@ export class AppointmentsService {
       updateAppointmentDto.appointment_time
     ) {
       const dateStr = String(newDate).slice(0, 10);
-      
+
       const overlapConflict = await this.appointmentsRepository
         .createQueryBuilder('appt')
         .where('appt.doctor_id = :doctorId', { doctorId: newDoctorId })
@@ -422,15 +418,15 @@ export class AppointmentsService {
 
   async updateStatus(
     id: number,
-    status: string,
-    reason?: string,
+    dto: import('./dto/update-appointment-status.dto').UpdateAppointmentStatusDto,
     user?: any,
   ): Promise<Appointment> {
+    const { status, reason, refund_bank_name, refund_bank_account, refund_account_name } = dto;
     const appointment = await this.appointmentsRepository.findOne({
       where: { id },
       relations: ['user', 'doctor', 'doctor.user'],
     });
-    
+
     if (!appointment) {
       throw new Error(`Appointment #${id} not found`);
     }
@@ -450,6 +446,40 @@ export class AppointmentsService {
     appointment.status = status;
     if (status === 'rejected' || status === 'cancelled') {
       appointment.cancel_reason = reason || null;
+
+      // LOGIC HOÀN TIỀN VÀ HỦY LỊCH
+      if (user?.role === 'admin_hospital') {
+        // Admin chủ động hủy -> Cho phép dời lịch miễn phí
+        appointment.admin_cancelled_free_reschedule = true;
+      } else if (user?.role === 'patient') {
+        // Patient chủ động hủy -> Tính thời gian hoàn tiền
+        if (appointment.appointment_date && appointment.appointment_time) {
+          const appointmentDateTime = new Date(`${String(appointment.appointment_date).slice(0, 10)}T${appointment.appointment_time}:00`);
+          const now = new Date();
+          const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000); // Múi giờ VN
+
+          const diffMs = appointmentDateTime.getTime() - vnTime.getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+
+          if (diffHours >= 2) {
+            appointment.refund_percentage = 100;
+          } else if (diffHours >= 1) {
+            appointment.refund_percentage = 50;
+          } else {
+            appointment.refund_percentage = 0;
+          }
+
+          if (appointment.refund_percentage > 0) {
+            // Nếu có thanh toán trước đó (PayOS / VNPay) và status trước đó không phải failed
+            // Yêu cầu hoàn tiền
+            appointment.refund_amount = Number(appointment.total_fee) * appointment.refund_percentage / 100;
+            appointment.refund_status = 'requested';
+            appointment.refund_bank_name = refund_bank_name ?? null;
+            appointment.refund_bank_account = refund_bank_account ?? null;
+            appointment.refund_account_name = refund_account_name ?? null;
+          }
+        }
+      }
     } else if (status === 'confirmed' || status === 'completed') {
       // Khi xác nhận / hoàn thành thì xóa lý do hủy trước đó (nếu có)
       appointment.cancel_reason = null;
@@ -469,6 +499,9 @@ export class AppointmentsService {
       } else if (status === 'rejected' || status === 'cancelled') {
         title = '⚠️ Lịch hẹn khám đã bị hủy';
         body = `Lịch khám của bạn lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã bị hủy.${reason ? ` Lý do: ${reason}` : ''}`;
+        if (saved.admin_cancelled_free_reschedule) {
+          body += ' Do lỗi từ phía phòng khám, bạn có thể chọn Dời lịch miễn phí hoặc Yêu cầu hoàn tiền 100%.';
+        }
         type = 'appointment_cancelled';
       } else if (status === 'completed') {
         title = '✅ Buổi khám hoàn thành';
@@ -499,9 +532,9 @@ export class AppointmentsService {
         const doctorFCM = doctorData?.user?.fcm_token;
         if (doctorFCM) {
           this.firebaseService.sendPushNotification(
-            doctorFCM, 
-            '🔔 Bệnh nhân đã check-in', 
-            `Bệnh nhân ${saved.user?.full_name || 'Khách hàng'} đã có mặt tại phòng khám.`, 
+            doctorFCM,
+            '🔔 Bệnh nhân đã check-in',
+            `Bệnh nhân ${saved.user?.full_name || 'Khách hàng'} đã có mặt tại phòng khám.`,
             { appointmentId: String(saved.id), status }
           ).catch(e => console.error(e));
         }
@@ -521,6 +554,9 @@ export class AppointmentsService {
         } else if (status === 'rejected' || status === 'cancelled') {
           title = '⚠️ Lịch hẹn khám đã bị hủy';
           body = `Lịch khám của bạn lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã bị hủy.${reason ? ` Lý do: ${reason}` : ''}`;
+          if (saved.admin_cancelled_free_reschedule) {
+            body += ' Do lỗi từ phía phòng khám, bạn có thể chọn Dời lịch miễn phí hoặc Yêu cầu hoàn tiền 100%.';
+          }
         } else if (status === 'completed') {
           title = '✅ Buổi khám hoàn tất';
           body = `Cảm ơn bạn đã sử dụng dịch vụ! Buổi khám lúc ${saved.appointment_time} ngày ${saved.appointment_date} đã hoàn thành tốt đẹp.`;
@@ -645,9 +681,9 @@ export class AppointmentsService {
     return Array.from(availableSlots).sort();
   }
   async getAvailableTimesForPackage(packageId: number, date: string): Promise<string[]> {
-    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
-      where: { id: packageId }, 
-      relations: ['doctors', 'hospitals', 'hospitals.doctors'] 
+    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, {
+      where: { id: packageId },
+      relations: ['doctors', 'hospitals', 'hospitals.doctors']
     });
 
     if (!servicePackage) {
@@ -668,15 +704,15 @@ export class AppointmentsService {
 
     for (const doctor of doctorsToCheck) {
       const times = await this.getAvailableTimes(doctor.id, date);
-      
+
       // Filter times that can accommodate the duration
       for (const time of times) {
         let isValid = true;
-        
+
         // We must check if the time slot + duration doesn't overlap with another booked appointment
         // We can do a quick check by verifying all 30-min sub-slots are in the 'times' array,
         // EXCEPT if there's a lunch break jump.
-        
+
         // Let's do the rigorous check via DB count (same as create)
         const [h, m] = time.split(':').map(Number);
         const totalStartMins = h * 60 + m;
@@ -705,7 +741,7 @@ export class AppointmentsService {
         // Also check if end time exceeds hospital schedule (assume max 17:00 = 17*60 = 1020)
         // If end time is past 17:00, it's invalid.
         if (totalEndMins > 17 * 60) {
-           isValid = false;
+          isValid = false;
         }
 
         if (overlapConflict > 0) {
@@ -722,9 +758,9 @@ export class AppointmentsService {
   }
 
   async getAvailableDoctorsForPackage(packageId: number, date: string, time: string): Promise<Doctor[]> {
-    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, { 
-      where: { id: packageId }, 
-      relations: ['doctors', 'doctors.user', 'hospitals', 'hospitals.doctors', 'hospitals.doctors.user'] 
+    const servicePackage = await this.dataSource.manager.findOne(ServicePackage, {
+      where: { id: packageId },
+      relations: ['doctors', 'doctors.user', 'hospitals', 'hospitals.doctors', 'hospitals.doctors.user']
     });
 
     if (!servicePackage) {
@@ -825,6 +861,7 @@ export class AppointmentsService {
       where: {
         status: 'pending',
         created_at: LessThan(expirationTime),
+        reschedule_count: 0, // Bỏ qua các lịch đã dời (vì pending lúc này là chờ admin duyệt)
       },
     });
 
@@ -838,7 +875,11 @@ export class AppointmentsService {
     }
   }
 
-  async requestRefund(appointmentId: number, user: any): Promise<Appointment> {
+  async requestRefund(
+    appointmentId: number,
+    user: any,
+    bankInfo?: { bankName?: string; bankAccount?: string; accountName?: string }
+  ): Promise<Appointment> {
     const appointment = await this.appointmentsRepository.findOne({
       where: { id: appointmentId },
     });
@@ -860,6 +901,16 @@ export class AppointmentsService {
     }
 
     appointment.refund_status = 'requested';
+    if (bankInfo) {
+      if (bankInfo.bankName) appointment.refund_bank_name = bankInfo.bankName;
+      if (bankInfo.bankAccount) appointment.refund_bank_account = bankInfo.bankAccount;
+      if (bankInfo.accountName) appointment.refund_account_name = bankInfo.accountName;
+    }
+
+    // Đảm bảo có refund_amount
+    if (!appointment.refund_amount || appointment.refund_amount == 0) {
+      appointment.refund_amount = appointment.total_fee;
+    }
     await this.appointmentsRepository.save(appointment);
 
     // Send notification to admin_hospital
@@ -926,14 +977,21 @@ export class AppointmentsService {
     appointment.schedule_id = dto.schedule_id;
     appointment.appointment_date = dto.appointment_date as any;
     appointment.appointment_time = dto.appointment_time;
-    
+
     const currentCount = appointment.reschedule_count || 0;
-    if (currentCount >= 1) {
-      appointment.status = 'awaiting_payment';
-    } else {
+
+    if (appointment.admin_cancelled_free_reschedule) {
+      // Dời lịch miễn phí do lỗi từ viện
       appointment.status = 'pending';
+      appointment.admin_cancelled_free_reschedule = false; // Dùng xong cờ này thì xóa
+    } else {
+      if (currentCount >= 1) {
+        appointment.status = 'awaiting_payment';
+      } else {
+        appointment.status = 'pending';
+      }
+      appointment.reschedule_count = currentCount + 1;
     }
-    appointment.reschedule_count = currentCount + 1;
     appointment.cancel_reason = null;
     appointment.refund_status = 'none';
 
