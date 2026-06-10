@@ -119,3 +119,28 @@ export const TIME_SLOTS = [
   "17:00",
   "17:30",
 ];
+
+// Health Tips
+export const HEALTH_TIPS = [
+  {
+    id: 1,
+    title: "Uống đủ nước mỗi ngày",
+    description: "Nên uống ít nhất 2 lít nước mỗi ngày để cơ thể khỏe mạnh",
+    icon: "💧",
+    date: "2025-11-15",
+  },
+  {
+    id: 2,
+    title: "Tập thể dục đều đặn",
+    description: "Dành ít nhất 30 phút mỗi ngày cho hoạt động thể chất",
+    icon: "🏃",
+    date: "2025-11-14",
+  },
+  {
+    id: 3,
+    title: "Ngủ đủ giấc",
+    description: "Ngủ 7-8 tiếng mỗi đêm giúp cơ thể phục hồi tốt",
+    icon: "😴",
+    date: "2025-11-13",
+  },
+];
