@@ -858,11 +858,17 @@ export class AppointmentsService {
     expirationTime.setMinutes(expirationTime.getMinutes() - 15);
 
     const expiredAppointments = await this.appointmentsRepository.find({
-      where: {
-        status: 'pending',
-        created_at: LessThan(expirationTime),
-        reschedule_count: 0, // Bỏ qua các lịch đã dời (vì pending lúc này là chờ admin duyệt)
-      },
+      where: [
+        {
+          status: 'pending',
+          created_at: LessThan(expirationTime),
+          reschedule_count: 0, // Đơn mới chưa thanh toán
+        },
+        {
+          status: 'awaiting_payment',
+          updated_at: LessThan(expirationTime), // Đơn dời lịch lần 2 chưa thanh toán
+        }
+      ],
     });
 
     if (expiredAppointments.length > 0) {
