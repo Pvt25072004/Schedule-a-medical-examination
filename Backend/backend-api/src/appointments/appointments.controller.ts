@@ -178,8 +178,7 @@ export class AppointmentsController {
   ) {
     return this.appointmentsService.updateStatus(
       +id,
-      updateStatusDto.status,
-      updateStatusDto.reason,
+      updateStatusDto,
       req.user,
     );
   }
@@ -188,8 +187,12 @@ export class AppointmentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('patient')
   @ApiOperation({ summary: 'Yêu cầu hoàn tiền cho lịch hẹn bị hủy' })
-  requestRefund(@Param('id') id: string, @Req() req: any) {
-    return this.appointmentsService.requestRefund(+id, req.user);
+  requestRefund(
+    @Param('id') id: string, 
+    @Req() req: any,
+    @Body() bankInfo?: { bankName?: string; bankAccount?: string; accountName?: string }
+  ) {
+    return this.appointmentsService.requestRefund(+id, req.user, bankInfo);
   }
 
   @Put('/:id/reschedule')

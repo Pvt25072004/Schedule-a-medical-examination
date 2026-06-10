@@ -29,7 +29,8 @@ export class Payment {
 
   @Column({
     type: 'enum',
-    enum: ['vnpay', 'payos', 'momo', 'cash', 'atm', 'credit_card'],
+    enum: ['vnpay', 'payos', 'momo', 'atm', 'credit_card'],
+    default: 'payos',
   })
   payment_method: string;
 

@@ -8,3 +8,8 @@
 2026-06-08T14:07:29.720Z PAYLOAD: {"user_id":5,"hospital_id":1,"service_package_id":1,"examination_type":"offline","symptoms":"Khám sdfsd - tghtyh","relationship":"Bản thân"}
 2026-06-08T14:12:27.326Z PAYLOAD: {"user_id":5,"hospital_id":1,"service_package_id":1,"examination_type":"offline","symptoms":"Khám sdfsd - sd","relationship":"Bản thân"}
 2026-06-08T14:14:58.637Z PAYLOAD: {"user_id":5,"doctor_id":2,"hospital_id":1,"schedule_id":1,"appointment_date":"2026-06-09","appointment_time":"08:30","examination_type":"offline","symptoms":"sdg - sdg","relationship":"Bản thân"}
+2026-06-10T05:34:27.891Z PAYLOAD: {"user_id":2,"doctor_id":3,"hospital_id":2,"schedule_id":2,"appointment_date":"2026-06-11","appointment_time":"15:30","examination_type":"offline","symptoms":"edrgegrerg","relationship":"Bản thân"}
+2026-06-10T05:35:41.460Z PAYLOAD: {"user_id":2,"doctor_id":3,"hospital_id":2,"schedule_id":2,"appointment_date":"2026-06-11","appointment_time":"10:00","examination_type":"offline","symptoms":"dhdth","relationship":"Bản thân"}
+2026-06-10T05:36:14.659Z PAYLOAD: {"user_id":2,"doctor_id":7,"hospital_id":3,"schedule_id":12,"appointment_date":"2026-06-11","appointment_time":"13:00","examination_type":"offline","symptoms":"ftghfh","relationship":"Bản thân"}
+2026-06-10T05:36:21.059Z PAYLOAD: {"user_id":2,"doctor_id":7,"hospital_id":3,"schedule_id":12,"appointment_date":"2026-06-11","appointment_time":"13:00","examination_type":"offline","symptoms":"ftghfh","relationship":"Bản thân"}
+2026-06-10T05:36:24.719Z PAYLOAD: {"user_id":2,"doctor_id":7,"hospital_id":3,"schedule_id":12,"appointment_date":"2026-06-11","appointment_time":"13:00","examination_type":"offline","symptoms":"ftghfh","relationship":"Bản thân"}

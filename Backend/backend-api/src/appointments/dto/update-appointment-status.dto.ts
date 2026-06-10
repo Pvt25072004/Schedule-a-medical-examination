@@ -8,6 +8,18 @@ export class UpdateAppointmentStatusDto {
   @IsString()
   @IsOptional()
   reason?: string;
+
+  @IsString()
+  @IsOptional()
+  refund_bank_name?: string;
+
+  @IsString()
+  @IsOptional()
+  refund_bank_account?: string;
+
+  @IsString()
+  @IsOptional()
+  refund_account_name?: string;
 }
 
 

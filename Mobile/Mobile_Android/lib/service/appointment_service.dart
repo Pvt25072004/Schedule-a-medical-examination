@@ -188,12 +188,18 @@ class AppointmentService {
     required int appointmentId,
     required String status,
     String? reason,
+    String? bankName,
+    String? bankAccount,
+    String? accountName,
   }) async {
     try {
       final urlStr = '${ApiConfig.baseUrl}/appointments/$appointmentId/status';
       final payload = {
         'status': status,
         if (reason != null) 'reason': reason,
+        if (bankName != null) 'refund_bank_name': bankName,
+        if (bankAccount != null) 'refund_bank_account': bankAccount,
+        if (accountName != null) 'refund_account_name': accountName,
       };
 
       print('🚀 Cập nhật Trạng thái Lịch hẹn: $urlStr -> $status');
@@ -210,6 +216,38 @@ class AppointmentService {
       return false;
     } catch (e) {
       print('🔥 updateAppointmentStatus Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> requestRefund({
+    required int appointmentId,
+    required String bankName,
+    required String bankAccount,
+    required String accountName,
+  }) async {
+    try {
+      final urlStr = '${ApiConfig.baseUrl}/appointments/$appointmentId/request-refund';
+      final payload = {
+        'bankName': bankName,
+        'bankAccount': bankAccount,
+        'accountName': accountName,
+      };
+
+      print('🚀 Yêu cầu hoàn tiền: $urlStr');
+      final response = await http.post(
+        Uri.parse(urlStr),
+        headers: _getHeaders(),
+        body: jsonEncode(payload),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+      print('🔥 requestRefund Failed with status ${response.statusCode}: ${response.body}');
+      return false;
+    } catch (e) {
+      print('🔥 requestRefund Error: $e');
       return false;
     }
   }

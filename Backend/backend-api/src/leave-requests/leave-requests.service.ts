@@ -14,7 +14,7 @@ export class LeaveRequestsService {
     private readonly leaveRequestsRepository: Repository<LeaveRequest>,
     private readonly appointmentsService: AppointmentsService,
     // We can use query builder for schedules and appointments directly or via services
-  ) {}
+  ) { }
 
   async create(dto: CreateLeaveRequestDto): Promise<LeaveRequest> {
     const leave = this.leaveRequestsRepository.create(dto);
@@ -69,7 +69,7 @@ export class LeaveRequestsService {
       // Use appointmentsService to leverage its built-in notification & FCM logic
       await this.appointmentsService.updateStatus(
         appt.id,
-        'cancelled',
+        { status: 'cancelled' },
         `Bác sĩ có việc bận đột xuất: ${leave.reason}. Mong quý khách thông cảm!`
       );
     }
@@ -80,7 +80,7 @@ export class LeaveRequestsService {
   async reject(id: number): Promise<LeaveRequest> {
     const leave = await this.leaveRequestsRepository.findOne({ where: { id } });
     if (!leave) throw new NotFoundException('Leave request not found');
-    
+
     leave.status = 'rejected';
     return await this.leaveRequestsRepository.save(leave);
   }

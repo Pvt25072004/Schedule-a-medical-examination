@@ -124,6 +124,30 @@ export class Appointment {
   })
   refund_status: string;
 
+  @ApiPropertyOptional({ example: 'Vietcombank', description: 'Tên ngân hàng nhận hoàn tiền' })
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  refund_bank_name: string | null;
+
+  @ApiPropertyOptional({ example: '0123456789', description: 'Số tài khoản nhận hoàn tiền' })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  refund_bank_account: string | null;
+
+  @ApiPropertyOptional({ example: 'NGUYEN VAN A', description: 'Tên chủ tài khoản nhận hoàn tiền' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  refund_account_name: string | null;
+
+  @ApiPropertyOptional({ example: 50, description: 'Phần trăm hoàn tiền (100, 50, 0)' })
+  @Column({ type: 'int', nullable: true })
+  refund_percentage: number | null;
+
+  @ApiProperty({ example: 0, description: 'Số tiền hoàn lại' })
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  refund_amount: number;
+
+  @ApiProperty({ example: false, description: 'Đánh dấu nếu Admin hủy và cho phép dời lịch miễn phí' })
+  @Column({ type: 'boolean', default: false })
+  admin_cancelled_free_reschedule: boolean;
+
   @ApiProperty({ example: 0, description: 'Số lần đã dời lịch' })
   @Column({ type: 'int', default: 0 })
   reschedule_count: number;

@@ -561,6 +561,90 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                     ),
                   ],
                   
+                  if (status.toLowerCase() == 'cancelled' && (appt['admin_cancelled_free_reschedule'] == true) && (appt['refund_status'] == 'none')) ...[
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
+                      child: const Text('Bệnh viện đã hủy lịch này. Bạn có thể Dời lịch miễn phí hoặc Yêu cầu hoàn tiền 100%.', style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              showAppSnackBar(context, 'Tính năng dời lịch đang được phát triển!');
+                            },
+                            icon: const Icon(Icons.edit_calendar, size: 18),
+                            label: const Text('Dời lịch'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue.shade700,
+                              side: BorderSide(color: Colors.blue.shade700),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              _showRefundDialog(appt);
+                            },
+                            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                            label: const Text('Hoàn tiền'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange.shade600,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              showAppSnackBar(context, 'Tính năng dời lịch đang được phát triển, vui lòng hủy và đặt lại!');
+                            },
+                            icon: const Icon(Icons.edit_calendar, size: 18),
+                            label: const Text('Dời lịch'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue.shade700,
+                              side: BorderSide(color: Colors.blue.shade700),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              _showCancelDialog(appt);
+                            },
+                            icon: const Icon(Icons.cancel_outlined, size: 18),
+                            label: const Text('Hủy lịch'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade600,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  
                   if (status.toLowerCase() == 'completed') ...[
                     const SizedBox(height: 18),
                     Builder(
@@ -642,26 +726,79 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   void _showCancelDialog(dynamic appt) {
     final TextEditingController reasonController = TextEditingController();
+    final TextEditingController bankNameController = TextEditingController();
+    final TextEditingController bankAccountController = TextEditingController();
+    final TextEditingController accountNameController = TextEditingController();
+    
+    final rawDate = appt['appointment_date']?.toString() ?? '';
+    final rawTime = appt['appointment_time']?.toString() ?? '';
+    double diffHours = 0;
+    bool showBankForm = false;
+    String refundMessage = 'Bạn sẽ không được hoàn tiền do hủy quá sát giờ.';
+    
+    if (rawDate.isNotEmpty && rawTime.isNotEmpty) {
+      try {
+        final appointmentDateTime = DateTime.parse('${rawDate.substring(0, 10)}T$rawTime:00');
+        final now = DateTime.now();
+        diffHours = appointmentDateTime.difference(now).inMinutes / 60.0;
+        
+        if (diffHours >= 2) {
+          showBankForm = true;
+          refundMessage = 'Hủy trước 2 tiếng: Được hoàn 100% phí khám. Vui lòng nhập thông tin ngân hàng.';
+        } else if (diffHours >= 1) {
+          showBankForm = true;
+          refundMessage = 'Hủy trước 1 tiếng: Được hoàn 50% phí khám. Vui lòng nhập thông tin ngân hàng.';
+        }
+      } catch (e) {
+        print('Error parsing date: $e');
+      }
+    }
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Xác nhận hủy lịch'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Bạn có chắc chắn muốn hủy lịch hẹn này không?'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: reasonController,
-                decoration: InputDecoration(
-                  labelText: 'Lý do hủy (tùy chọn)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Bạn có chắc chắn muốn hủy lịch hẹn này không?'),
+                const SizedBox(height: 12),
+                Text(refundMessage, style: TextStyle(color: showBankForm ? Colors.green.shade700 : Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: reasonController,
+                  decoration: InputDecoration(
+                    labelText: 'Lý do hủy (tùy chọn)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  maxLines: 2,
                 ),
-                maxLines: 2,
-              ),
-            ],
+                if (showBankForm) ...[
+                  const SizedBox(height: 16),
+                  const Text('Thông tin nhận hoàn tiền:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: bankNameController,
+                    decoration: InputDecoration(labelText: 'Tên Ngân Hàng (VD: Vietcombank)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: bankAccountController,
+                    decoration: InputDecoration(labelText: 'Số Tài Khoản', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: accountNameController,
+                    decoration: InputDecoration(labelText: 'Tên Chủ Tài Khoản', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                ]
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -670,12 +807,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             ),
             ElevatedButton(
               onPressed: () async {
+                if (showBankForm && (bankNameController.text.isEmpty || bankAccountController.text.isEmpty || accountNameController.text.isEmpty)) {
+                  showAppSnackBar(context, 'Vui lòng nhập đầy đủ thông tin ngân hàng!', color: Colors.red);
+                  return;
+                }
                 Navigator.pop(context);
                 setState(() => _isLoading = true);
                 final success = await _appointmentService.updateAppointmentStatus(
                   appointmentId: appt['id'], 
                   status: 'cancelled',
                   reason: reasonController.text.isNotEmpty ? reasonController.text : 'Người dùng hủy',
+                  bankName: showBankForm ? bankNameController.text : null,
+                  bankAccount: showBankForm ? bankAccountController.text : null,
+                  accountName: showBankForm ? accountNameController.text : null,
                 );
                 if (success) {
                   showAppSnackBar(context, 'Hủy lịch thành công!', color: const Color(0xFF48A1F3));
@@ -690,6 +834,83 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               child: const Text('Hủy lịch', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  void _showRefundDialog(dynamic appt) {
+    final TextEditingController bankNameController = TextEditingController();
+    final TextEditingController bankAccountController = TextEditingController();
+    final TextEditingController accountNameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Yêu cầu hoàn tiền'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Vì phòng khám hủy lịch, bạn được hoàn lại 100% phí khám. Vui lòng cung cấp tài khoản ngân hàng để nhận lại tiền.', style: TextStyle(fontSize: 14)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: bankNameController,
+                  decoration: InputDecoration(labelText: 'Tên Ngân Hàng (VD: Vietcombank)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: bankAccountController,
+                  decoration: InputDecoration(labelText: 'Số Tài Khoản', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: accountNameController,
+                  decoration: InputDecoration(labelText: 'Tên Chủ Tài Khoản', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (bankNameController.text.isEmpty || bankAccountController.text.isEmpty || accountNameController.text.isEmpty) {
+                  showAppSnackBar(context, 'Vui lòng nhập đầy đủ thông tin ngân hàng!', color: Colors.red);
+                  return;
+                }
+                Navigator.pop(context);
+                setState(() => _isLoading = true);
+                
+                final success = await _appointmentService.requestRefund(
+                  appointmentId: appt['id'],
+                  bankName: bankNameController.text,
+                  bankAccount: bankAccountController.text,
+                  accountName: accountNameController.text,
+                );
+                
+                if (success) {
+                  showAppSnackBar(context, 'Gửi yêu cầu hoàn tiền thành công!', color: const Color(0xFF48A1F3));
+                  _loadData();
+                } else {
+                  showAppSnackBar(context, 'Có lỗi xảy ra, vui lòng thử lại.');
+                  setState(() => _isLoading = false);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade600,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Gửi yêu cầu', style: TextStyle(color: Colors.white)),
             ),
           ],
         );

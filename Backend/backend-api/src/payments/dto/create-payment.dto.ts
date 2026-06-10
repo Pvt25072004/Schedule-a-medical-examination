@@ -21,7 +21,7 @@ export class CreatePaymentDto {
   @IsOptional()
   vat?: number;
 
-  @IsEnum(['vnpay', 'payos', 'momo', 'cash', 'atm', 'credit_card'])
+  @IsEnum(['vnpay', 'payos', 'momo', 'atm', 'credit_card'])
   @IsNotEmpty()
   payment_method: string;
 }
