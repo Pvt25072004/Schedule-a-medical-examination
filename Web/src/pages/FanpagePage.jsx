@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicNews } from '../services/news.api';
-import { normalizeForSearch } from '../utils/helpers';
+import { normalizeForSearch, stripHtml } from '../utils/helpers';
 import { getActiveHospitalBanners } from '../services/admin.hospital.banner.api';
 
 const BannerCarousel = () => {
@@ -196,10 +196,13 @@ const FanpagePage = () => {
     const tags = new Set();
     posts.forEach(post => {
       if (post.content) {
-        const words = post.content.split(/\s+/);
+        const cleanContent = stripHtml(post.content);
+        const words = cleanContent.split(/\s+/);
         words.forEach(word => {
           if (word.startsWith('#') && word.length > 1) {
-            tags.add(word);
+            // Remove any trailing punctuation like commas or periods
+            const cleanTag = word.replace(/[.,!?;"']+$/, '');
+            tags.add(cleanTag);
           }
         });
       }
@@ -211,11 +214,11 @@ const FanpagePage = () => {
 
   const searchResultsPosts = posts.filter(post => 
     normalizeForSearch(post.title).includes(normalizeForSearch(searchQuery)) ||
-    normalizeForSearch(post.content).includes(normalizeForSearch(searchQuery))
+    normalizeForSearch(stripHtml(post.content)).includes(normalizeForSearch(searchQuery))
   );
   const searchResultsNews = newsList.filter(item => 
     normalizeForSearch(item.title).includes(normalizeForSearch(searchQuery)) ||
-    normalizeForSearch(item.summary).includes(normalizeForSearch(searchQuery))
+    normalizeForSearch(stripHtml(item.summary)).includes(normalizeForSearch(searchQuery))
   );
   const searchResultsHashtags = useMemo(() => {
     if (!searchQuery) return [];
@@ -223,6 +226,11 @@ const FanpagePage = () => {
       normalizeForSearch(tag).includes(normalizeForSearch(searchQuery))
     );
   }, [allHashtags, searchQuery]);
+
+  const searchResultsHospitals = hospitals.filter(h => 
+    normalizeForSearch(h.name).includes(normalizeForSearch(searchQuery)) ||
+    (h.address && normalizeForSearch(h.address).includes(normalizeForSearch(searchQuery)))
+  );
 
   // Main feed logic (filters only if a hashtag is clicked)
   const feedPosts = activeHashtag 
@@ -341,6 +349,32 @@ const FanpagePage = () => {
                       </div>
                     )}
 
+                    {/* Hospitals/Fanpages */}
+                    <div className="py-2">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Bệnh viện / Fanpage</div>
+                      {searchResultsHospitals.length > 0 ? (
+                        searchResultsHospitals.map(h => (
+                          <div 
+                            key={h.id} 
+                            className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex items-center gap-3"
+                            onClick={() => {
+                              setIsSearchFocused(false);
+                              setSearchQuery('');
+                              navigate(`/fanpage/${h.id}`);
+                            }}
+                          >
+                            <img src={h.avatar_url || h.logo_url || 'https://via.placeholder.com/40'} alt={h.name} className="w-8 h-8 rounded-full object-cover border border-gray-100" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-gray-800 truncate">{h.name}</div>
+                              <div className="text-xs text-gray-500 truncate mt-0.5">{h.address || 'Chưa cập nhật địa chỉ'}</div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500 px-2 py-1">Không tìm thấy bệnh viện</div>
+                      )}
+                    </div>
+
                     {/* Posts */}
                     <div className="py-2">
                       <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Bài viết</div>
@@ -356,7 +390,7 @@ const FanpagePage = () => {
                             }}
                           >
                             <div className="text-sm font-semibold text-gray-800 truncate">{p.title || p.fanpage?.hospital?.name}</div>
-                            <div className="text-xs text-gray-500 truncate mt-0.5">{p.content}</div>
+                            <div className="text-xs text-gray-500 truncate mt-0.5">{stripHtml(p.content)}</div>
                           </div>
                         ))
                       ) : (
@@ -381,7 +415,7 @@ const FanpagePage = () => {
                             }}
                           >
                             <div className="text-sm font-semibold text-gray-800 truncate">{item.title}</div>
-                            <div className="text-xs text-gray-500 truncate mt-0.5">{item.summary}</div>
+                            <div className="text-xs text-gray-500 truncate mt-0.5">{stripHtml(item.summary)}</div>
                           </div>
                         ))
                       ) : (

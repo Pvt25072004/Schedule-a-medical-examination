@@ -173,3 +173,10 @@ export const normalizeForSearch = (str) => {
     .replace(/[^a-z0-9]/g, ""); // Remove spaces, punctuation, and hashtags
 };
 
+// Strip HTML tags and decode HTML entities
+export const stripHtml = (html) => {
+  if (!html) return "";
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || "";
+};
+
