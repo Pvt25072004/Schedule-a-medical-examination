@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Search, Filter, Shield, Clock, Plus, ArrowRight, TrendingUp, DollarSign } from "lucide-react";
+import { Search, Filter, Shield, Clock, Plus, ArrowRight, TrendingUp, DollarSign, X } from "lucide-react";
 import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import { PAGES } from "../utils/constants";
@@ -22,6 +22,7 @@ const ServicePackagesPage = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const filterRef = useRef(null);
+  const [selectedDescPkg, setSelectedDescPkg] = useState(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -334,12 +335,14 @@ const ServicePackagesPage = () => {
                     {pkg.name}
                   </h3>
                   
-                  <div 
-                    className="text-gray-600 mb-6 flex-grow line-clamp-3 leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: pkg.description || "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu được các chuyên gia khuyên dùng định kỳ hàng năm."
-                    }}
-                  />
+                  <div className="mb-6 flex-grow">
+                    <button 
+                      onClick={() => setSelectedDescPkg(pkg)}
+                      className="text-blue-600 font-medium hover:text-blue-800 hover:underline text-sm flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" /> Chi tiết gói khám
+                    </button>
+                  </div>
                   
                   <div className="space-y-3 mb-8 bg-gray-50 p-4 rounded-xl">
                     <div className="flex items-center justify-between text-gray-700">
@@ -395,6 +398,38 @@ const ServicePackagesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Description Modal */}
+      {selectedDescPkg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedDescPkg(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="text-xl font-bold text-gray-900 line-clamp-1 mr-4">
+                {selectedDescPkg.name}
+              </h3>
+              <button 
+                onClick={() => setSelectedDescPkg(null)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-full transition-colors shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div 
+                className="text-gray-700 leading-relaxed text-base prose prose-blue max-w-none break-words"
+                dangerouslySetInnerHTML={{
+                  __html: selectedDescPkg.description || "Gói khám sức khỏe toàn diện với nhiều hạng mục thiết yếu được các chuyên gia khuyên dùng định kỳ hàng năm."
+                }}
+              />
+            </div>
+            <div className="p-4 border-t border-gray-100 flex justify-end bg-gray-50">
+              <Button onClick={() => setSelectedDescPkg(null)} variant="outline">
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
