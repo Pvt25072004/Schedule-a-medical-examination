@@ -369,13 +369,17 @@ const ChatPage = ({ navigate }) => {
               className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
             >
               <div className={`flex gap-3 max-w-[85%] ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border ${
+                <div className={`w-9 h-9 overflow-hidden rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border ${
                   msg.sender === 'user'
                     ? 'bg-blue-600 border-blue-500 text-white'
                     : 'bg-white border-gray-100 text-blue-600'
                 }`}>
                   {msg.sender === 'user' ? (
-                    <UserIcon className="w-4.5 h-4.5" />
+                    user && (user.avatar_url || user.avatar) ? (
+                      <img src={user.avatar_url || user.avatar} alt="User" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-4.5 h-4.5" />
+                    )
                   ) : (
                     <Bot className="w-4.5 h-4.5" />
                   )}
