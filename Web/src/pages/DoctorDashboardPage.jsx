@@ -271,7 +271,9 @@ export default function DoctorDashboardPage({ navigate }) {
       setLoadingCategories(true);
       const targetHospitals = hospitalsList || doctorProfile?.hospitals || [];
       if (targetHospitals.length > 0) {
-        const promises = targetHospitals.map((h) => getCategories(h.id || h.hospital_id));
+        const promises = targetHospitals.map((h) =>
+          getCategories(h.id || h.hospital_id),
+        );
         const results = await Promise.all(promises);
         const uniqueCategories = [];
         const seenIds = new Set();
@@ -982,13 +984,6 @@ export default function DoctorDashboardPage({ navigate }) {
               sẽ xử lý trong vòng 24h.
             </p>
           </div>
-          <Button
-            className="bg-white text-[#143250] hover:bg-slate-50 shadow-lg !font-bold"
-            icon={MessageCircle}
-            onClick={() => setActiveTab(TABS.AFFILIATIONS)}
-          >
-            Quản lý liên kết
-          </Button>
         </div>
       </Card>
     </div>

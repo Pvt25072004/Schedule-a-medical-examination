@@ -22,6 +22,7 @@ import { UpdateApplicationStatusDto } from './dto/update-application-status.dto'
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from 'src/auth/optional-jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ForbiddenException } from '@nestjs/common';
 import { memoryStorage } from 'multer';
@@ -51,6 +52,7 @@ export class DoctorsController {
   }
 
   @Get() // GET /doctors
+  @UseGuards(OptionalJwtAuthGuard)
   findAll(
     @Req() req: any,
     @Query('hospitalId') hospitalId?: string,
