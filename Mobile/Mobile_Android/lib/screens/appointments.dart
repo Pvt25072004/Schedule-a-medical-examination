@@ -721,12 +721,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
         final now = DateTime.now();
         diffHours = appointmentDateTime.difference(now).inMinutes / 60.0;
         
-        if (diffHours >= 2) {
-          showBankForm = true;
-          refundMessage = 'Hủy trước 2 tiếng: Được hoàn 100% phí khám. Vui lòng nhập thông tin ngân hàng.';
-        } else if (diffHours >= 1) {
-          showBankForm = true;
-          refundMessage = 'Hủy trước 1 tiếng: Được hoàn 50% phí khám. Vui lòng nhập thông tin ngân hàng.';
+        if (appt['status'] == 'confirmed') {
+          if (diffHours >= 2) {
+            showBankForm = true;
+            refundMessage = 'Hủy trước 2 tiếng: Được hoàn 100% phí khám. Vui lòng nhập thông tin ngân hàng.';
+          } else if (diffHours >= 1) {
+            showBankForm = true;
+            refundMessage = 'Hủy trước 1 tiếng: Được hoàn 50% phí khám. Vui lòng nhập thông tin ngân hàng.';
+          }
         }
       } catch (e) {
         print('Error parsing date: $e');

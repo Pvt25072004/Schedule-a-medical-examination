@@ -215,7 +215,6 @@ const BookingPage = ({ navigate }) => {
       return;
     }
     setStep(step + 1);
-    window.scrollTo(0, 0);
   };
 
   const handleSubmit = async () => {

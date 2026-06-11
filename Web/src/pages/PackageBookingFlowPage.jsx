@@ -156,7 +156,6 @@ const PackageBookingFlowPage = () => {
     }
     
     setStep(nextStepTarget);
-    window.scrollTo(0, 0);
   };
 
   const calculateEndTime = (startTimeStr, durationMins) => {

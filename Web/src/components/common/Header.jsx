@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { PAGES } from "../../utils/constants";
 import { useAuth } from "../../contexts/AuthContext";
 import Button from "./Button";
-import { ChevronDown, Smartphone } from "lucide-react";
+import { ChevronDown, Smartphone, Menu, X } from "lucide-react";
 
 import logo from "../../assets/LOGOmain.jpg";
 
@@ -11,6 +11,7 @@ const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   // Ẩn Header ở các trang auth hoặc dashboard của admin/doctor
   const hideOnRoutes = [
@@ -269,8 +270,133 @@ const Header = () => {
               </>
             )}
           </div>
+
+          {/* Mobile Menu Toggle Button */}
+          <div className="flex md:hidden items-center ml-2">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 text-gray-600 hover:text-blue-600 focus:outline-none"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 shadow-lg absolute top-16 left-0 right-0 z-50">
+          <div className="flex flex-col p-4 space-y-3">
+            <button
+              onClick={() => {
+                navigate(PAGES.WELCOME);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                setIsMobileMenuOpen(false);
+              }}
+              className="text-left text-gray-700 hover:text-blue-600 font-medium transition py-2 border-b border-gray-50"
+            >
+              Trang chủ
+            </button>
+            <button
+              onClick={() => {
+                handleScrollTo("doctors");
+                setIsMobileMenuOpen(false);
+              }}
+              className="text-left text-gray-700 hover:text-blue-600 font-medium transition py-2 border-b border-gray-50"
+            >
+              Bác sĩ
+            </button>
+            <button
+              onClick={() => {
+                handleScrollTo("specialties");
+                setIsMobileMenuOpen(false);
+              }}
+              className="text-left text-gray-700 hover:text-blue-600 font-medium transition py-2 border-b border-gray-50"
+            >
+              Chuyên khoa
+            </button>
+            {!isPatient && (
+              <button
+                onClick={() => {
+                  handleScrollTo("contact");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="text-left text-gray-700 hover:text-blue-600 font-medium transition py-2 border-b border-gray-50"
+              >
+                Liên hệ
+              </button>
+            )}
+
+            {isPatient && (
+              <>
+                <div className="font-medium text-gray-900 py-2">Dịch vụ</div>
+                <div className="pl-4 flex flex-col space-y-2 border-b border-gray-50 pb-2">
+                  <button
+                    onClick={() => { navigate(PAGES.BOOKING); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-blue-600"
+                  >
+                    Đặt khám theo cơ sở
+                  </button>
+                  <button
+                    onClick={() => { navigate(PAGES.DOCTORS); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-blue-600"
+                  >
+                    Đặt khám theo bác sĩ
+                  </button>
+                  <button
+                    onClick={() => { navigate(PAGES.BOOKING); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-blue-600"
+                  >
+                    Đặt khám tại nhà
+                  </button>
+                  <button
+                    onClick={() => { navigate(PAGES.SERVICE_PACKAGES); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-blue-600"
+                  >
+                    Gói dịch vụ
+                  </button>
+                </div>
+
+                <div className="font-medium text-gray-900 py-2">Tin tức</div>
+                <div className="pl-4 flex flex-col space-y-2 border-b border-gray-50 pb-2">
+                  <button
+                    onClick={() => { navigate(PAGES.NEWS); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-blue-600"
+                  >
+                    Tin tức y khoa
+                  </button>
+                  <button
+                    onClick={() => { navigate(PAGES.FANPAGE); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-blue-600"
+                  >
+                    Bảng tin Fanpage
+                  </button>
+                </div>
+              </>
+            )}
+
+            {!isAuthenticated && (
+              <>
+                <div className="font-medium text-amber-600 py-2">Hợp tác</div>
+                <div className="pl-4 flex flex-col space-y-2 pb-2">
+                  <button
+                    onClick={() => { navigate(PAGES.APPLY_DOCTOR); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-amber-600"
+                  >
+                    Dành cho Bác sĩ
+                  </button>
+                  <button
+                    onClick={() => { navigate(PAGES.HOSPITAL_REGISTRATION); setIsMobileMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-green-600"
+                  >
+                    Dành cho Cơ sở y tế
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Marquee Notification Below Header */}
       <div className="bg-amber-100 text-amber-900 py-1 border-t border-amber-200 overflow-hidden flex items-center w-full relative z-40">

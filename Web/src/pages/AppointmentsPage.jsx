@@ -98,21 +98,20 @@ const AppointmentsPage = ({ navigate }) => {
   // === Refund / Reschedule states ===
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
-  const [rsDoctors, setRsDoctors] = useState([]);
   const [rsSelectedDoctorId, setRsSelectedDoctorId] = useState("");
   const [rsSchedules, setRsSchedules] = useState([]);
   const [rsAvailableTimes, setRsAvailableTimes] = useState([]);
+  const [rsSelectedScheduleId, setRsSelectedScheduleId] = useState("");
   const [rsLoadingTimes, setRsLoadingTimes] = useState(false);
   const [rsDate, setRsDate] = useState("");
   const [rsTime, setRsTime] = useState("");
-  const [rsSelectedScheduleId, setRsSelectedScheduleId] = useState("");
   const [rsSubmitting, setRsSubmitting] = useState(false);
 
   const sortedAppointments = [...appointments].sort((a, b) => {
     if (sortBy === "date_desc" || sortBy === "date_asc") {
       const aTime = a.date ? new Date(`${a.date}T${a.time || "00:00"}`).getTime() : 0;
       const bTime = b.date ? new Date(`${b.date}T${b.time || "00:00"}`).getTime() : 0;
-      
+
       if (sortBy === "date_desc") {
         if (!a.date && b.date) return -1;
         if (a.date && !b.date) return 1;
@@ -186,7 +185,7 @@ const AppointmentsPage = ({ navigate }) => {
     try {
       if (!apt.payment) return;
       const amount = apt.payment.amount || 500000;
-      
+
       if (method === "payos") {
         const payosResponse = await createPayosUrl({
           appointment_id: apt.backendId || apt.id,
@@ -302,18 +301,20 @@ const AppointmentsPage = ({ navigate }) => {
 
   const openRescheduleModal = async (apt) => {
     setRescheduleTarget(apt);
-    setRsSelectedDoctorId("");
+    setRsSelectedDoctorId(apt.doctorId || "");
     setRsSchedules([]);
     setRsDate("");
     setRsTime("");
     setRsAvailableTimes([]);
     setRsSelectedScheduleId("");
     setShowRescheduleModal(true);
-    try {
-      const docs = await getDoctors();
-      setRsDoctors(Array.isArray(docs) ? docs : (docs?.data || []));
-    } catch (e) {
-      console.error(e);
+    if (apt.doctorId) {
+      try {
+        const data = await getSchedulesByDoctor(apt.doctorId);
+        setRsSchedules(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
@@ -381,7 +382,6 @@ const AppointmentsPage = ({ navigate }) => {
       return;
     }
     const selectedSchedule = rsSchedules.find(s => s.id === Number(rsSelectedScheduleId));
-    const selectedDoctor = rsDoctors.find(d => d.id === Number(rsSelectedDoctorId));
     try {
       setRsSubmitting(true);
       await rescheduleAppointment(rescheduleTarget.backendId || rescheduleTarget.id, {
@@ -390,7 +390,7 @@ const AppointmentsPage = ({ navigate }) => {
         hospital_id: selectedSchedule?.hospital_id || rescheduleTarget.hospitalId,
         appointment_date: rsDate,
         appointment_time: rsTime,
-        doctor_name_snapshot: selectedDoctor?.name || selectedDoctor?.user?.full_name,
+        doctor_name_snapshot: rescheduleTarget?.doctorName,
         hospital_name_snapshot: selectedSchedule?.hospital?.name,
       });
       showSuccess("Đã dời lịch thành công! Lịch hẹn đang chờ bệnh viện xác nhận lại.");
@@ -505,26 +505,26 @@ const AppointmentsPage = ({ navigate }) => {
           {/* Refund / Reschedule options - only show if cancelled/rejected by hospital/doctor AND payment was made */}
           {(apt.status === "cancelled" || apt.status === "rejected") &&
             apt.refundStatus !== "requested" && apt.refundStatus !== "completed" &&
-            !(apt.cancelReason && apt.cancelReason.includes("[Bệnh nhân tự hủy]")) && 
+            !(apt.cancelReason && apt.cancelReason.includes("[Bệnh nhân tự hủy]")) &&
             apt.payment?.payment_status === 'completed' && (
-            <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm font-semibold text-amber-800 mb-2">ℹ️ Bạn muốn xử lý thế nào?</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => openRescheduleModal(apt)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Dời lịch khám
-                </button>
-                <button
-                  onClick={() => handleRequestRefund(apt)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-bold bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-all"
-                >
-                  <DollarSign className="w-3.5 h-3.5" /> Yêu cầu hoàn tiền
-                </button>
+              <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm font-semibold text-amber-800 mb-2">ℹ️ Bạn muốn xử lý thế nào?</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => openRescheduleModal(apt)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Dời lịch khám
+                  </button>
+                  <button
+                    onClick={() => handleRequestRefund(apt)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-bold bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-all"
+                  >
+                    <DollarSign className="w-3.5 h-3.5" /> Yêu cầu hoàn tiền
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {(apt.status === "cancelled" || apt.status === "rejected") && apt.refundStatus === "requested" && (
             <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
@@ -569,7 +569,7 @@ const AppointmentsPage = ({ navigate }) => {
                   setSelectedAppointment(apt);
                   setCancelReason("");
                   setBankInfo({ refund_bank_name: "", refund_bank_account: "", refund_account_name: "" });
-                  
+
                   let pct = 0;
                   if (apt.status === "confirmed" && apt.date && apt.time) {
                     const aptTime = new Date(`${apt.date}T${apt.time}:00`).getTime();
@@ -579,7 +579,7 @@ const AppointmentsPage = ({ navigate }) => {
                     else if (diffHours >= 1) pct = 50;
                   }
                   setRefundPercentage(pct);
-                  
+
                   setShowCancelModal(true);
                 }}
                 className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 font-semibold"
@@ -662,7 +662,7 @@ const AppointmentsPage = ({ navigate }) => {
               onClick={() => navigate(PAGES.HOME)}
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition flex-shrink-0 bg-white border border-gray-200 px-4 py-2.5 rounded-full shadow-sm hover:shadow-md hover:border-blue-200"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
               <span className="font-semibold text-sm">Quay lại Bảng điều khiển</span>
             </button>
 
@@ -729,11 +729,10 @@ const AppointmentsPage = ({ navigate }) => {
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab("upcoming")}
-            className={`py-3 px-6 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "upcoming"
-                ? "border-blue-600 text-blue-600 bg-blue-50/50"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+            className={`py-3 px-6 text-sm font-medium border-b-2 transition-colors ${activeTab === "upcoming"
+              ? "border-blue-600 text-blue-600 bg-blue-50/50"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
           >
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -745,11 +744,10 @@ const AppointmentsPage = ({ navigate }) => {
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`py-3 px-6 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "history"
-                ? "border-blue-600 text-blue-600 bg-blue-50/50"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+            className={`py-3 px-6 text-sm font-medium border-b-2 transition-colors ${activeTab === "history"
+              ? "border-blue-600 text-blue-600 bg-blue-50/50"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
           >
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
@@ -793,7 +791,7 @@ const AppointmentsPage = ({ navigate }) => {
               ) : (
                 <div>
                   {historyAppointments.map(apt => renderAppointmentCard(apt, true))}
-                  
+
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-4 mt-8 pt-6 border-t border-gray-100">
                       <button
@@ -887,8 +885,8 @@ const AppointmentsPage = ({ navigate }) => {
       {/* Cancel Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full animate-scale-in">
-            <div className="flex items-center justify-between mb-4">
+          <Card className="max-w-md w-full max-h-[90vh] flex flex-col animate-scale-in">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h3 className="text-xl font-bold text-gray-900">
                 Hủy lịch hẹn
               </h3>
@@ -900,86 +898,88 @@ const AppointmentsPage = ({ navigate }) => {
               </button>
             </div>
 
-            <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-4 text-sm">
-              <p>
-                Bạn có chắc chắn muốn hủy lịch hẹn với bác sĩ{" "}
-                <span className="font-semibold">
-                  {selectedAppointment?.doctorName}
-                </span>{" "}
-                vào lúc{" "}
-                <span className="font-semibold">
-                  {selectedAppointment?.time} {formatDate(selectedAppointment?.date)}
-                </span>
-                ?
-              </p>
-              {selectedAppointment?.status === "confirmed" && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-amber-800">
-                  <strong>Thông báo hoàn tiền:</strong>
-                  <ul className="list-disc ml-5 mt-1">
-                    <li>Hủy trước 2 tiếng: Hoàn 100%</li>
-                    <li>Hủy trước 1 tiếng: Hoàn 50%</li>
-                    <li>Hủy dưới 1 tiếng: Không hoàn tiền</li>
-                  </ul>
-                  <p className="mt-2 font-bold text-amber-900">
-                    Lịch của bạn sẽ được hoàn: <span className="text-xl">{refundPercentage}%</span>
-                  </p>
+            <div className="overflow-y-auto pr-1 flex-1">
+              <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-4 text-sm">
+                <p>
+                  Bạn có chắc chắn muốn hủy lịch hẹn với bác sĩ{" "}
+                  <span className="font-semibold">
+                    {selectedAppointment?.doctorName}
+                  </span>{" "}
+                  vào lúc{" "}
+                  <span className="font-semibold">
+                    {selectedAppointment?.time} {formatDate(selectedAppointment?.date)}
+                  </span>
+                  ?
+                </p>
+                {selectedAppointment?.status === "confirmed" && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-amber-800">
+                    <strong>Thông báo hoàn tiền:</strong>
+                    <ul className="list-disc ml-5 mt-1">
+                      <li>Hủy trước 2 tiếng: Hoàn 100%</li>
+                      <li>Hủy trước 1 tiếng: Hoàn 50%</li>
+                      <li>Hủy dưới 1 tiếng: Không hoàn tiền</li>
+                    </ul>
+                    <p className="mt-2 font-bold text-amber-900">
+                      Lịch của bạn sẽ được hoàn: <span className="text-xl">{refundPercentage}%</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lý do hủy (bắt buộc)
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Vui lòng cho biết lý do bạn hủy lịch..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                  rows="2"
+                  required
+                />
+              </div>
+
+              {refundPercentage > 0 && (
+                <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <p className="text-sm font-semibold text-blue-800 mb-3">Vui lòng cung cấp thông tin tài khoản nhận hoàn tiền:</p>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <label className="block text-gray-700 mb-1">Tên ngân hàng</label>
+                      <input
+                        type="text"
+                        placeholder="VD: Vietcombank, MB Bank..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500"
+                        value={bankInfo.refund_bank_name}
+                        onChange={e => setBankInfo({ ...bankInfo, refund_bank_name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 mb-1">Số tài khoản</label>
+                      <input
+                        type="text"
+                        placeholder="VD: 123456789"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500"
+                        value={bankInfo.refund_bank_account}
+                        onChange={e => setBankInfo({ ...bankInfo, refund_bank_account: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 mb-1">Tên chủ tài khoản</label>
+                      <input
+                        type="text"
+                        placeholder="VD: NGUYEN VAN A"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 uppercase"
+                        value={bankInfo.refund_account_name}
+                        onChange={e => setBankInfo({ ...bankInfo, refund_account_name: e.target.value.toUpperCase() })}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lý do hủy (bắt buộc)
-              </label>
-              <textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Vui lòng cho biết lý do bạn hủy lịch..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                rows="2"
-                required
-              />
-            </div>
-
-            {refundPercentage > 0 && (
-              <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <p className="text-sm font-semibold text-blue-800 mb-3">Vui lòng cung cấp thông tin tài khoản nhận hoàn tiền:</p>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Tên ngân hàng</label>
-                    <input 
-                      type="text" 
-                      placeholder="VD: Vietcombank, MB Bank..." 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500"
-                      value={bankInfo.refund_bank_name}
-                      onChange={e => setBankInfo({...bankInfo, refund_bank_name: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 mb-1">Số tài khoản</label>
-                    <input 
-                      type="text" 
-                      placeholder="VD: 123456789" 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500"
-                      value={bankInfo.refund_bank_account}
-                      onChange={e => setBankInfo({...bankInfo, refund_bank_account: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 mb-1">Tên chủ tài khoản</label>
-                    <input 
-                      type="text" 
-                      placeholder="VD: NGUYEN VAN A" 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 uppercase"
-                      value={bankInfo.refund_account_name}
-                      onChange={e => setBankInfo({...bankInfo, refund_account_name: e.target.value.toUpperCase()})}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-4 flex-shrink-0">
               <Button
                 variant="outline"
                 size="md"
@@ -1167,7 +1167,7 @@ const AppointmentsPage = ({ navigate }) => {
                   <RefreshCw className="w-5 h-5 text-blue-600" /> Dời lịch khám
                 </h3>
                 <p className={`text-sm mt-1 ${rescheduleTarget?.rescheduleCount >= 1 ? 'text-amber-600 font-medium' : 'text-slate-500'}`}>
-                  {rescheduleTarget?.rescheduleCount >= 1 
+                  {rescheduleTarget?.rescheduleCount >= 1
                     ? "Bạn đã hết lượt dời lịch miễn phí. Lần dời này sẽ yêu cầu thanh toán lại phí khám."
                     : "Chọn bác sĩ và ca khám mới. Bạn có 1 lần dời lịch miễn phí."}
                 </p>
@@ -1181,22 +1181,19 @@ const AppointmentsPage = ({ navigate }) => {
             </div>
 
             <div className="space-y-4">
-              {/* Chọn bác sĩ */}
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Chọn bác sĩ</label>
-                <select
-                  value={rsSelectedDoctorId}
-                  onChange={(e) => handleRsDoctorChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none text-sm font-medium"
-                >
-                  <option value="">-- Chọn bác sĩ --</option>
-                  {rsDoctors.map((doc) => (
-                    <option key={doc.id} value={doc.id}>
-                      {doc.user?.full_name || doc.name || `Bác sĩ #${doc.id}`}
-                      {doc.specialty ? ` – ${doc.specialty}` : ""}
-                    </option>
-                  ))}
-                </select>
+              {/* Không cho đổi bác sĩ, hiện tên bác sĩ cố định */}
+              <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-white border border-blue-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                  {rescheduleTarget?.avatar_url ? (
+                    <img src={rescheduleTarget.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-6 h-6 text-blue-400" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-blue-600 font-semibold mb-0.5">Dời lịch hẹn cho:</p>
+                  <p className="text-base font-bold text-gray-900">{rescheduleTarget?.doctorName}</p>
+                </div>
               </div>
 
               {/* Chọn ca khám -> Đổi thành chọn Ngày + Giờ từ availableTimes */}
@@ -1243,11 +1240,10 @@ const AppointmentsPage = ({ navigate }) => {
                                     setRsTime(slot.time);
                                     setRsSelectedScheduleId(slot.scheduleId);
                                   }}
-                                  className={`py-2 px-1 rounded-xl text-sm font-bold transition-all border ${
-                                    isSelected
-                                      ? "bg-[#48a1f3] text-white border-[#48a1f3] shadow-md shadow-blue-500/20"
-                                      : "bg-slate-50 text-slate-600 border-slate-200 hover:border-[#48a1f3] hover:text-[#48a1f3]"
-                                  }`}
+                                  className={`py-2 px-1 rounded-xl text-sm font-bold transition-all border ${isSelected
+                                    ? "bg-[#48a1f3] text-white border-[#48a1f3] shadow-md shadow-blue-500/20"
+                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:border-[#48a1f3] hover:text-[#48a1f3]"
+                                    }`}
                                 >
                                   {slot.time}
                                 </button>
