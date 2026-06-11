@@ -368,7 +368,7 @@ class _Step7PaymentState extends State<Step7Payment> {
                         const SizedBox(height: 12),
                         _buildPopupInfo('Cơ sở:', widget.hospitalName),
                         if (widget.roomName != null && widget.roomName!.isNotEmpty)
-                          _buildPopupInfo('Phòng khám:', widget.roomName!),
+                          _buildPopupInfo('Phòng:', widget.roomName!),
                         _buildPopupInfo('Bác sĩ:', widget.doctor),
                         _buildPopupInfo('Ngày/Giờ:', '${DateFormat('dd/MM/yyyy').format(widget.date)} - ${widget.timeSlot}'),
                         _buildPopupInfo('Bệnh nhân:', '${widget.fullName} ${widget.isForRelative ? '(${widget.relationship})' : ''}'),

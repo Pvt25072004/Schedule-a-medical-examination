@@ -177,7 +177,13 @@ const BookingPage = ({ navigate }) => {
           }
         }
       }
-      const slotsArray = Array.from(slotsSet).sort();
+      const slotsArray = Array.from(slotsSet)
+        .sort()
+        .filter(time => {
+          const [h, m] = time.split(':').map(Number);
+          const totalMins = h * 60 + m;
+          return !(totalMins >= 11 * 60 + 30 && totalMins < 13 * 60);
+        });
       setAvailableSlots(slotsArray);
     } catch (err) {
       console.error("Load schedule slots error:", err);

@@ -125,13 +125,17 @@ export class AppointmentsService {
         const endM = totalEndMins % 60;
         endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
+        const conflictEndH = Math.floor((totalStartMins + 30) / 60);
+        const conflictEndM = (totalStartMins + 30) % 60;
+        const conflictEndTime = `${String(conflictEndH).padStart(2, '0')}:${String(conflictEndM).padStart(2, '0')}`;
+
         const overlapConflict = await queryRunner.manager
           .createQueryBuilder(Appointment, 'appt')
           .where('appt.doctor_id = :doctorId', { doctorId: createAppointmentDto.doctor_id })
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
           .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed', 'checked_in', 'in_progress', 'awaiting_payment'] })
-          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
-          .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: appointmentTime })
+          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: conflictEndTime })
+          .andWhere("ADDTIME(appt.appointment_time, '00:30:00') > :newStartTime", { newStartTime: appointmentTime })
           .getCount();
 
         if (overlapConflict > 0) {
@@ -350,9 +354,8 @@ export class AppointmentsService {
         .andWhere('DATE(appt.appointment_date) = :appointmentDate', { appointmentDate: dateStr })
         .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
         .andWhere('appt.id != :id', { id: appointment.id }) // trừ chính nó ra
-        // Giả sử mỗi lịch khám kéo dài 30 phút
         .andWhere("appt.appointment_time < ADDTIME(:newTime, '00:30:00')", { newTime })
-        .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newTime", { newTime })
+        .andWhere("ADDTIME(appt.appointment_time, '00:30:00') > :newTime", { newTime })
         .getCount();
 
       if (overlapConflict > 0) {
@@ -608,16 +611,11 @@ export class AppointmentsService {
     for (const appt of appointments) {
       if (!appt.appointment_time) continue;
       const startStr = appt.appointment_time.slice(0, 5); // "HH:mm"
-      const endStr = appt.end_time ? appt.end_time.slice(0, 5) : null;
-
+      
       let [sH, sM] = startStr.split(':').map(Number);
       const startTotal = sH * 60 + sM;
-
-      let endTotal = startTotal + 30; // default
-      if (endStr) {
-        let [eH, eM] = endStr.split(':').map(Number);
-        endTotal = eH * 60 + eM;
-      }
+      
+      let endTotal = startTotal + 30; // Chỉ lock 30 phút cho bác sĩ
 
       for (let t = startTotal; t < endTotal; t += 30) {
         const h = Math.floor(t / 60);
@@ -737,13 +735,17 @@ export class AppointmentsService {
         const endM = totalEndMins % 60;
         const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
+        const conflictEndH = Math.floor((totalStartMins + 30) / 60);
+        const conflictEndM = (totalStartMins + 30) % 60;
+        const conflictEndTimeStr = `${String(conflictEndH).padStart(2, '0')}:${String(conflictEndM).padStart(2, '0')}`;
+
         const overlapConflict = await this.dataSource.manager
           .createQueryBuilder(Appointment, 'appt')
           .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
           .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed', 'checked_in', 'in_progress', 'awaiting_payment'] })
-          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
-          .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: time })
+          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: conflictEndTimeStr })
+          .andWhere("ADDTIME(appt.appointment_time, '00:30:00') > :newStartTime", { newStartTime: time })
           .getCount();
 
         // Also check if end time exceeds hospital schedule (assume max 17:00 = 17*60 = 1020)
@@ -768,7 +770,7 @@ export class AppointmentsService {
   async getAvailableDoctorsForPackage(packageId: number, date: string, time: string): Promise<Doctor[]> {
     const servicePackage = await this.dataSource.manager.findOne(ServicePackage, {
       where: { id: packageId },
-      relations: ['doctors', 'doctors.user', 'hospitals', 'hospitals.doctors', 'hospitals.doctors.user']
+      relations: ['categories', 'doctors', 'doctors.user', 'doctors.category', 'hospitals', 'hospitals.doctors', 'hospitals.doctors.user', 'hospitals.doctors.category']
     });
 
     if (!servicePackage) {
@@ -777,7 +779,14 @@ export class AppointmentsService {
 
     let doctorsToCheck = servicePackage.doctors || [];
     if (doctorsToCheck.length === 0 && servicePackage.hospitals && servicePackage.hospitals.length > 0) {
+      // Fallback to all doctors in the hospital(s)
       doctorsToCheck = servicePackage.hospitals.flatMap(h => h.doctors || []);
+      
+      // Filter by package categories if applicable
+      if (servicePackage.categories && servicePackage.categories.length > 0) {
+        const packageCategoryIds = servicePackage.categories.map(c => c.id);
+        doctorsToCheck = doctorsToCheck.filter(d => d.category && packageCategoryIds.includes(d.category.id));
+      }
     }
 
     if (doctorsToCheck.length === 0) {
@@ -850,6 +859,7 @@ export class AppointmentsService {
           ...doctor,
           name: doctor.user?.full_name || 'Bác sĩ ẩn danh',
           avatar_url: doctor.user?.avatar_url || '',
+          specialty: doctor.category?.name || '',
           hospital_id: matchedHospitalId
         } as any);
       }

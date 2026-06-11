@@ -5,6 +5,7 @@ import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { Schedule } from './entities/schedule.entity';
 import { Doctor } from '../doctors/doctor.entity';
+import { Room } from '../rooms/entities/room.entity';
 
 @Injectable()
 export class SchedulesService {
@@ -13,6 +14,8 @@ export class SchedulesService {
     private readonly schedulesRepository: Repository<Schedule>,
     @InjectRepository(Doctor)
     private readonly doctorsRepository: Repository<Doctor>,
+    @InjectRepository(Room)
+    private readonly roomsRepository: Repository<Room>,
   ) { }
 
   async create(dto: CreateScheduleDto, user?: any): Promise<any> {
@@ -34,6 +37,7 @@ export class SchedulesService {
         .createQueryBuilder('doctor')
         .innerJoin('doctor.hospitals', 'hospital')
         .leftJoinAndSelect('doctor.user', 'user')
+        .leftJoinAndSelect('doctor.category', 'category')
         .where('hospital.id = :hospitalId', { hospitalId: dto.hospital_id })
         .andWhere('doctor.verification_status = :status', { status: 'active' });
 
@@ -54,6 +58,8 @@ export class SchedulesService {
       doctorsToProcess = await this.doctorsRepository
         .createQueryBuilder('doctor')
         .leftJoinAndSelect('doctor.user', 'user')
+        .leftJoinAndSelect('doctor.category', 'category')
+        .leftJoinAndSelect('doctor.hospitals', 'hospital')
         .whereInIds(dto.doctor_ids)
         .getMany();
         
@@ -66,7 +72,7 @@ export class SchedulesService {
       }
       const doctor = await this.doctorsRepository.findOne({
         where: { id: dto.doctor_id },
-        relations: ['user']
+        relations: ['user', 'category', 'hospitals']
       });
       if (!doctor) {
         throw new BadRequestException('Không tìm thấy bác sĩ');
@@ -101,11 +107,43 @@ export class SchedulesService {
           continue;
         }
 
+        let assignedRoomId = dto.room_id;
+
+        if (!assignedRoomId && doctorsToProcess.length > 1) {
+          const hospId = dto.hospital_id || doctor.hospitals?.[0]?.id;
+          if (hospId) {
+            let roomQuery = this.roomsRepository.createQueryBuilder('room')
+              .where('room.hospital_id = :hospitalId', { hospitalId: hospId });
+
+            if (doctor.category?.id) {
+              roomQuery = roomQuery.andWhere('(room.category_id = :catId OR room.category_id IS NULL)', { catId: doctor.category.id });
+            }
+
+            const candidateRooms = await roomQuery.getMany();
+            const availableRooms: Room[] = [];
+            for (const room of candidateRooms) {
+              const conflict = await this.schedulesRepository.createQueryBuilder('s')
+                .where('s.room_id = :roomId', { roomId: room.id })
+                .andWhere('DATE(s.work_date) = :workDate', { workDate: workDateStr })
+                .andWhere('s.start_time < :endTime', { endTime: dto.end_time })
+                .andWhere('s.end_time > :startTime', { startTime: dto.start_time })
+                .getOne();
+              if (!conflict) availableRooms.push(room);
+            }
+
+            if (availableRooms.length > 0) {
+              const randomIndex = Math.floor(Math.random() * availableRooms.length);
+              assignedRoomId = availableRooms[randomIndex].id;
+            }
+          }
+        }
+
         const isCreatedByAdmin = user?.role === 'admin' || user?.role === 'admin_hospital';
         const schedule = this.schedulesRepository.create({
           ...dto,
           work_date: workDateStr, // overwrite work_date with current date in loop
           doctor_id: doctor.id,
+          room_id: assignedRoomId,
           is_available: isCreatedByAdmin ? true : false,
           approval_status: isCreatedByAdmin ? 'approved' : 'pending',
         });
@@ -139,19 +177,19 @@ export class SchedulesService {
       return this.schedulesRepository.find({
         where: { hospital_id: user.hospital_id },
         order: { work_date: 'ASC', start_time: 'ASC' },
-        relations: ['doctor', 'doctor.user', 'hospital', 'room'],
+        relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'room'],
       });
     }
     return this.schedulesRepository.find({
       order: { work_date: 'ASC', start_time: 'ASC' },
-      relations: ['doctor', 'doctor.user', 'hospital', 'room'],
+      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'room'],
     });
   }
 
   async findOne(id: number): Promise<Schedule> {
     const schedule = await this.schedulesRepository.findOne({ 
       where: { id },
-      relations: ['doctor', 'doctor.user', 'hospital', 'room']
+      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'room']
     });
     if (!schedule) {
       throw new NotFoundException(`Schedule with ID ${id} not found`);
@@ -173,7 +211,7 @@ export class SchedulesService {
     }
     return this.schedulesRepository.find({
       where,
-      relations: ['hospital', 'room'],
+      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'room'],
       order: {
         work_date: 'ASC',
         start_time: 'ASC',
