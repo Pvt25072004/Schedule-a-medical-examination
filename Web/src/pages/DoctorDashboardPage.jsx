@@ -975,7 +975,7 @@ export default function DoctorDashboardPage({ navigate }) {
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 p-2">
           <div>
-            <h3 className="text-2xl font-black mb-2 text-black">
+            <h3 className="text-2xl font-black mb-2 text-white">
               Cần hỗ trợ từ Admin?
             </h3>
             <p className="text-sm text-blue-100/80 max-w-xl font-medium">
@@ -985,7 +985,7 @@ export default function DoctorDashboardPage({ navigate }) {
             </p>
           </div>
           <Button
-            className="bg-white text-[#143250] hover:bg-slate-50 shadow-lg !font-bold"
+            className="bg-white text-black hover:bg-slate-50 shadow-lg !font-bold"
             icon={MessageCircle}
             onClick={() => setActiveTab(TABS.AFFILIATIONS)}
           >
