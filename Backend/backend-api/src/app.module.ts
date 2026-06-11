@@ -36,6 +36,7 @@ import { CitiesModule } from './cities/cities.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 import { MedicalRecordsModule } from './medical-records/medical-records.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     LeaveRequestsModule,
     MedicalRecordsModule,
     DashboardModule,
+    RoomsModule,
   ],
   controllers: [AppController, EmailController],
   providers: [

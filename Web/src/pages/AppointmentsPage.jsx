@@ -458,6 +458,14 @@ const AppointmentsPage = ({ navigate }) => {
               <Clock className="w-4 h-4 text-blue-500" />
               <span className="text-sm font-medium">{apt.time}</span>
             </div>
+            {apt.roomName && apt.payment?.payment_status === 'completed' && (
+              <div className="col-span-2 flex items-center gap-2 text-blue-700 bg-blue-50 p-2 rounded-lg border border-blue-100 mt-1">
+                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span className="text-sm font-bold">
+                  Phòng khám: {apt.roomName}
+                </span>
+              </div>
+            )}
             {apt.type && (
               <div className="col-span-2 flex items-start gap-2 text-gray-700">
                 <FileText className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
