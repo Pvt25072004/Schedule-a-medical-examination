@@ -1037,6 +1037,9 @@ export default function DoctorDashboardPage({ navigate }) {
                   <p className="text-lg font-black text-[#143250]">
                     {formatDateVN(entry.work_date)}
                   </p>
+                  <p className="text-sm font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100 inline-block mt-1">
+                    <MapPin className="w-3 h-3 inline mr-1" /> {entry.room?.name || 'Chưa xếp phòng'}
+                  </p>
                   <p className="text-sm font-medium text-slate-500 mt-1 flex items-center gap-2">
                     <Users className="w-4 h-4" /> Tối đa{" "}
                     {entry.max_patients ?? 10} bệnh nhân
@@ -1242,10 +1245,13 @@ export default function DoctorDashboardPage({ navigate }) {
                       </div>
                     )}
 
-                    <p className="text-sm font-medium text-[#48a1f3] mb-2 flex items-center gap-1">
-                      <Clock className="w-4 h-4" />{" "}
-                      {formatDateVN(apt.appointment_date)} lúc{" "}
-                      {apt.appointment_time?.slice(0, 5)}
+                    <p className="text-sm font-medium text-[#48a1f3] mb-2 flex items-center gap-2">
+                      <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {formatDateVN(apt.appointment_date)} lúc {apt.appointment_time?.slice(0, 5)}</span>
+                      {apt.schedule?.room?.name && (
+                        <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {apt.schedule.room.name}
+                        </span>
+                      )}
                     </p>
                     <div className="text-sm text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 italic">
                       <span className="font-semibold not-italic text-slate-700">

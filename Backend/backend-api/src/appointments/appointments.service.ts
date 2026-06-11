@@ -268,6 +268,8 @@ export class AppointmentsService {
       .leftJoinAndSelect('doctor.user', 'doctorUser') // also fetch doctor's user entity for full name
       .leftJoinAndSelect('appointment.hospital', 'hospital')
       .leftJoinAndSelect('appointment.payment', 'payment')
+        .leftJoinAndSelect('appointment.schedule', 'schedule')
+        .leftJoinAndSelect('schedule.room', 'room')
       .orderBy('appointment.created_at', 'DESC');
 
     if (user?.role === 'admin_hospital') {
@@ -392,7 +394,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where,
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['user', 'hospital', 'payment'],
+      relations: ['user', 'hospital', 'payment', 'schedule', 'schedule.room'],
     });
   }
 
