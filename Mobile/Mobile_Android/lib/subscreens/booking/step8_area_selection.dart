@@ -201,12 +201,14 @@ class Step8Confirmation extends StatelessWidget {
           ),
           const SizedBox(height: 30),
 
-          // --- Nút Đặt lịch mới ---
+          // --- Nút Về trang chủ ---
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: onBookNew,
-              child: const Text('Đặt lịch mới'),
+              onPressed: () {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+              child: const Text('Về trang chủ'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade600,
                 foregroundColor: Colors.white,

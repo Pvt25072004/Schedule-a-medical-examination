@@ -713,21 +713,22 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     final rawTime = appt['appointment_time']?.toString() ?? '';
     double diffHours = 0;
     bool showBankForm = false;
-    String refundMessage = 'Bạn sẽ không được hoàn tiền do hủy quá sát giờ.';
+    int refundPercentage = 0;
     
     if (rawDate.isNotEmpty && rawTime.isNotEmpty) {
       try {
-        final appointmentDateTime = DateTime.parse('${rawDate.substring(0, 10)}T$rawTime:00');
+        final timeStr = rawTime.length >= 5 ? rawTime.substring(0, 5) : rawTime;
+        final appointmentDateTime = DateTime.parse('${rawDate.substring(0, 10)}T$timeStr:00');
         final now = DateTime.now();
         diffHours = appointmentDateTime.difference(now).inMinutes / 60.0;
         
         if (appt['status'] == 'confirmed') {
           if (diffHours >= 2) {
             showBankForm = true;
-            refundMessage = 'Hủy trước 2 tiếng: Được hoàn 100% phí khám. Vui lòng nhập thông tin ngân hàng.';
+            refundPercentage = 100;
           } else if (diffHours >= 1) {
             showBankForm = true;
-            refundMessage = 'Hủy trước 1 tiếng: Được hoàn 50% phí khám. Vui lòng nhập thông tin ngân hàng.';
+            refundPercentage = 50;
           }
         }
       } catch (e) {
@@ -747,8 +748,29 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Bạn có chắc chắn muốn hủy lịch hẹn này không?'),
-                const SizedBox(height: 12),
-                Text(refundMessage, style: TextStyle(color: showBankForm ? Colors.green.shade700 : Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                if (appt['status'] == 'confirmed') ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      border: Border.all(color: Colors.orange.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Thông báo hoàn tiền:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                        const SizedBox(height: 8),
+                        const Text('• Hủy trước 2 tiếng: Hoàn 100%', style: TextStyle(fontSize: 13, color: Colors.deepOrange)),
+                        const Text('• Hủy trước 1 tiếng: Hoàn 50%', style: TextStyle(fontSize: 13, color: Colors.deepOrange)),
+                        const Text('• Hủy dưới 1 tiếng: Không hoàn tiền', style: TextStyle(fontSize: 13, color: Colors.deepOrange)),
+                        const SizedBox(height: 8),
+                        Text('Lịch của bạn sẽ được hoàn: $refundPercentage%', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 TextField(
                   controller: reasonController,
@@ -760,22 +782,54 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                 ),
                 if (showBankForm) ...[
                   const SizedBox(height: 16),
-                  const Text('Thông tin nhận hoàn tiền:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: bankNameController,
-                    decoration: InputDecoration(labelText: 'Tên Ngân Hàng (VD: Vietcombank)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: bankAccountController,
-                    decoration: InputDecoration(labelText: 'Số Tài Khoản', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: accountNameController,
-                    decoration: InputDecoration(labelText: 'Tên Chủ Tài Khoản', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      border: Border.all(color: Colors.blue.shade100),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Vui lòng cung cấp thông tin tài khoản nhận hoàn tiền:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent, fontSize: 13)),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: bankNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Tên Ngân Hàng (VD: Vietcombank)', 
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: bankAccountController,
+                          decoration: InputDecoration(
+                            labelText: 'Số Tài Khoản', 
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: accountNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Tên Chủ Tài Khoản', 
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                          ),
+                          textCapitalization: TextCapitalization.characters,
+                        ),
+                      ],
+                    ),
                   ),
                 ]
               ],

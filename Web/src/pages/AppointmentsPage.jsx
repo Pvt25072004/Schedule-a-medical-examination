@@ -572,7 +572,8 @@ const AppointmentsPage = ({ navigate }) => {
 
                   let pct = 0;
                   if (apt.status === "confirmed" && apt.date && apt.time) {
-                    const aptTime = new Date(`${apt.date}T${apt.time}:00`).getTime();
+                    const timeStr = apt.time.substring(0, 5);
+                    const aptTime = new Date(`${apt.date}T${timeStr}:00`).getTime();
                     const now = new Date().getTime();
                     const diffHours = (aptTime - now) / (1000 * 60 * 60);
                     if (diffHours >= 2) pct = 100;

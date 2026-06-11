@@ -102,8 +102,8 @@ class _BookingScreenState extends State<BookingScreen> {
     } else if (widget.initialPackageData != null) {
       isDirectBooking = true;
       isPackageBooking = true;
-      currentStep = 5; // Nhảy đến chọn Ngày/Giờ
-      maxStepReached = 5;
+      currentStep = 4; // Nhảy đến chọn Bác sĩ
+      maxStepReached = 4;
 
       final pkg = widget.initialPackageData!;
       selectedPackageId = pkg['id'] != null ? int.tryParse(pkg['id'].toString()) : null;
@@ -127,7 +127,8 @@ class _BookingScreenState extends State<BookingScreen> {
   void goToStep(int step, {Map<String, dynamic>? data}) {
     setState(() {
       if (isDirectBooking) {
-        if (step < 5) return; // Không cho lùi về các bước chọn khu vực, bác sĩ
+        if (isPackageBooking && step < 4) return; // Nếu là Gói khám thì không được lùi về trước bước Chọn bác sĩ
+        if (!isPackageBooking && step < 5) return; // Nếu là Khám theo Bác sĩ thì không được lùi về trước bước Chọn Ngày/Giờ
       }
 
       // Logic chỉ cho phép chuyển tiến tới bước đã hoàn thành
@@ -195,9 +196,20 @@ class _BookingScreenState extends State<BookingScreen> {
   // Back to previous step
   void goBack() {
     if (isDirectBooking) {
-      if (currentStep == 5) {
-        Navigator.pop(context); // Quay về màn hình hồ sơ bác sĩ
-        return;
+      if (isPackageBooking) {
+        if (currentStep == 4) {
+          Navigator.pop(context); // Quay về màn hình danh sách gói khám
+          return;
+        }
+        if (currentStep == 5) {
+          setState(() => currentStep = 4); // Từ chọn Ngày/Giờ lùi về chọn Bác sĩ
+          return;
+        }
+      } else {
+        if (currentStep == 5) {
+          Navigator.pop(context); // Quay về màn hình hồ sơ bác sĩ
+          return;
+        }
       }
       if (currentStep == 6) {
         setState(() => currentStep = 5); // Từ thông tin BN lùi về chọn Ngày/Giờ
@@ -323,11 +335,12 @@ class _BookingScreenState extends State<BookingScreen> {
     return WillPopScope(
       onWillPop: () async {
         if (isDirectBooking) {
-          if (currentStep == 5) return true; // Cho phép thoát khỏi BookingScreen
+          if (isPackageBooking && (currentStep == 4 || currentStep == 8)) return true;
+          if (!isPackageBooking && (currentStep == 5 || currentStep == 8)) return true;
           goBack();
           return false; // Chặn thoát, chỉ lùi step
         } else {
-          if (currentStep == 1) return true;
+          if (currentStep == 1 || currentStep == 8) return true;
           goBack();
           return false;
         }
@@ -377,8 +390,18 @@ class _BookingScreenState extends State<BookingScreen> {
           // Nền luôn là màu trắng (hoặc màu mặc định)
           backgroundColor: appBarColor,
           foregroundColor: foregroundColor, // Chữ/icon luôn màu tối
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: false, // Ẩn nút back mặc định
           elevation: 0,
+          actions: [
+            if (isDirectBooking)
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                tooltip: 'Hủy đặt lịch',
+              ),
+          ],
         ),
         body: Column(
           children: [

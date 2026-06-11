@@ -89,7 +89,9 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chọn Bác sĩ (${widget.specialtyName})',
+                widget.specialtyName.isNotEmpty 
+                    ? 'Chọn Bác sĩ (${widget.specialtyName})' 
+                    : 'Chọn Bác sĩ phụ trách',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
