@@ -163,6 +163,8 @@ const AppointmentsPage = ({ navigate }) => {
       setShowCancelModal(false);
       setSelectedAppointment(null);
       setCancelReason("");
+      showSuccess("Hủy lịch thành công");
+      if (refreshAppointments) refreshAppointments();
     }
   };
 

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../service/auth_service.dart';
 import '../service/appointment_service.dart';
 import '../service/review_service.dart';
+import 'reschedule_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -530,7 +531,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              showAppSnackBar(context, 'Tính năng dời lịch đang được phát triển, vui lòng hủy và đặt lại!');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => RescheduleScreen(appointment: appt)),
+                              ).then((value) {
+                                if (value == true) {
+                                  _loadData();
+                                }
+                              });
                             },
                             icon: const Icon(Icons.edit_calendar, size: 18),
                             label: const Text('Dời lịch'),
@@ -576,7 +584,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              showAppSnackBar(context, 'Tính năng dời lịch đang được phát triển!');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => RescheduleScreen(appointment: appt)),
+                              ).then((value) {
+                                if (value == true) {
+                                  _loadData();
+                                }
+                              });
                             },
                             icon: const Icon(Icons.edit_calendar, size: 18),
                             label: const Text('Dời lịch'),

@@ -251,4 +251,44 @@ class AppointmentService {
       return false;
     }
   }
+
+  Future<bool> rescheduleAppointment({
+    required int appointmentId,
+    required int scheduleId,
+    required int doctorId,
+    required int hospitalId,
+    required String appointmentDate,
+    required String appointmentTime,
+    String? doctorNameSnapshot,
+    String? hospitalNameSnapshot,
+  }) async {
+    try {
+      final urlStr = '${ApiConfig.baseUrl}/appointments/$appointmentId/reschedule';
+      final payload = {
+        'schedule_id': scheduleId,
+        'doctor_id': doctorId,
+        'hospital_id': hospitalId,
+        'appointment_date': appointmentDate,
+        'appointment_time': appointmentTime,
+        if (doctorNameSnapshot != null) 'doctor_name_snapshot': doctorNameSnapshot,
+        if (hospitalNameSnapshot != null) 'hospital_name_snapshot': hospitalNameSnapshot,
+      };
+
+      print('🚀 Dời lịch hẹn: $urlStr');
+      final response = await http.put(
+        Uri.parse(urlStr),
+        headers: _getHeaders(),
+        body: jsonEncode(payload),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+      print('🔥 reschedule Failed with status ${response.statusCode}: ${response.body}');
+      return false;
+    } catch (e) {
+      print('🔥 reschedule Error: $e');
+      return false;
+    }
+  }
 }

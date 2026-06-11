@@ -480,7 +480,8 @@ export class AppointmentsService {
             appointment.refund_percentage = 0;
           }
 
-          if (appointment.refund_percentage > 0) {
+          // Chỉ hoàn tiền nếu lịch này ĐÃ THANH TOÁN (confirmed)
+          if (appointment.status === 'confirmed' && appointment.refund_percentage > 0) {
             // Nếu có thanh toán trước đó (PayOS / VNPay) và status trước đó không phải failed
             // Yêu cầu hoàn tiền
             appointment.refund_amount = Number(appointment.total_fee) * appointment.refund_percentage / 100;
