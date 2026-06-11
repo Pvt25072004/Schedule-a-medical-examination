@@ -47,7 +47,18 @@ export class CategoriesController {
   }
 
   @Get()
-  findAll(@Query('hospitalId') hospitalId?: string) {
+  findAll(
+    @Query('hospitalId') hospitalId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    if (page && limit) {
+      return this.categoriesService.findAllPaginated(
+        +page,
+        +limit,
+        hospitalId ? +hospitalId : undefined,
+      );
+    }
     return this.categoriesService.findAll(hospitalId ? +hospitalId : undefined);
   }
 
