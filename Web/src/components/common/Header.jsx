@@ -83,12 +83,14 @@ const Header = () => {
             >
               Chuyên khoa
             </button>
-            <button
-              onClick={() => handleScrollTo("contact")}
-              className="text-gray-700 hover:text-blue-600 font-medium transition"
-            >
-              Liên hệ
-            </button>
+            {!isPatient && (
+              <button
+                onClick={() => handleScrollTo("contact")}
+                className="text-gray-700 hover:text-blue-600 font-medium transition"
+              >
+                Liên hệ
+              </button>
+            )}
 
             {isPatient && (
               <>
