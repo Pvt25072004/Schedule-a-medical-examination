@@ -466,7 +466,11 @@ export class AppointmentsService {
       } else if (user?.role === 'patient') {
         // Patient chủ động hủy -> Tính thời gian hoàn tiền
         if (appointment.appointment_date && appointment.appointment_time) {
-          const appointmentDateTime = new Date(`${String(appointment.appointment_date).slice(0, 10)}T${appointment.appointment_time}:00`);
+          const appointmentDateStr = typeof appointment.appointment_date === 'string'
+            ? appointment.appointment_date
+            : (appointment.appointment_date as Date).toISOString().split('T')[0];
+          const timeStr = appointment.appointment_time.length === 5 ? `${appointment.appointment_time}:00` : appointment.appointment_time;
+          const appointmentDateTime = new Date(`${appointmentDateStr}T${timeStr}`);
           const now = new Date();
           const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000); // Múi giờ VN
 
