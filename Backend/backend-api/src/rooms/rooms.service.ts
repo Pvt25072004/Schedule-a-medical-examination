@@ -17,6 +17,11 @@ export class RoomsService {
     return this.roomsRepository.save(room);
   }
 
+  async createBulk(createRoomDtos: CreateRoomDto[]): Promise<Room[]> {
+    const rooms = this.roomsRepository.create(createRoomDtos);
+    return this.roomsRepository.save(rooms);
+  }
+
   findAll(hospitalId?: number, categoryId?: number): Promise<Room[]> {
     const where: any = {};
     if (hospitalId) where.hospital_id = hospitalId;

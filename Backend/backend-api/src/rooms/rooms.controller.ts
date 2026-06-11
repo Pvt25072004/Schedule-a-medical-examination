@@ -12,6 +12,14 @@ export class RoomsController {
     return this.roomsService.create(createRoomDto);
   }
 
+  @Post('bulk')
+  createBulk(@Body() createRoomDtos: CreateRoomDto[]) {
+    if (!Array.isArray(createRoomDtos)) {
+      throw new Error('Payload must be an array');
+    }
+    return this.roomsService.createBulk(createRoomDtos);
+  }
+
   @Get()
   findAll(
     @Query('hospital_id') hospitalId?: string,
