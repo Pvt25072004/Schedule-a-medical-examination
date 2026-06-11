@@ -75,6 +75,7 @@ export const AppointmentProvider = ({ children }) => {
           price: apt.total_fee || 0,
           refundStatus: apt.refund_status || "none",
           hospitalId: apt.hospital_id,
+          roomName: apt.schedule?.room?.name || "",
         };
       });
       setAppointments(mapped);

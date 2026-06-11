@@ -56,6 +56,7 @@ class PrinterService {
     required String doctorName,
     required String date,
     required String time,
+    String? roomName,
   }) async {
     bool? isConn = await bluetooth.isConnected;
     if (isConn == null || !isConn) {
@@ -84,6 +85,9 @@ class PrinterService {
       await bluetooth.printCustom("Ma Kiem Tra: #$appointmentId", 1, 0);
       await bluetooth.printCustom("Benh nhan: $patientName", 1, 0);
       await bluetooth.printCustom("Bac si: $doctorName", 0, 0);
+      if (roomName != null && roomName.isNotEmpty) {
+        await bluetooth.printCustom("Phong Kham: $roomName", 1, 0);
+      }
       await bluetooth.printCustom("Thoi gian: $time - $date", 0, 0);
       
       await bluetooth.printCustom("--------------------------------", 0, 1);

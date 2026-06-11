@@ -23,6 +23,7 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isModalExpanded, setIsModalExpanded] = useState(false);
   
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
@@ -206,7 +207,7 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
         <div className="px-4 pb-3">
           {title && <h4 className="font-bold text-gray-800 mb-2">{title}</h4>}
           <div className="text-gray-800 text-[15px] leading-relaxed relative">
-            <div className={`${content && content.length > 250 && !isExpanded ? 'max-h-[120px] overflow-hidden' : ''} transition-all duration-300 whitespace-pre-wrap`}>
+            <div className={`${content && content.length > 250 && !isExpanded ? 'max-h-[120px] overflow-hidden' : ''} transition-all duration-300 whitespace-pre-wrap break-words`}>
               {renderPostContent(content)}
               {content && content.length > 250 && !isExpanded && (
                 <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent pointer-events-none" />
@@ -322,8 +323,21 @@ const PostCard = ({ post, onHashtagClick, defaultOpenCommentModal = false, modal
               <div className="flex-1 overflow-y-auto">
                 <div className="p-4 border-b border-gray-100">
                   {title && <h4 className="font-bold text-gray-800 mb-2 text-sm">{title}</h4>}
-                  <div className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
-                    {renderPostContent(content)}
+                  <div className="text-gray-800 text-[15px] leading-relaxed relative">
+                    <div className={`${content && content.length > 250 && !isModalExpanded ? 'max-h-[150px] overflow-hidden' : ''} transition-all duration-300 whitespace-pre-wrap break-words`}>
+                      {renderPostContent(content)}
+                      {content && content.length > 250 && !isModalExpanded && (
+                        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                      )}
+                    </div>
+                    {content && content.length > 250 && (
+                      <button 
+                        onClick={() => setIsModalExpanded(!isModalExpanded)} 
+                        className="text-blue-600 hover:underline text-xs font-semibold mt-1 focus:outline-none"
+                      >
+                        {isModalExpanded ? 'Rút gọn' : 'Xem thêm'}
+                      </button>
+                    )}
                   </div>
                 </div>
 

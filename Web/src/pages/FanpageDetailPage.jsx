@@ -115,7 +115,7 @@ const FanpageDetailPage = () => {
           {/* Cover Image */}
           <div className="w-full h-64 md:h-80 relative bg-gray-200">
             <img 
-              src={fanpage.cover_image_url || 'https://via.placeholder.com/1200x400'} 
+              src={fanpage.cover_image_url || hospital?.image_url || hospital?.cover_url || 'https://via.placeholder.com/1200x400'} 
               alt="Cover" 
               className="w-full h-full object-cover"
             />
@@ -127,7 +127,7 @@ const FanpageDetailPage = () => {
               {/* Avatar & Name */}
               <div className="flex flex-col md:flex-row items-center md:items-end gap-6 relative z-10 w-full md:w-auto">
                 <img 
-                  src={fanpage.avatar_url || 'https://via.placeholder.com/150'} 
+                  src={fanpage.avatar_url || hospital?.logo_url || hospital?.avatar_url || 'https://via.placeholder.com/150'} 
                   alt={hospital?.name} 
                   className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-md object-cover bg-white -mt-16 md:-mt-20"
                 />

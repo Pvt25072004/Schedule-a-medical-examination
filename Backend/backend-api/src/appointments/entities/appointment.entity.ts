@@ -4,6 +4,7 @@ import { Payment } from 'src/payments/entities/payment.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Review } from 'src/reviews/entities/review.entity';
 import { ServicePackage } from 'src/service-packages/entities/service-package.entity';
+import { Schedule } from 'src/schedules/entities/schedule.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -236,4 +237,8 @@ export class Appointment {
   @ManyToOne(() => ServicePackage, (servicePackage) => servicePackage.appointments)
   @JoinColumn({ name: 'service_package_id' })
   service_package?: ServicePackage | null;
+
+  @ManyToOne(() => Schedule, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'schedule_id' })
+  schedule?: Schedule | null;
 }

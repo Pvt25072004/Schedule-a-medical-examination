@@ -314,7 +314,7 @@ export class AppointmentsService {
   findOne(id: number) {
     return this.appointmentsRepository.findOne({
       where: { id },
-      relations: ['user'],
+      relations: ['user', 'schedule', 'schedule.room'],
     });
   }
 
@@ -400,7 +400,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where: { user_id: userId },
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'review', 'payment', 'service_package'],
+      relations: ['doctor', 'doctor.user', 'doctor.category', 'hospital', 'review', 'payment', 'service_package', 'schedule', 'schedule.room'],
     });
   }
 
@@ -412,7 +412,7 @@ export class AppointmentsService {
     return this.appointmentsRepository.find({
       where,
       order: { appointment_date: 'DESC', appointment_time: 'DESC' },
-      relations: ['user', 'doctor', 'hospital', 'payment'],
+      relations: ['user', 'doctor', 'hospital', 'payment', 'schedule', 'schedule.room'],
     });
   }
 
@@ -424,7 +424,7 @@ export class AppointmentsService {
     const { status, reason, refund_bank_name, refund_bank_account, refund_account_name } = dto;
     const appointment = await this.appointmentsRepository.findOne({
       where: { id },
-      relations: ['user', 'doctor', 'doctor.user'],
+      relations: ['user', 'doctor', 'doctor.user', 'schedule', 'schedule.room'],
     });
 
     if (!appointment) {
@@ -959,6 +959,29 @@ export class AppointmentsService {
       throw new BadRequestException('Lịch hẹn này đã có yêu cầu hoàn tiền, không thể dời lịch');
     }
 
+    if (!appointment.doctor_id) {
+      throw new BadRequestException('Lịch hẹn gốc không có thông tin bác sĩ');
+    }
+
+    // Verify same specialty
+    const oldDoctor = await this.doctorsRepository.findOne({
+      where: { id: appointment.doctor_id },
+      relations: ['category'],
+    });
+
+    const newDoctor = await this.doctorsRepository.findOne({
+      where: { id: dto.doctor_id },
+      relations: ['category'],
+    });
+
+    if (!oldDoctor || !newDoctor) {
+      throw new BadRequestException('Không tìm thấy thông tin bác sĩ');
+    }
+
+    if (oldDoctor.category?.id !== newDoctor.category?.id) {
+      throw new BadRequestException('Bác sĩ được chọn không cùng chuyên khoa với bác sĩ ban đầu');
+    }
+
     // Verify new schedule exists and has capacity
     const newSchedule = await this.schedulesRepository.findOne({
       where: { id: dto.schedule_id },
@@ -969,7 +992,7 @@ export class AppointmentsService {
     const existingAppointmentsCount = await this.appointmentsRepository.count({
       where: {
         schedule_id: dto.schedule_id,
-        status: In(['pending', 'confirmed', 'completed']),
+        status: In(['pending', 'confirmed', 'checked_in', 'completed']),
       },
     });
 
@@ -998,7 +1021,7 @@ export class AppointmentsService {
     const timeStr = appointment.appointment_time.length === 5 ? `${appointment.appointment_time}:00` : appointment.appointment_time;
     const originalAppointmentDateTime = new Date(`${appointmentDateStr}T${timeStr}`);
     const now = new Date();
-    
+
     // Tính khoảng cách thời gian (giờ)
     const diffHours = (originalAppointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 

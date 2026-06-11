@@ -34,6 +34,10 @@ export class CreateScheduleDto {
 
   @IsOptional()
   @IsInt()
+  room_id?: number;
+
+  @IsOptional()
+  @IsInt()
   @Min(1)
   max_patients?: number;
 

@@ -26,6 +26,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     final doctorName = data['doctor_name_snapshot'] ?? 'Bác sĩ';
     final date = data['appointment_date'] ?? '';
     final time = data['appointment_time'] ?? '';
+    final roomName = data['schedule']?['room']?['name'];
 
     // Call physical printer
     try {
@@ -36,6 +37,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         doctorName: doctorName,
         date: date,
         time: time,
+        roomName: roomName,
       );
     } catch (e) {
       debugPrint('Printing failed (no printer or error): $e');
@@ -78,6 +80,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       Text('Mã hẹn: #$appointmentId'),
                       Text('Bệnh nhân: $patientName'),
                       Text('Bác sĩ: $doctorName'),
+                      if (roomName != null && roomName.isNotEmpty) 
+                        Text('Phòng khám: $roomName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
                       Text('Thời gian: $time - $date'),
                       const Divider(),
                       const Center(child: Text('Vui lòng chờ đến lượt!', style: TextStyle(fontStyle: FontStyle.italic))),

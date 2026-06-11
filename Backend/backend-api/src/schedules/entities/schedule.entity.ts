@@ -8,6 +8,7 @@ import {
   CreateDateColumn,
   JoinColumn,
 } from 'typeorm';
+import { Room } from 'src/rooms/entities/room.entity';
 @Entity('schedules')
 export class Schedule {
   @PrimaryGeneratedColumn()
@@ -27,6 +28,13 @@ export class Schedule {
 
   @Column({ type: 'time' })
   end_time: string;
+
+  @Column({ nullable: true })
+  room_id: number;
+
+  @ManyToOne(() => Room, (room) => room.schedules, { nullable: true })
+  @JoinColumn({ name: 'room_id' })
+  room: Room;
 
   @Column({ default: 10 })
   max_patients: number;
