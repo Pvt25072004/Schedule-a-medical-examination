@@ -30,16 +30,25 @@ export class SchedulesService {
     let doctorsToProcess: Doctor[] = [];
 
     if (dto.apply_to_all_doctors) {
-      doctorsToProcess = await this.doctorsRepository
+      let qb = this.doctorsRepository
         .createQueryBuilder('doctor')
         .innerJoin('doctor.hospitals', 'hospital')
         .leftJoinAndSelect('doctor.user', 'user')
         .where('hospital.id = :hospitalId', { hospitalId: dto.hospital_id })
-        .andWhere('doctor.verification_status = :status', { status: 'active' })
-        .getMany();
+        .andWhere('doctor.verification_status = :status', { status: 'active' });
+
+      if (dto.category_id) {
+        qb = qb.andWhere('doctor.category_id = :categoryId', { categoryId: dto.category_id });
+      }
+
+      doctorsToProcess = await qb.getMany();
 
       if (doctorsToProcess.length === 0) {
-        throw new BadRequestException('Không có bác sĩ nào đang hoạt động tại cơ sở này.');
+        throw new BadRequestException(
+          dto.category_id 
+            ? 'Không có bác sĩ nào thuộc chuyên khoa này đang hoạt động tại cơ sở.' 
+            : 'Không có bác sĩ nào đang hoạt động tại cơ sở này.'
+        );
       }
     } else {
       if (!dto.doctor_id) {

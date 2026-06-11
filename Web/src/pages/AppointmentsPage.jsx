@@ -138,7 +138,7 @@ const AppointmentsPage = ({ navigate }) => {
   });
 
   const upcomingAppointments = filteredAppointments.filter(
-    (apt) => apt.status === "pending" || apt.status === "confirmed" || apt.status === "awaiting_payment"
+    (apt) => apt.status === "pending" || apt.status === "confirmed" || apt.status === "awaiting_payment" || apt.status === "checked_in" || apt.status === "in_progress"
   );
 
   const historyAppointmentsAll = filteredAppointments.filter(

@@ -16,6 +16,10 @@ export class CreateScheduleDto {
   @IsBoolean()
   apply_to_all_doctors?: boolean;
 
+  @IsOptional()
+  @IsInt()
+  category_id?: number;
+
   @IsInt()
   hospital_id: number;
 

@@ -129,7 +129,7 @@ export class AppointmentsService {
           .createQueryBuilder(Appointment, 'appt')
           .where('appt.doctor_id = :doctorId', { doctorId: createAppointmentDto.doctor_id })
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: appointmentDateStr })
-          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
+          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed', 'checked_in', 'in_progress', 'awaiting_payment'] })
           .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTime })
           .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: appointmentTime })
           .getCount();
@@ -591,7 +591,7 @@ export class AppointmentsService {
       where: {
         doctor_id: doctorId,
         appointment_date: date as any, // TypeORM expected Date object but string "YYYY-MM-DD" works for DB
-        status: In(['pending', 'confirmed', 'completed']),
+        status: In(['pending', 'confirmed', 'completed', 'checked_in', 'in_progress', 'awaiting_payment']),
       },
     });
 
@@ -733,7 +733,7 @@ export class AppointmentsService {
           .createQueryBuilder(Appointment, 'appt')
           .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
           .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
-          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
+          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed', 'checked_in', 'in_progress', 'awaiting_payment'] })
           .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
           .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: time })
           .getCount();
