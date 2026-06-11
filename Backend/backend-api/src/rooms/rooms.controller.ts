@@ -24,7 +24,17 @@ export class RoomsController {
   findAll(
     @Query('hospital_id') hospitalId?: string,
     @Query('category_id') categoryId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
+    if (page && limit) {
+      return this.roomsService.findAllPaginated(
+        +page,
+        +limit,
+        hospitalId ? +hospitalId : undefined,
+        categoryId ? +categoryId : undefined,
+      );
+    }
     return this.roomsService.findAll(
       hospitalId ? +hospitalId : undefined,
       categoryId ? +categoryId : undefined,

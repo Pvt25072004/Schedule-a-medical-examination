@@ -54,6 +54,28 @@ export class RoomsService {
     });
   }
 
+  async findAllPaginated(page: number, limit: number, hospitalId?: number, categoryId?: number): Promise<any> {
+    const where: any = {};
+    if (hospitalId) where.hospital_id = hospitalId;
+    if (categoryId) where.category_id = categoryId;
+
+    const [data, total] = await this.roomsRepository.findAndCount({
+      where,
+      relations: ['hospital', 'category'],
+      order: { name: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   async findOne(id: number): Promise<Room> {
     const room = await this.roomsRepository.findOne({
       where: { id },

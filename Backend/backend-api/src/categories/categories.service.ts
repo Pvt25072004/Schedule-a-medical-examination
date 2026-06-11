@@ -38,6 +38,26 @@ export class CategoriesService {
     return qb.getMany();
   }
 
+  async findAllPaginated(page: number, limit: number, hospitalId?: number): Promise<any> {
+    const qb = this.categoriesRepository.createQueryBuilder('category');
+    if (hospitalId) {
+      qb.innerJoin('hospital_category', 'hc', 'hc.category_id = category.id')
+        .where('hc.hospital_id = :hospitalId', { hospitalId });
+    }
+    qb.orderBy('category.name', 'ASC');
+    
+    qb.skip((page - 1) * limit).take(limit);
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   async findOne(id: number): Promise<Category> {
     const category = await this.categoriesRepository.findOne({
       where: { id },
