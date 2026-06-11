@@ -139,17 +139,20 @@ export class SchedulesService {
       return this.schedulesRepository.find({
         where: { hospital_id: user.hospital_id },
         order: { work_date: 'ASC', start_time: 'ASC' },
-        relations: ['doctor', 'doctor.user', 'hospital'],
+        relations: ['doctor', 'doctor.user', 'hospital', 'room'],
       });
     }
     return this.schedulesRepository.find({
       order: { work_date: 'ASC', start_time: 'ASC' },
-      relations: ['doctor', 'doctor.user', 'hospital'],
+      relations: ['doctor', 'doctor.user', 'hospital', 'room'],
     });
   }
 
   async findOne(id: number): Promise<Schedule> {
-    const schedule = await this.schedulesRepository.findOne({ where: { id } });
+    const schedule = await this.schedulesRepository.findOne({ 
+      where: { id },
+      relations: ['doctor', 'doctor.user', 'hospital', 'room']
+    });
     if (!schedule) {
       throw new NotFoundException(`Schedule with ID ${id} not found`);
     }
@@ -170,7 +173,7 @@ export class SchedulesService {
     }
     return this.schedulesRepository.find({
       where,
-      relations: ['hospital'],
+      relations: ['hospital', 'room'],
       order: {
         work_date: 'ASC',
         start_time: 'ASC',
