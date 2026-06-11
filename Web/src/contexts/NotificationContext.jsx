@@ -85,21 +85,22 @@ export const NotificationProvider = ({ children }) => {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-center p-4 bg-white border shadow-lg rounded-lg transform transition-all duration-300 ${
+            className={`pointer-events-auto flex items-center p-4 border shadow-lg rounded-lg transform transition-all duration-300 ${
               toast.type === "success"
-                ? "border-emerald-100"
+                ? "bg-emerald-500 border-emerald-600 text-white"
                 : toast.type === "error"
-                ? "border-l-4 border-l-red-500 border-red-100"
-                : "border-emerald-100"
+                ? "bg-white border-l-4 border-l-red-500 border-red-100"
+                : "bg-white border-emerald-100"
             }`}
           >
             <div className="flex-shrink-0 mr-3">
-              {toast.type === "success" && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+              {toast.type === "success" && <CheckCircle2 className="w-5 h-5 text-white" />}
               {toast.type === "error" && <AlertCircle className="w-5 h-5 text-red-500" />}
               {toast.type === "info" && <Info className="w-5 h-5 text-emerald-500" />}
             </div>
             <div className="flex-1">
               <p className={`text-sm font-medium ${
+                toast.type === "success" ? "text-white" :
                 toast.type === "error" ? "text-red-800" : "text-slate-800"
               }`}>
                 {toast.message}
@@ -107,7 +108,9 @@ export const NotificationProvider = ({ children }) => {
             </div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="flex-shrink-0 ml-4 text-slate-400 hover:text-slate-600 transition-colors"
+              className={`flex-shrink-0 ml-4 transition-colors ${
+                toast.type === "success" ? "text-emerald-100 hover:text-white" : "text-slate-400 hover:text-slate-600"
+              }`}
             >
               <X className="w-4 h-4" />
             </button>

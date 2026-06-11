@@ -448,6 +448,7 @@ export class AppointmentsService {
       throw new ForbiddenException('Bạn không có quyền thay đổi trạng thái lịch hẹn của bác sĩ khác');
     }
 
+    const previousStatus = appointment.status;
     appointment.status = status;
     if (status === 'checked_in') {
       const now = new Date();
@@ -481,7 +482,7 @@ export class AppointmentsService {
           }
 
           // Chỉ hoàn tiền nếu lịch này ĐÃ THANH TOÁN (confirmed)
-          if (appointment.status === 'confirmed' && appointment.refund_percentage > 0) {
+          if (previousStatus === 'confirmed' && appointment.refund_percentage > 0) {
             // Nếu có thanh toán trước đó (PayOS / VNPay) và status trước đó không phải failed
             // Yêu cầu hoàn tiền
             appointment.refund_amount = Number(appointment.total_fee) * appointment.refund_percentage / 100;
