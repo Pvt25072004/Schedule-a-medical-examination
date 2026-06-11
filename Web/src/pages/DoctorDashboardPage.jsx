@@ -984,13 +984,6 @@ export default function DoctorDashboardPage({ navigate }) {
               sẽ xử lý trong vòng 24h.
             </p>
           </div>
-          <Button
-            className="bg-white text-black hover:bg-slate-50 shadow-lg !font-bold"
-            icon={MessageCircle}
-            onClick={() => setActiveTab(TABS.AFFILIATIONS)}
-          >
-            Quản lý liên kết
-          </Button>
         </div>
       </Card>
     </div>
