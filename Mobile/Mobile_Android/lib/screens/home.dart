@@ -25,6 +25,7 @@ import '../subscreens/profile/notification_history.dart';
 import 'chatbot.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../service/service_package_service.dart';
+import '../utils/image_helper.dart';
 
 // --- Cài đặt Màu Chủ đạo ---
 const Color primaryColor = Color(0xFF48A1F3); // Xanh lam
@@ -715,27 +716,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'STL Xin chào,',
-                                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'STL Xin chào,',
+                                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                      ),
+                                      Text(
+                                        userName,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: primaryDarkColor,
                                         ),
-                                        Text(
-                                          userName,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: primaryDarkColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 _buildWeatherWidget(),
                               ],
                             ),
@@ -1152,7 +1154,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               )
                         else if (_topDoctors.isNotEmpty)
                              SizedBox(
-                                height: 185,
+                                height: 200,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1177,7 +1179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     final String doctorName = (doctor['user']?['full_name'] ?? doctor['name'] ?? 'Bác sĩ').toString();
                                     final String categoryName = (doctor['category']?['name'] ?? 'Chuyên gia').toString();
                                     
-                                    final String avatarUrl = (doctor['avatar_url'] ?? doctor['user']?['avatar'] ?? '').toString();
+                                    final String avatarUrl = (doctor['avatar_url'] ?? doctor['user']?['avatar_url'] ?? doctor['user']?['avatar'] ?? '').toString();
 
                                     return Container(
                                       width: 160,
@@ -1207,7 +1209,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     color: primaryColor.withOpacity(0.1),
                                                     child: avatarUrl.isNotEmpty
                                                       ? Image.network(
-                                                          avatarUrl,
+                                                          ImageHelper.getFullUrl(avatarUrl),
                                                           height: 55,
                                                           width: 55,
                                                           fit: BoxFit.cover,
@@ -1230,12 +1232,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 ),
                                                 Text(
                                                   categoryName,
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                     fontSize: 11,
                                                     color: primaryColor,
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                   textAlign: TextAlign.center,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(

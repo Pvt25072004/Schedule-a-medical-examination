@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 class Step8Confirmation extends StatelessWidget {
   // Thông tin Lịch khám
   final String hospitalName;
+  final String? roomName;
   final String cityName;
   final String specialty;
   final String doctor;
@@ -28,6 +29,7 @@ class Step8Confirmation extends StatelessWidget {
     super.key,
     this.bookingCode,
     required this.hospitalName,
+    this.roomName,
     required this.cityName,
     required this.specialty,
     required this.doctor,
@@ -146,7 +148,9 @@ class Step8Confirmation extends StatelessWidget {
           const Divider(height: 10),
 
           _buildInfoItem(Icons.person, 'Bác sĩ', doctor, isHeader: true),
-          _buildInfoItem(Icons.location_on, 'Bệnh viện', '$hospitalName - $cityName'),
+          _buildInfoItem(Icons.local_hospital, 'Cơ sở khám', '$hospitalName - $cityName'),
+          if (roomName != null && roomName!.isNotEmpty)
+            _buildInfoItem(Icons.meeting_room, 'Phòng khám', roomName!),
           _buildInfoItem(Icons.calendar_today, 'Ngày khám', formattedDate),
           _buildInfoItem(Icons.access_time, 'Giờ khám', timeSlot),
           _buildInfoItem(Icons.medical_services, 'Chuyên khoa', specialty),

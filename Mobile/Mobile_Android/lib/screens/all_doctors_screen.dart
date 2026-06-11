@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/image_helper.dart';
 import '../service/doctor_service.dart';
 import 'booking.dart';
 
@@ -153,7 +154,7 @@ class _AllDoctorsScreenState extends State<AllDoctorsScreen> {
     final int reviewCount = doctor['review_count'] ?? 0;
     final double rating = (doctor['rating'] ?? 5.0).toDouble();
 
-    final String avatarUrl = (doctor['avatar_url'] ?? doctor['user']?['avatar'] ?? '').toString();
+    final String avatarUrl = (doctor['avatar_url'] ?? doctor['user']?['avatar_url'] ?? doctor['user']?['avatar'] ?? '').toString();
 
     return GestureDetector(
       onTap: () {
@@ -187,8 +188,7 @@ class _AllDoctorsScreenState extends State<AllDoctorsScreen> {
                 height: 72,
                 color: const Color(0xFF48A1F3).withOpacity(0.1),
                 child: avatarUrl.isNotEmpty
-                    ? Image.network(
-                        avatarUrl,
+                    ? Image.network(ImageHelper.getFullUrl(avatarUrl),
                         fit: BoxFit.cover,
                         errorBuilder: (c, e, s) => Center(
                           child: Text(
@@ -259,3 +259,4 @@ class _AllDoctorsScreenState extends State<AllDoctorsScreen> {
     );
   }
 }
+

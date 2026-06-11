@@ -514,6 +514,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
                   _buildInfoRow(Icons.business_rounded, 'Nơi khám', hospName, Colors.indigo.shade600),
                   const SizedBox(height: 10),
+                  _buildInfoRow(Icons.meeting_room_rounded, 'Phòng', appt['schedule']?['room']?['name']?.toString() ?? 'Chưa phân phòng', Colors.purple.shade600),
+                  const SizedBox(height: 10),
                   _buildInfoRow(
                     Icons.sticky_note_2_outlined, 
                     'Lý do khám', 
@@ -607,44 +609,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                     ),
                   ],
                     const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              showAppSnackBar(context, 'Tính năng dời lịch đang được phát triển, vui lòng hủy và đặt lại!');
-                            },
-                            icon: const Icon(Icons.edit_calendar, size: 18),
-                            label: const Text('Dời lịch'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.blue.shade700,
-                              side: BorderSide(color: Colors.blue.shade700),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              _showCancelDialog(appt);
-                            },
-                            icon: const Icon(Icons.cancel_outlined, size: 18),
-                            label: const Text('Hủy lịch'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.shade600,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  
                   if (status.toLowerCase() == 'completed') ...[
                     const SizedBox(height: 18),
                     Builder(

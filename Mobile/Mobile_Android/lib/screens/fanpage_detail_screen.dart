@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../utils/image_helper.dart';
+import '../utils/text_utils.dart';
 import '../service/social_service.dart';
 import '../service/auth_service.dart';
 import '../utils/snackbar_helper.dart';
@@ -122,7 +124,7 @@ class _FanpageDetailScreenState extends State<FanpageDetailScreen> {
                       width: double.infinity,
                       color: Colors.grey.shade300,
                       child: coverUrl != null 
-                          ? Image.network(coverUrl, fit: BoxFit.cover) 
+                          ? Image.network(ImageHelper.getFullUrl(coverUrl), fit: BoxFit.cover) 
                           : const Center(child: Icon(Icons.photo, size: 50, color: Colors.grey)),
                     ),
                     Positioned(
@@ -136,7 +138,7 @@ class _FanpageDetailScreenState extends State<FanpageDetailScreen> {
                         child: CircleAvatar(
                           radius: 40,
                           backgroundColor: Colors.white,
-                          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                          backgroundImage: avatarUrl != null ? NetworkImage(ImageHelper.getFullUrl(avatarUrl)) : null,
                           child: avatarUrl == null ? const Icon(Icons.business, size: 40, color: Color(0xFF48A1F3)) : null,
                         ),
                       ),
@@ -236,3 +238,4 @@ class _FanpageDetailScreenState extends State<FanpageDetailScreen> {
     );
   }
 }
+

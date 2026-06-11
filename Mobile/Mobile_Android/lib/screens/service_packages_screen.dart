@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../service/service_package_service.dart';
 import 'booking.dart';
-
+import '../utils/image_helper.dart';
+import '../utils/text_utils.dart';
 class ServicePackagesScreen extends StatefulWidget {
   const ServicePackagesScreen({super.key});
 
@@ -58,7 +59,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
                             ClipRRect(
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                               child: Image.network(
-                                pkg['image_url'].toString(),
+                                ImageHelper.getFullUrl(pkg['image_url'].toString()),
                                 height: 140,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
@@ -81,7 +82,7 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              pkg['description'] ?? 'Không có mô tả',
+                              TextUtils.stripHtml(pkg['description']?.toString() ?? 'Không có mô tả'),
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: Colors.grey[700]),
@@ -117,7 +118,9 @@ class _ServicePackagesScreenState extends State<ServicePackagesScreen> {
                           ],
                         ),
                       ),
-                    );
+                    ],
+                  ),
+                );
                   },
                 ),
     );

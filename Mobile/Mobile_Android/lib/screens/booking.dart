@@ -42,6 +42,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Color specialtyColor = const Color(0xFF48A1F3);
   String selectedDoctor = '';
   int? selectedDoctorId; // MỚI: Lưu ID thật từ backend
+  String? selectedRoomName; // MỚI: Tên phòng khám
   
   // -- Tích hợp Gói Khám --
   int? selectedPackageId;
@@ -169,6 +170,7 @@ class _BookingScreenState extends State<BookingScreen> {
           if (data != null && data.containsKey('date')) {
             selectedDate = data['date'] is DateTime ? data['date'] : (data['date'] as DateTime? ?? DateTime.now());
             selectedTimeSlot = data['timeSlot'] ?? '';
+            selectedRoomName = data['roomName'];
           }
         } else if (step == 7) {
           // Step 7: Thông tin Bệnh nhân
@@ -272,6 +274,7 @@ class _BookingScreenState extends State<BookingScreen> {
         body = Step7Payment(
           hospitalName: selectedHospital,
           hospitalId: selectedHospitalId, // Truyền vào để gọi API
+          roomName: selectedRoomName,
           doctor: selectedDoctor,
           doctorId: selectedDoctorId, // Truyền vào để gọi API
           date: selectedDate,
@@ -296,6 +299,7 @@ class _BookingScreenState extends State<BookingScreen> {
         body = Step8Confirmation(
           bookingCode: bookingCode, // Truyền mã lịch thực từ Backend
           hospitalName: selectedHospital,
+          roomName: selectedRoomName,
           cityName: selectedCity,
           specialty: selectedSpecialty,
           doctor: selectedDoctor,

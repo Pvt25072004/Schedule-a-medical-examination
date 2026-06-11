@@ -113,9 +113,9 @@ class SocialService {
     }
   }
 
-  Future<Map<String, dynamic>?> fetchFanpageDetail(int id) async {
+  Future<Map<String, dynamic>?> fetchFanpageDetail(int hospitalId) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/fanpages/$id');
+      final url = Uri.parse('${ApiConfig.baseUrl}/fanpages/hospital/$hospitalId');
       final response = await http.get(url).timeout(ApiConfig.timeout);
 
       if (response.statusCode == 200) {
@@ -128,9 +128,9 @@ class SocialService {
     }
   }
 
-  Future<List<dynamic>> fetchPostsByFanpage(int fanpageId, {int page = 1, int limit = 10}) async {
+  Future<List<dynamic>> fetchPostsByFanpage(int hospitalId, {int page = 1, int limit = 10}) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/posts/fanpage/$fanpageId?page=$page&limit=$limit');
+      final url = Uri.parse('${ApiConfig.baseUrl}/posts/hospital/$hospitalId?page=$page&limit=$limit');
       final headers = <String, String>{};
       final token = AuthService.accessToken;
       if (token != null) {

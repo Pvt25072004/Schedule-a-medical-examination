@@ -3,7 +3,8 @@ import '../service/social_service.dart';
 import '../service/auth_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../screens/fanpage_detail_screen.dart';
-
+import '../utils/text_utils.dart';
+import '../utils/image_helper.dart';
 class PostCardWidget extends StatefulWidget {
   final dynamic post;
   final SocialService socialService;
@@ -77,11 +78,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           children: [
             GestureDetector(
               onTap: () {
-                if (post['fanpage'] != null && post['fanpage']['id'] != null) {
+                if (post['hospital'] != null && post['hospital']['id'] != null) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FanpageDetailScreen(fanpageId: post['fanpage']['id']),
+                      // We pass hospital['id'] but maybe we need fanpageId. Actually, FanpageDetailScreen expects fanpageId
+                      // The backend fanpage API has /api/v1/fanpages/:id. 
+                      // Wait, earlier the API showed fanpage ID = 1 for Hospital 2. So we need to query fanpage by hospital_id?
+                      // If the fanpage API uses fanpage ID, we might need a way to get fanpage by hospital id, but let's assume the user meant navigating to fanpage detail with the fanpage id if available, or just pass hospital ID and let the screen handle it. Let's look at FanpageDetailScreen.
+                      builder: (context) => FanpageDetailScreen(fanpageId: post['hospital']['id']),
                     ),
                   );
                 }
@@ -90,10 +95,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                 children: [
                   CircleAvatar(
                     backgroundColor: const Color(0xFFEBF5FF),
-                    backgroundImage: (post['fanpage'] != null && post['fanpage']['avatar_url'] != null)
-                        ? NetworkImage(post['fanpage']['avatar_url'])
+                    backgroundImage: (post['hospital'] != null && post['hospital']['logo_url'] != null && post['hospital']['logo_url'].toString().isNotEmpty)
+                        ? NetworkImage(ImageHelper.getFullUrl(post['hospital']['logo_url']))
                         : null,
-                    child: (post['fanpage'] == null || post['fanpage']['avatar_url'] == null)
+                    child: (post['hospital'] == null || post['hospital']['logo_url'] == null || post['hospital']['logo_url'].toString().isEmpty)
                         ? const Icon(Icons.business, color: Color(0xFF48A1F3))
                         : null,
                   ),
@@ -103,7 +108,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post['fanpage']?['hospital']?['name'] ?? post['fanpage']?['name'] ?? 'Bệnh viện chưa xác định',
+                          post['hospital'] != null ? (post['hospital']['name'] ?? 'Bệnh viện') : 'Bệnh viện chưa xác định',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         Text(
@@ -118,15 +123,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             ),
             const SizedBox(height: 12),
             if (post['title'] != null && post['title'].toString().isNotEmpty) ...[
-              Text(post['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              Text(TextUtils.stripHtml(post['title'].toString()), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               const SizedBox(height: 4),
             ],
-            Text(post['content'] ?? ''),
+            Text(TextUtils.stripHtml(post['content']?.toString() ?? '')),
             if (post['image_url'] != null && post['image_url'].toString().isNotEmpty) ...[
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(post['image_url'], fit: BoxFit.cover),
+                child: Image.network(ImageHelper.getFullUrl(post['image_url']), fit: BoxFit.cover),
               ),
             ],
             const SizedBox(height: 12),

@@ -304,6 +304,19 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
     return const SizedBox.shrink();
   }
 
+  String? _getRoomForSlot(DateTime? date, String timeSlot) {
+    if (date == null || timeSlot.isEmpty) return null;
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    for (var s in _doctorSchedules) {
+      if (s['work_date'] != null && s['work_date'].toString().startsWith(dateStr)) {
+        if (s['room'] != null) {
+          return s['room']['name']?.toString() ?? s['room']['room_name']?.toString();
+        }
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isReadyToProceed = selectedDate!=null && selectedTimeSlot.isNotEmpty;
@@ -337,7 +350,7 @@ class _Step4DateTimeSelectionState extends State<Step4DateTimeSelection> {
                   width: double.infinity,
                   margin: const EdgeInsets.only(top:10),
                   child: ElevatedButton(
-                    onPressed: isReadyToProceed ? ()=>widget.onNext({'date':selectedDate!, 'timeSlot':selectedTimeSlot}) : null,
+                    onPressed: isReadyToProceed ? ()=>widget.onNext({'date':selectedDate!, 'timeSlot':selectedTimeSlot, 'roomName': _getRoomForSlot(selectedDate, selectedTimeSlot)}) : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isReadyToProceed?primaryColor:Colors.grey,
                       foregroundColor: isReadyToProceed?primaryDarkColor:Colors.white,

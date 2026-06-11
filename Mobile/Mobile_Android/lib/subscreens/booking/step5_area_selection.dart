@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/image_helper.dart';
 import 'package:intl/intl.dart';
 import '../../service/doctor_service.dart';
 
@@ -137,8 +138,9 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
                       itemBuilder: (context, index) {
                         final doc = _doctors[index];
                         final int docId = doc['id'] as int;
-                        final String name = doc['name'] ?? 'Bác sĩ';
-                        final String specialty = doc['specialty'] ?? widget.specialtyName;
+                        
+                        final String name = (doc['user']?['full_name'] ?? doc['name'] ?? 'Bác sĩ').toString();
+                        final String specialty = (doc['category']?['name'] ?? doc['specialty'] ?? widget.specialtyName).toString();
                         
                         // --- TÍNH TOÁN GIÁ THẬT (Chuẩn Enterprise) ---
                         // Tổng giá = Giá khám bác sĩ + Phụ phí bệnh viện
@@ -154,9 +156,12 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
                           facilityFee = (currentHos['facility_fee'] ?? 0).toDouble();
                         }
                         final int price = (doctorFee + facilityFee).toInt();
-                        final double rating = 4.5 + (docId % 5) * 0.1; // Lên tới 5.0 sao
-                        final int reviews = 50 + (docId * 7) % 150;
-                        final int expYears = 5 + (docId % 20);
+                        
+                        // Dữ liệu thật từ API
+                        final double rating = (doc['rating'] != null) ? (double.tryParse(doc['rating'].toString()) ?? 5.0) : 5.0;
+                        final int reviews = (doc['review_count'] != null) ? (int.tryParse(doc['review_count'].toString()) ?? 0) : 0;
+                        final int expYears = (doc['experience_years'] != null) ? (int.tryParse(doc['experience_years'].toString()) ?? 0) : 0;
+                        final String avatarUrl = (doc['avatar_url'] ?? doc['user']?['avatar_url'] ?? doc['user']?['avatar'] ?? '').toString();
 
                         // Avatar color
                         final List<Color> avatarColors = [
@@ -189,9 +194,8 @@ class _Step5DoctorSelectionState extends State<Step5DoctorSelection> {
                                         width: 60,
                                         height: 60,
                                         color: avatarBg,
-                                        child: (doc['avatar_url'] != null || doc['user']?['avatar'] != null)
-                                            ? Image.network(
-                                                (doc['avatar_url'] ?? doc['user']?['avatar']).toString(),
+                                        child: avatarUrl.isNotEmpty
+                                            ? Image.network(ImageHelper.getFullUrl(avatarUrl),
                                                 fit: BoxFit.cover,
                                                 errorBuilder: (c, e, s) => const Icon(Icons.person, size: 30, color: Colors.black54),
                                               )

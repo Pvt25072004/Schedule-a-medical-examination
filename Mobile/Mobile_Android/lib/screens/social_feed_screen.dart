@@ -3,8 +3,9 @@ import '../service/social_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../service/auth_service.dart';
 import '../widgets/post_card.dart';
-
 import 'fanpage_detail_screen.dart';
+import '../utils/text_utils.dart';
+import '../utils/image_helper.dart';
 
 class SocialFeedScreen extends StatefulWidget {
   const SocialFeedScreen({super.key});
@@ -35,13 +36,13 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   }
 
   List<dynamic> get _filteredPosts {
-    if (_searchQuery.trim().isEmpty) return [];
+    if (_searchQuery.trim().isEmpty) return _posts;
     final q = _searchQuery.toLowerCase();
     return _posts.where((post) {
-      final title = (post['title'] ?? '').toString().toLowerCase();
-      final content = (post['content'] ?? '').toString().toLowerCase();
-      final fanpageName = (post['fanpage']?['hospital']?['name'] ?? post['fanpage']?['name'] ?? '').toString().toLowerCase();
-      return title.contains(q) || content.contains(q) || fanpageName.contains(q);
+      final title = TextUtils.stripHtml((post['title'] ?? '').toString()).toLowerCase();
+      final content = TextUtils.stripHtml((post['content'] ?? '').toString()).toLowerCase();
+      final hospitalName = (post['hospital']?['name'] ?? '').toString().toLowerCase();
+      return title.contains(q) || content.contains(q) || hospitalName.contains(q);
     }).toList();
   }
 
@@ -105,6 +106,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
     final searchResults = _filteredPosts;
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: _isSearching 
             ? TextField(
                 controller: _searchController,
@@ -147,86 +149,29 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : RefreshIndicator(
-                        onRefresh: _loadPosts,
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          itemCount: _posts.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == _posts.length) {
-                              return _isLoadingMore
-                                  ? const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
-                                  : const SizedBox.shrink();
-                            }
-                            final post = _posts[index];
-                            return PostCardWidget(post: post, socialService: _socialService);
-                          },
-                        ),
-                      ),
-              ),
-            ],
-          ),
-          
-          // Search Results Dropdown Card Overlay
-          if (_searchQuery.isNotEmpty)
-            Positioned(
-              top: 8,
-              left: 16,
-              right: 16,
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  constraints: const BoxConstraints(maxHeight: 350),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: searchResults.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Text('Không tìm thấy kết quả cho "$_searchQuery"', style: TextStyle(color: Colors.grey.shade600)),
-                        )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: searchResults.length,
-                          separatorBuilder: (context, index) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final post = searchResults[index];
-                            final hospitalName = post['fanpage']?['hospital']?['name'] ?? post['fanpage']?['name'] ?? 'Bệnh viện';
-                            return ListTile(
-                              leading: const Icon(Icons.article_outlined, color: Color(0xFF48A1F3)),
-                              title: Text(
-                                post['title'] != null && post['title'].toString().isNotEmpty 
-                                    ? post['title'] 
-                                    : (post['content']?.toString().substring(0, post['content'].toString().length > 30 ? 30 : post['content'].toString().length) ?? 'Bài viết'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(hospitalName, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                              onTap: () {
-                                // Navigate to the fanpage directly from search result
-                                if (post['fanpage'] != null && post['fanpage']['id'] != null) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => FanpageDetailScreen(fanpageId: post['fanpage']['id']),
-                                    ),
-                                  );
+                    : searchResults.isEmpty
+                        ? const Center(child: Text('Không tìm thấy bài viết nào.'))
+                        : RefreshIndicator(
+                            onRefresh: _loadPosts,
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              itemCount: _isSearching ? searchResults.length : (_posts.length + 1),
+                              itemBuilder: (context, index) {
+                                if (!_isSearching && index == _posts.length) {
+                                  return _isLoadingMore
+                                      ? const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
+                                      : const SizedBox.shrink();
                                 }
-                                // Hide search
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                                FocusScope.of(context).unfocus();
+                                final post = _isSearching ? searchResults[index] : _posts[index];
+                                return PostCardWidget(post: post, socialService: _socialService);
                               },
-                            );
-                          },
                         ),
                 ),
-              ),
+              )
+              ],
             ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 }

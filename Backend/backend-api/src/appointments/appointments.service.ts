@@ -446,6 +446,12 @@ export class AppointmentsService {
     }
 
     appointment.status = status;
+    if (status === 'checked_in') {
+      const now = new Date();
+      const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+      appointment.appointment_date = new Date(vnTime.toISOString().slice(0, 10));
+      appointment.appointment_time = vnTime.toISOString().slice(11, 16);
+    }
     if (status === 'rejected' || status === 'cancelled') {
       appointment.cancel_reason = reason || null;
 

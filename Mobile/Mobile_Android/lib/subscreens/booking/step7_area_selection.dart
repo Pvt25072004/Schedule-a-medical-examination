@@ -16,6 +16,7 @@ class Step7Payment extends StatefulWidget {
   final int? doctorId; // MỚI
   final String hospitalName;
   final int? hospitalId; // MỚI
+  final String? roomName;
   final String phone;
   final String? email; // MỚI
   final String? reason; // MỚI
@@ -39,6 +40,7 @@ class Step7Payment extends StatefulWidget {
     this.doctorId,
     required this.hospitalName,
     this.hospitalId,
+    this.roomName,
     required this.phone,
     this.email,
     this.reason,
@@ -364,7 +366,10 @@ class _Step7PaymentState extends State<Step7Payment> {
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 12),
-                        _buildPopupInfo('Mục khám:', '${widget.doctor} - ${widget.hospitalName}'),
+                        _buildPopupInfo('Cơ sở:', widget.hospitalName),
+                        if (widget.roomName != null && widget.roomName!.isNotEmpty)
+                          _buildPopupInfo('Phòng khám:', widget.roomName!),
+                        _buildPopupInfo('Bác sĩ:', widget.doctor),
                         _buildPopupInfo('Ngày/Giờ:', '${DateFormat('dd/MM/yyyy').format(widget.date)} - ${widget.timeSlot}'),
                         _buildPopupInfo('Bệnh nhân:', '${widget.fullName} ${widget.isForRelative ? '(${widget.relationship})' : ''}'),
                         _buildPopupInfo('SĐT:', widget.phone),

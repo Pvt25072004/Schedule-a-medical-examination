@@ -1,5 +1,6 @@
 import 'package:clinic_booking_system/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import '../utils/image_helper.dart';
 import '../service/doctor_service.dart';
 import 'booking.dart';
 
@@ -156,7 +157,7 @@ class _SpecialtyDoctorsScreenState extends State<SpecialtyDoctorsScreen> {
     final int reviewCount = doctor['review_count'] != null ? int.tryParse(doctor['review_count'].toString()) ?? 0 : 0;
     
     final String description = (doctor['description'] ?? 'Chưa cập nhật thông tin mô tả chi tiết kinh nghiệm làm việc.').toString();
-    final String avatarUrl = (doctor['user']?['avatar'] ?? doctor['avatar_url'] ?? '').toString();
+    final String avatarUrl = (doctor['avatar_url'] ?? doctor['user']?['avatar_url'] ?? doctor['user']?['avatar'] ?? '').toString();
 
     final hospitalsRaw = doctor['hospitals'] as List?;
     final String hospitalNames = (hospitalsRaw != null && hospitalsRaw.isNotEmpty)
@@ -349,3 +350,4 @@ class _SpecialtyDoctorsScreenState extends State<SpecialtyDoctorsScreen> {
     );
   }
 }
+
