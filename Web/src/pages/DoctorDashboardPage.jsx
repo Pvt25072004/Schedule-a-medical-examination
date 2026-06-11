@@ -271,7 +271,9 @@ export default function DoctorDashboardPage({ navigate }) {
       setLoadingCategories(true);
       const targetHospitals = hospitalsList || doctorProfile?.hospitals || [];
       if (targetHospitals.length > 0) {
-        const promises = targetHospitals.map((h) => getCategories(h.id || h.hospital_id));
+        const promises = targetHospitals.map((h) =>
+          getCategories(h.id || h.hospital_id),
+        );
         const results = await Promise.all(promises);
         const uniqueCategories = [];
         const seenIds = new Set();
@@ -973,7 +975,7 @@ export default function DoctorDashboardPage({ navigate }) {
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 p-2">
           <div>
-            <h3 className="text-2xl font-black mb-2 text-white">
+            <h3 className="text-2xl font-black mb-2 text-black">
               Cần hỗ trợ từ Admin?
             </h3>
             <p className="text-sm text-blue-100/80 max-w-xl font-medium">
