@@ -83,14 +83,20 @@ export const updateAppointment = async (id, payload) => {
   return handleResponse(response, "Không thể cập nhật lịch hẹn");
 };
 
-export const updateAppointmentStatus = async (id, status, reason = "") => {
+export const updateAppointmentStatus = async (id, status, reason = "", bankInfo = null) => {
+  const payload = { status, reason };
+  if (bankInfo) {
+    if (bankInfo.refund_bank_name) payload.refund_bank_name = bankInfo.refund_bank_name;
+    if (bankInfo.refund_bank_account) payload.refund_bank_account = bankInfo.refund_bank_account;
+    if (bankInfo.refund_account_name) payload.refund_account_name = bankInfo.refund_account_name;
+  }
   const response = await fetch(`${APPOINTMENTS_ENDPOINT}/${id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
     },
-    body: JSON.stringify({ status, reason }),
+    body: JSON.stringify(payload),
   });
   return handleResponse(response, "Không thể cập nhật trạng thái lịch hẹn");
 };

@@ -51,6 +51,12 @@ const AppointmentsPage = ({ navigate }) => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [refundPercentage, setRefundPercentage] = useState(0);
+  const [bankInfo, setBankInfo] = useState({
+    refund_bank_name: "",
+    refund_bank_account: "",
+    refund_account_name: ""
+  });
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrAppointment, setQrAppointment] = useState(null);
   const location = useLocation();
@@ -158,11 +164,19 @@ const AppointmentsPage = ({ navigate }) => {
 
   const handleCancelAppointment = async () => {
     if (selectedAppointment) {
+      if (refundPercentage > 0) {
+        if (!bankInfo.refund_bank_name || !bankInfo.refund_bank_account || !bankInfo.refund_account_name) {
+          showError("Vui lòng nhập đầy đủ thông tin tài khoản nhận hoàn tiền");
+          return;
+        }
+      }
       const reasonToSubmit = `[Bệnh nhân tự hủy] ${cancelReason}`;
-      await cancelAppointment(selectedAppointment.id, reasonToSubmit);
+      await cancelAppointment(selectedAppointment.id, reasonToSubmit, refundPercentage > 0 ? bankInfo : null);
       setShowCancelModal(false);
       setSelectedAppointment(null);
       setCancelReason("");
+      setRefundPercentage(0);
+      setBankInfo({ refund_bank_name: "", refund_bank_account: "", refund_account_name: "" });
       showSuccess("Hủy lịch thành công");
       if (refreshAppointments) refreshAppointments();
     }
@@ -553,9 +567,22 @@ const AppointmentsPage = ({ navigate }) => {
                 size="sm"
                 onClick={() => {
                   setSelectedAppointment(apt);
+                  setCancelReason("");
+                  setBankInfo({ refund_bank_name: "", refund_bank_account: "", refund_account_name: "" });
+                  
+                  let pct = 0;
+                  if (apt.status === "confirmed" && apt.date && apt.time) {
+                    const aptTime = new Date(`${apt.date}T${apt.time}:00`).getTime();
+                    const now = new Date().getTime();
+                    const diffHours = (aptTime - now) / (1000 * 60 * 60);
+                    if (diffHours >= 2) pct = 100;
+                    else if (diffHours >= 1) pct = 50;
+                  }
+                  setRefundPercentage(pct);
+                  
                   setShowCancelModal(true);
                 }}
-                className="text-red-600 hover:bg-red-50 hover:border-red-200"
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 font-semibold"
               >
                 Hủy lịch
               </Button>
@@ -874,18 +901,33 @@ const AppointmentsPage = ({ navigate }) => {
             </div>
 
             <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-4 text-sm">
-              Bạn có chắc chắn muốn hủy lịch hẹn với bác sĩ{" "}
-              <span className="font-semibold">
-                {selectedAppointment?.doctorName}
-              </span>{" "}
-              vào lúc{" "}
-              <span className="font-semibold">
-                {selectedAppointment?.time} {formatDate(selectedAppointment?.date)}
-              </span>
-              ?
+              <p>
+                Bạn có chắc chắn muốn hủy lịch hẹn với bác sĩ{" "}
+                <span className="font-semibold">
+                  {selectedAppointment?.doctorName}
+                </span>{" "}
+                vào lúc{" "}
+                <span className="font-semibold">
+                  {selectedAppointment?.time} {formatDate(selectedAppointment?.date)}
+                </span>
+                ?
+              </p>
+              {selectedAppointment?.status === "confirmed" && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-amber-800">
+                  <strong>Thông báo hoàn tiền:</strong>
+                  <ul className="list-disc ml-5 mt-1">
+                    <li>Hủy trước 2 tiếng: Hoàn 100%</li>
+                    <li>Hủy trước 1 tiếng: Hoàn 50%</li>
+                    <li>Hủy dưới 1 tiếng: Không hoàn tiền</li>
+                  </ul>
+                  <p className="mt-2 font-bold text-amber-900">
+                    Lịch của bạn sẽ được hoàn: <span className="text-xl">{refundPercentage}%</span>
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Lý do hủy (bắt buộc)
               </label>
@@ -894,10 +936,48 @@ const AppointmentsPage = ({ navigate }) => {
                 onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="Vui lòng cho biết lý do bạn hủy lịch..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                rows="3"
+                rows="2"
                 required
               />
             </div>
+
+            {refundPercentage > 0 && (
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <p className="text-sm font-semibold text-blue-800 mb-3">Vui lòng cung cấp thông tin tài khoản nhận hoàn tiền:</p>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <label className="block text-gray-700 mb-1">Tên ngân hàng</label>
+                    <input 
+                      type="text" 
+                      placeholder="VD: Vietcombank, MB Bank..." 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500"
+                      value={bankInfo.refund_bank_name}
+                      onChange={e => setBankInfo({...bankInfo, refund_bank_name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-1">Số tài khoản</label>
+                    <input 
+                      type="text" 
+                      placeholder="VD: 123456789" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500"
+                      value={bankInfo.refund_bank_account}
+                      onChange={e => setBankInfo({...bankInfo, refund_bank_account: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-1">Tên chủ tài khoản</label>
+                    <input 
+                      type="text" 
+                      placeholder="VD: NGUYEN VAN A" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 uppercase"
+                      value={bankInfo.refund_account_name}
+                      onChange={e => setBankInfo({...bankInfo, refund_account_name: e.target.value.toUpperCase()})}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button

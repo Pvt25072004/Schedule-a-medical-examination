@@ -112,11 +112,11 @@ export const AppointmentProvider = ({ children }) => {
     );
   };
 
-  const cancelAppointment = async (id, reason = "") => {
+  const cancelAppointment = async (id, reason = "", bankInfo = null) => {
     const target = appointments.find((apt) => apt.id === id);
     if (target?.backendId) {
       try {
-        await updateAppointmentStatus(target.backendId, APPOINTMENT_STATUS.CANCELLED, reason);
+        await updateAppointmentStatus(target.backendId, APPOINTMENT_STATUS.CANCELLED, reason, bankInfo);
       } catch (e) {
         console.error("Cancel appointment on server failed:", e);
       }
