@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Send, Bot, User as UserIcon, Phone, Video, MoreVertical, ArrowLeft, Paperclip, Smile, Sparkles, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { PAGES, API_BASE_URL } from '../utils/constants';
 import { formatTime } from '../utils/helpers';
 
@@ -23,6 +24,7 @@ const extractJSON = (text) => {
 
 const ChatPage = ({ navigate }) => {
   const { user } = useAuth();
+  const { confirm } = useNotification();
   const [messages, setMessages] = useState(() => {
     const saved = localStorage.getItem('ai_chat_messages');
     if (saved) return JSON.parse(saved);
@@ -75,8 +77,13 @@ const ChatPage = ({ navigate }) => {
     localStorage.setItem('ai_booking_data', JSON.stringify(bookingData));
   }, [bookingData]);
 
-  const clearChat = () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?')) {
+  const clearChat = async () => {
+    const isConfirm = await confirm(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?",
+      { variant: "danger" }
+    );
+    if (isConfirm) {
       const defaultMessages = [
         {
           id: 1,

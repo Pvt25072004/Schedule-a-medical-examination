@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronUp, MessageSquare, X, Send, Bot, User as UserIcon, Maximize2, Minimize2, Trash2 } from 'lucide-react';
 import Button from './Button';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { API_BASE_URL, PAGES } from '../../utils/constants';
 
 // Helper function to extract JSON object from a string
@@ -24,6 +25,7 @@ const extractJSON = (text) => {
 
 const FloatingWidgets = () => {
   const { user } = useAuth();
+  const { confirm } = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -87,8 +89,13 @@ const FloatingWidgets = () => {
     setIsChatOpen(false);
   }, [location.pathname]);
 
-  const clearChat = () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?')) {
+  const clearChat = async () => {
+    const isConfirm = await confirm(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?",
+      { variant: "danger" }
+    );
+    if (isConfirm) {
       const defaultMessages = [
         {
           id: 1,

@@ -17,6 +17,7 @@ import Card from "../components/common/Card";
 import Footer from "../components/common/Footer";
 import { PAGES } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import {
   getAppointments,
   createAppointment,
@@ -41,6 +42,7 @@ const DEFAULT_APPOINTMENT_FORM = Object.freeze({
 
 const WelcomePage = ({ navigate }) => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { confirm } = useNotification();
   const [appointments, setAppointments] = useState([]);
   const [formData, setFormData] = useState({ ...DEFAULT_APPOINTMENT_FORM });
   const [listLoading, setListLoading] = useState(false);
@@ -299,7 +301,12 @@ const WelcomePage = ({ navigate }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn chắc chắn muốn xóa lịch hẹn này?")) {
+    const isConfirm = await confirm(
+      "Xác nhận xóa",
+      "Bạn chắc chắn muốn xóa lịch hẹn này?",
+      { variant: "danger" }
+    );
+    if (!isConfirm) {
       return;
     }
     setDeletingId(id);
