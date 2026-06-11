@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronUp, MessageSquare, X, Send, Bot, User as UserIcon, Maximize2, Minimize2, Trash2 } from 'lucide-react';
 import Button from './Button';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { API_BASE_URL, PAGES } from '../../utils/constants';
 
 // Helper function to extract JSON object from a string
@@ -24,6 +25,7 @@ const extractJSON = (text) => {
 
 const FloatingWidgets = () => {
   const { user } = useAuth();
+  const { confirm } = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -87,8 +89,13 @@ const FloatingWidgets = () => {
     setIsChatOpen(false);
   }, [location.pathname]);
 
-  const clearChat = () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?')) {
+  const clearChat = async () => {
+    const isConfirm = await confirm(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?",
+      { variant: "danger" }
+    );
+    if (isConfirm) {
       const defaultMessages = [
         {
           id: 1,
@@ -379,8 +386,16 @@ const FloatingWidgets = () => {
                 className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`flex gap-2 ${isExpanded ? 'max-w-[90%]' : 'max-w-[85%]'} ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white border text-blue-600'}`}>
-                    {msg.sender === 'user' ? <UserIcon className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
+                  <div className={`w-7 h-7 overflow-hidden rounded-full flex items-center justify-center shrink-0 text-xs ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white border text-blue-600'}`}>
+                    {msg.sender === 'user' ? (
+                      user && (user.avatar_url || user.avatar) ? (
+                        <img src={user.avatar_url || user.avatar} alt="User" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-3.5 h-3.5" />
+                      )
+                    ) : (
+                      <Bot className="w-3.5 h-3.5" />
+                    )}
                   </div>
                   <div>
                     <div className={`inline-block p-3 rounded-2xl max-w-[85%] ${msg.sender === 'user'

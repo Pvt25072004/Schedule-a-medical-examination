@@ -71,7 +71,7 @@ const TABS = {
 
 export default function DoctorDashboardPage({ navigate }) {
   const { user, logout } = useAuth();
-  const { showError, showSuccess, showInfo, confirm } = useNotification();
+  const { showError, showSuccess, showInfo, confirm, prompt } = useNotification();
   const [activeTab, setActiveTab] = useState(TABS.OVERVIEW);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -523,9 +523,12 @@ export default function DoctorDashboardPage({ navigate }) {
   };
 
   const handleRejectAppointment = async (appointment) => {
-    const reason =
-      window.prompt("Nhập lý do từ chối lịch hẹn này (bắt buộc):") || "";
-    if (!reason.trim()) {
+    const reason = await prompt(
+      "Từ chối lịch hẹn",
+      "Nhập lý do từ chối lịch hẹn này (bắt buộc):",
+      { variant: "primary", placeholder: "Ví dụ: Lịch kín, lý do cá nhân..." }
+    );
+    if (!reason || !reason.trim()) {
       showError("Bạn cần nhập lý do khi từ chối lịch hẹn.");
       return;
     }

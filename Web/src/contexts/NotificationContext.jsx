@@ -15,6 +15,7 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [promptDialog, setPromptDialog] = useState(null);
 
   const showToast = useCallback((message, type = "success") => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -53,8 +54,30 @@ export const NotificationProvider = ({ children }) => {
     });
   }, []);
 
+  const prompt = useCallback((title, message, options = {}) => {
+    return new Promise((resolve) => {
+      setPromptDialog({
+        title,
+        message,
+        placeholder: options.placeholder || "Nhập thông tin...",
+        defaultValue: options.defaultValue || "",
+        confirmText: options.confirmText || "Xác nhận",
+        cancelText: options.cancelText || "Hủy",
+        variant: options.variant || "primary",
+        onConfirm: (inputValue) => {
+          setPromptDialog(null);
+          resolve(inputValue);
+        },
+        onCancel: () => {
+          setPromptDialog(null);
+          resolve(null);
+        },
+      });
+    });
+  }, []);
+
   return (
-    <NotificationContext.Provider value={{ showSuccess, showError, showInfo, confirm }}>
+    <NotificationContext.Provider value={{ showSuccess, showError, showInfo, confirm, prompt }}>
       {children}
 
       {/* Toasts Container */}
@@ -114,6 +137,44 @@ export const NotificationProvider = ({ children }) => {
                 {confirmDialog.confirmText}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Dialog Modal */}
+      {promptDialog && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={promptDialog.onCancel}></div>
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+              {promptDialog.title}
+            </h3>
+            {promptDialog.message && (
+              <p className="text-sm text-slate-600 mb-4">
+                {promptDialog.message}
+              </p>
+            )}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              promptDialog.onConfirm(e.target.promptInput.value);
+            }}>
+              <input
+                name="promptInput"
+                type="text"
+                autoFocus
+                defaultValue={promptDialog.defaultValue}
+                placeholder={promptDialog.placeholder}
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6"
+              />
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={promptDialog.onCancel}>
+                  {promptDialog.cancelText}
+                </Button>
+                <Button type="submit" variant={promptDialog.variant}>
+                  {promptDialog.confirmText}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

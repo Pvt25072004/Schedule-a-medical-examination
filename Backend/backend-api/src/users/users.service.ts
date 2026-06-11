@@ -34,7 +34,24 @@ export class UsersService {
     }
 
     if (filters?.region && filters.region !== 'all') {
-      qb.andWhere('user.address LIKE :region', { region: `%${filters.region}%` });
+      qb.andWhere(
+        `(
+          user.address LIKE :region 
+          OR user.hospital_id IN (
+            SELECT h.id FROM hospitals h
+            JOIN cities c ON h.city_id = c.id
+            WHERE c.name LIKE :region
+          )
+          OR user.id IN (
+            SELECT d.user_id FROM doctors d
+            JOIN doctor_hospital dh ON d.id = dh.doctor_id
+            JOIN hospitals h2 ON h2.id = dh.hospital_id
+            JOIN cities c2 ON h2.city_id = c2.id
+            WHERE c2.name LIKE :region AND d.user_id IS NOT NULL
+          )
+        )`,
+        { region: `%${filters.region}%` }
+      );
     }
 
     if (userCtx?.role === 'admin_hospital') {
