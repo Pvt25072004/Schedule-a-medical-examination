@@ -50,9 +50,19 @@ export class SchedulesService {
             : 'Không có bác sĩ nào đang hoạt động tại cơ sở này.'
         );
       }
+    } else if (dto.doctor_ids && dto.doctor_ids.length > 0) {
+      doctorsToProcess = await this.doctorsRepository
+        .createQueryBuilder('doctor')
+        .leftJoinAndSelect('doctor.user', 'user')
+        .whereInIds(dto.doctor_ids)
+        .getMany();
+        
+      if (doctorsToProcess.length === 0) {
+        throw new BadRequestException('Không tìm thấy bác sĩ nào');
+      }
     } else {
       if (!dto.doctor_id) {
-        throw new BadRequestException('Vui lòng cung cấp doctor_id hoặc chọn apply_to_all_doctors');
+        throw new BadRequestException('Vui lòng cung cấp doctor_id, doctor_ids hoặc chọn apply_to_all_doctors');
       }
       const doctor = await this.doctorsRepository.findOne({
         where: { id: dto.doctor_id },

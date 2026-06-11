@@ -13,6 +13,9 @@ export class CreateScheduleDto {
   doctor_id?: number;
 
   @IsOptional()
+  doctor_ids?: number[];
+
+  @IsOptional()
   @IsBoolean()
   apply_to_all_doctors?: boolean;
 
