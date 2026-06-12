@@ -714,58 +714,111 @@ export class AppointmentsService {
     const durationMinutes = servicePackage.duration_minutes || 30;
     const allAvailableSlots = new Set<string>();
 
+    // Tối ưu: Lấy toàn bộ lịch làm việc và lịch khám của tất cả bác sĩ trong 1 lần query
+    const doctorIds = doctorsToCheck.map(d => d.id);
+    const allSchedules = await this.schedulesRepository.find({
+      where: { doctor_id: In(doctorIds), work_date: date as any, is_available: true },
+    });
+
+    if (allSchedules.length === 0) return [];
+
+    const allAppointments = await this.appointmentsRepository.find({
+      where: {
+        doctor_id: In(doctorIds),
+        appointment_date: date as any,
+        status: In(['pending', 'confirmed', 'completed', 'checked_in', 'in_progress', 'awaiting_payment']),
+      },
+    });
+
+    const now = new Date();
+    const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const isToday = date === vnTime.toISOString().slice(0, 10);
+    const currentTotalMins = vnTime.getUTCHours() * 60 + vnTime.getUTCMinutes();
+    const morningEndMins = 11 * 60 + 30; // 11:30
+    const lunchDuration = 90; // 1.5 hours
+
     for (const doctor of doctorsToCheck) {
-      const times = await this.getAvailableTimes(doctor.id, date);
+      const doctorSchedules = allSchedules.filter(s => s.doctor_id === doctor.id);
+      if (doctorSchedules.length === 0) continue;
 
-      // Filter times that can accommodate the duration
-      for (const time of times) {
-        let isValid = true;
+      const doctorAppointments = allAppointments.filter(a => a.doctor_id === doctor.id);
+      
+      const bookedSlots = new Set<string>();
+      for (const appt of doctorAppointments) {
+        if (!appt.appointment_time) continue;
+        const [sH, sM] = appt.appointment_time.slice(0, 5).split(':').map(Number);
+        const startTotal = sH * 60 + sM;
+        const endTotal = startTotal + 30; // lock 30 min per default appt
 
-        // We must check if the time slot + duration doesn't overlap with another booked appointment
-        // We can do a quick check by verifying all 30-min sub-slots are in the 'times' array,
-        // EXCEPT if there's a lunch break jump.
-
-        // Let's do the rigorous check via DB count (same as create)
-        const [h, m] = time.split(':').map(Number);
-        const totalStartMins = h * 60 + m;
-        let totalEndMins = totalStartMins + durationMinutes;
-
-        const morningEndMins = 11 * 60 + 30; // 11:30
-        const lunchDuration = 90; // 1.5 hours
-
-        if (totalStartMins < morningEndMins && totalEndMins > morningEndMins) {
-          totalEndMins += lunchDuration;
+        for (let t = startTotal; t < endTotal; t += 30) {
+          const h = Math.floor(t / 60);
+          const m = t % 60;
+          bookedSlots.add(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
         }
+      }
 
-        const endH = Math.floor(totalEndMins / 60);
-        const endM = totalEndMins % 60;
-        const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      for (const schedule of doctorSchedules) {
+        const scheduleAppointments = doctorAppointments.filter(a => a.schedule_id === schedule.id);
+        if (scheduleAppointments.length >= schedule.max_patients) continue;
 
-        const conflictEndH = Math.floor((totalStartMins + 30) / 60);
-        const conflictEndM = (totalStartMins + 30) % 60;
-        const conflictEndTimeStr = `${String(conflictEndH).padStart(2, '0')}:${String(conflictEndM).padStart(2, '0')}`;
+        const start = schedule.start_time.slice(0, 5);
+        const end = schedule.end_time.slice(0, 5);
+        if (!start || !end) continue;
 
-        const overlapConflict = await this.dataSource.manager
-          .createQueryBuilder(Appointment, 'appt')
-          .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
-          .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
-          .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed', 'checked_in', 'in_progress', 'awaiting_payment'] })
-          .andWhere('appt.appointment_time < :newEndTime', { newEndTime: conflictEndTimeStr })
-          .andWhere("ADDTIME(appt.appointment_time, '00:30:00') > :newStartTime", { newStartTime: time })
-          .getCount();
+        let [h, m] = start.split(':').map(Number);
+        const [endH, endM] = end.split(':').map(Number);
+        const endTotalMins = endH * 60 + endM;
 
-        // Also check if end time exceeds hospital schedule (assume max 17:00 = 17*60 = 1020)
-        // If end time is past 17:00, it's invalid.
-        if (totalEndMins > 17 * 60) {
-          isValid = false;
-        }
+        while (h * 60 + m < endTotalMins) {
+          const hh = String(h).padStart(2, '0');
+          const mm = String(m).padStart(2, '0');
+          const timeStr = `${hh}:${mm}`;
+          const slotTotalMins = h * 60 + m;
 
-        if (overlapConflict > 0) {
-          isValid = false;
-        }
+          let isPast = false;
+          if (isToday && slotTotalMins <= currentTotalMins + 30) {
+            isPast = true;
+          }
 
-        if (isValid) {
-          allAvailableSlots.add(time);
+          if (!isPast && !bookedSlots.has(timeStr)) {
+            if (!(slotTotalMins >= morningEndMins && slotTotalMins < 13 * 60)) {
+              let totalEndMinsPackage = slotTotalMins + durationMinutes;
+              if (slotTotalMins < morningEndMins && totalEndMinsPackage > morningEndMins) {
+                totalEndMinsPackage += lunchDuration;
+              }
+
+              if (totalEndMinsPackage <= 17 * 60) {
+                // Check overlap with appointments
+                const conflictEndTotal = slotTotalMins + 30; 
+                let hasConflict = false;
+                
+                for (const appt of doctorAppointments) {
+                  if (!appt.appointment_time) continue;
+                  const [aH, aM] = appt.appointment_time.slice(0, 5).split(':').map(Number);
+                  const apptStart = aH * 60 + aM;
+                  const apptEndStr = appt.end_time ? appt.end_time.slice(0, 5) : null;
+                  const apptEnd = apptEndStr 
+                      ? (Number(apptEndStr.split(':')[0]) * 60 + Number(apptEndStr.split(':')[1]))
+                      : apptStart + 30;
+                  
+                  if (apptStart < conflictEndTotal && apptEnd > slotTotalMins) {
+                      hasConflict = true;
+                      break;
+                  }
+                }
+
+                if (!hasConflict) {
+                  allAvailableSlots.add(timeStr);
+                }
+              }
+            }
+          }
+
+          m += 30;
+          if (m >= 60) {
+            h += 1;
+            m -= 60;
+          }
         }
       }
     }
@@ -821,29 +874,59 @@ export class AppointmentsService {
       return []; // Exceeds hospital hours
     }
 
+    // Tối ưu: Lấy toàn bộ lịch làm việc và lịch khám của bác sĩ trong 1 lần
+    const doctorIds = doctorsToCheck.map(d => d.id);
+    const allSchedules = await this.dataSource.manager.find(Schedule, {
+      where: {
+        doctor_id: In(doctorIds),
+        work_date: date as any,
+        is_available: true,
+      }
+    });
+
+    const allAppointments = await this.dataSource.manager.find(Appointment, {
+      where: {
+        doctor_id: In(doctorIds),
+        appointment_date: date as any,
+        status: In(['pending', 'confirmed', 'completed'])
+      }
+    });
+
     for (const doctor of doctorsToCheck) {
       // Check if doctor has a valid schedule for this time
-      const schedule = await this.dataSource.manager.createQueryBuilder(Schedule, 'schedule')
-        .where('schedule.doctor_id = :doctorId', { doctorId: doctor.id })
-        .andWhere('schedule.work_date = :workDate', { workDate: date })
-        .andWhere('schedule.start_time <= :time', { time })
-        .andWhere('schedule.end_time >= :time', { time })
-        .andWhere('schedule.is_available = true')
-        .getOne();
+      const schedule = allSchedules.find(s => 
+        s.doctor_id === doctor.id && 
+        s.start_time <= time && 
+        s.end_time >= time
+      );
 
       if (!schedule) continue;
 
-      // Check overlap
-      const overlapConflict = await this.dataSource.manager
-        .createQueryBuilder(Appointment, 'appt')
-        .where('appt.doctor_id = :doctorId', { doctorId: doctor.id })
-        .andWhere('appt.appointment_date = :appointmentDate', { appointmentDate: date })
-        .andWhere('appt.status IN (:...statuses)', { statuses: ['pending', 'confirmed', 'completed'] })
-        .andWhere('appt.appointment_time < :newEndTime', { newEndTime: endTimeStr })
-        .andWhere("COALESCE(appt.end_time, ADDTIME(appt.appointment_time, '00:30:00')) > :newStartTime", { newStartTime: time })
-        .getCount();
+      // Check overlap in memory
+      let hasConflict = false;
+      const doctorAppointments = allAppointments.filter(a => a.doctor_id === doctor.id);
+      
+      const newApptEndStr = endTimeStr;
+      const newApptEndTotalMins = Number(newApptEndStr.split(':')[0]) * 60 + Number(newApptEndStr.split(':')[1]);
+      const newApptStartTotalMins = totalStartMins;
 
-      if (overlapConflict === 0) {
+      for (const appt of doctorAppointments) {
+        if (!appt.appointment_time) continue;
+        const [aH, aM] = appt.appointment_time.slice(0, 5).split(':').map(Number);
+        const apptStart = aH * 60 + aM;
+        const apptEndStr = appt.end_time ? appt.end_time.slice(0, 5) : null;
+        const apptEnd = apptEndStr 
+            ? (Number(apptEndStr.split(':')[0]) * 60 + Number(apptEndStr.split(':')[1]))
+            : apptStart + 30;
+        
+        // overlap condition: old appt starts before new appt ends, AND old appt ends after new appt starts
+        if (apptStart < newApptEndTotalMins && apptEnd > newApptStartTotalMins) {
+            hasConflict = true;
+            break;
+        }
+      }
+
+      if (!hasConflict) {
         // Find which hospital this doctor belongs to that is also in the package
         let matchedHospitalId: number | null = null;
         if (doctor.hospitals && doctor.hospitals.length > 0) {

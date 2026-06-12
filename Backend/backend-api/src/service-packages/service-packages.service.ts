@@ -12,7 +12,7 @@ export class ServicePackagesService {
 
   async findAll(hospital_id?: number): Promise<ServicePackage[]> {
     const options: any = {
-      relations: ['categories', 'hospitals', 'doctors'],
+      relations: ['categories', 'hospitals'],
       order: { created_at: 'DESC' },
     };
 
