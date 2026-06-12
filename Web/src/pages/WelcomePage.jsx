@@ -400,7 +400,7 @@ const WelcomePage = ({ navigate }) => {
               {/* Main Image Masking */}
               <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[90%] max-w-md mx-auto z-10">
                 <img
-                  src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&q=80"
+                  src="https://vcdn1-suckhoe.vnecdn.net/2026/04/20/DSC01550-1776669731-9863-1776670476.png?w=680&h=0&q=100&dpr=2&fit=crop&s=ic5T65urai_zNV7QD41Acw"
                   alt="Doctor"
                   className="w-full h-full object-cover rounded-[3rem] shadow-2xl border-8 border-white"
                 />
@@ -471,12 +471,11 @@ const WelcomePage = ({ navigate }) => {
               return (
                 <div
                   key={index}
-                  className={`group relative bg-white rounded-[2rem] p-8 text-center cursor-pointer border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transform hover:-translate-y-2 transition-all duration-700 ease-out ${
-                    featuresVisible
+                  className={`group relative bg-white rounded-[2rem] p-8 text-center cursor-pointer border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transform hover:-translate-y-2 transition-all duration-700 ease-out ${featuresVisible
                       ? "opacity-100 translate-x-0"
                       : "opacity-0 " +
-                        (isLeft ? "-translate-x-24" : "translate-x-24")
-                  }`}
+                      (isLeft ? "-translate-x-24" : "translate-x-24")
+                    }`}
                   style={{
                     transitionDelay: featuresVisible
                       ? `${index * 150}ms`
@@ -616,11 +615,10 @@ const WelcomePage = ({ navigate }) => {
                     <button
                       key={idx}
                       onClick={() => setCurrentBannerIdx(idx)}
-                      className={`h-2.5 rounded-full transition-all duration-500 ${
-                        currentBannerIdx === idx
+                      className={`h-2.5 rounded-full transition-all duration-500 ${currentBannerIdx === idx
                           ? "w-8 bg-[#48a1f3]"
                           : "w-2.5 bg-gray-200 hover:bg-gray-300"
-                      }`}
+                        }`}
                     />
                   ),
                 )}
@@ -877,11 +875,10 @@ const WelcomePage = ({ navigate }) => {
                       e.stopPropagation();
                       setSingleBannerIdx(idx);
                     }}
-                    className={`h-2.5 rounded-full transition-all duration-500 shadow-md ${
-                      singleBannerIdx === idx
+                    className={`h-2.5 rounded-full transition-all duration-500 shadow-md ${singleBannerIdx === idx
                         ? "w-10 bg-[#48a1f3]"
                         : "w-2.5 bg-white/60 hover:bg-white"
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -1031,7 +1028,7 @@ const WelcomePage = ({ navigate }) => {
                 </h4>
                 <div className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100 break-words">
                   {selectedPackage.hospitals &&
-                  selectedPackage.hospitals.length > 0 ? (
+                    selectedPackage.hospitals.length > 0 ? (
                     <>
                       <span className="font-semibold text-[#143250]">
                         {selectedPackage.hospitals[0].name}
