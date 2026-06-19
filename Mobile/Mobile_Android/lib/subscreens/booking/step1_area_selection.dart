@@ -1,7 +1,7 @@
 // step1_area_selection.dart (Đã sửa UI Khung và Icon Khu vực)
 import 'package:flutter/material.dart';
-
-import '../../service/city_service.dart';
+import 'package:provider/provider.dart';
+import '../../../logics/core_data/presentation/providers/city_provider.dart';
 
 class Step1AreaSelection extends StatefulWidget {
   final Function(Map<String, dynamic>) onNext;
@@ -13,7 +13,6 @@ class Step1AreaSelection extends StatefulWidget {
 
 class _Step1AreaSelectionState extends State<Step1AreaSelection> {
   String? _expandedArea;
-  final CityService _cityService = CityService();
   bool _isLoading = true;
 
   final Map<String, List<Map<String, dynamic>>> areas = {
@@ -29,21 +28,21 @@ class _Step1AreaSelectionState extends State<Step1AreaSelection> {
   }
 
   Future<void> _loadCities() async {
-    final cities = await _cityService.fetchCities();
+    final cityProvider = context.read<CityProvider>();
+    await cityProvider.fetchCities();
+    
     if (mounted) {
       setState(() {
-        // Xóa dữ liệu cũ trước khi nạp mới để tránh trùng lặp nếu gọi lại
         areas['Miền Bắc']?.clear();
         areas['Miền Trung']?.clear();
         areas['Miền Nam']?.clear();
 
-        for (var city in cities) {
-          // Lấy thuộc tính area (hoặc mien/region nếu API thay đổi)
-          final area = (city['area'] ?? city['mien'] ?? city['region'])?.toString().trim();
+        for (var city in cityProvider.cities) {
+          final area = city.area.trim();
           if (areas.containsKey(area)) {
             areas[area]!.add({
-              'name': city['name'],
-              'hospitals': city['hospitalCount'] ?? 0,
+              'name': city.name,
+              'hospitals': city.hospitalCount,
               'color': area == 'Miền Bắc' ? const Color(0xFF2FA8E0) : (area == 'Miền Trung' ? Colors.orange : Colors.redAccent),
             });
           }

@@ -1,4 +1,4 @@
-import 'package:clinic_booking_system/welcome/loginscreen.dart';
+import 'package:clinic_booking_system/presentation/pages/auth/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -38,7 +38,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     Navigator.of(context).push(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 700),
-        pageBuilder: (_, __, ___) => Loginscreen(isLogin: isLogin),
+        pageBuilder: (_, __, ___) => LoginPage(isLogin: isLogin),
         transitionsBuilder: (_, animation, __, child) {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)

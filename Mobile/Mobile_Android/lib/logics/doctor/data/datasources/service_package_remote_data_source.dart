@@ -1,0 +1,12 @@
+import 'package:dio/dio.dart';
+import '../../../../utils/api_config.dart';
+import '../models/service_package_model.dart';
+
+abstract class ServicePackageRemoteDataSource {
+}
+
+class ServicePackageRemoteDataSourceImpl implements ServicePackageRemoteDataSource {
+  final Dio dio;
+  ServicePackageRemoteDataSourceImpl(this.dio);
+
+}

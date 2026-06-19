@@ -1,21 +1,27 @@
 import 'package:clinic_booking_system/firebase_options.dart';
-import 'package:clinic_booking_system/screens/home.dart';
-import 'package:clinic_booking_system/screens/splash_screen.dart';
-import 'package:clinic_booking_system/dashboard.dart';
-import 'package:clinic_booking_system/welcome/onboarding.dart';
+import 'package:clinic_booking_system/routes/app_routes.dart';
 import 'package:clinic_booking_system/service/auth_service.dart';
-import 'package:clinic_booking_system/screens/doctor_dashboard.dart';
-import 'package:clinic_booking_system/welcome/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:clinic_booking_system/logics/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:clinic_booking_system/logics/auth/data/repositories/auth_repo_impl.dart';
+import 'package:clinic_booking_system/logics/auth/domain/usecases/auth_usecases.dart';
+import 'package:clinic_booking_system/logics/auth/domain/usecases/login_usecase.dart';
+import 'package:clinic_booking_system/logics/auth/domain/usecases/register_usecase.dart';
+import 'package:clinic_booking_system/logics/auth/presentation/providers/auth_provider.dart';
+import 'package:clinic_booking_system/logics/core_data/data/datasources/city_remote_data_source.dart';
+import 'package:clinic_booking_system/logics/core_data/data/repositories/city_repo_impl.dart';
+import 'package:clinic_booking_system/logics/core_data/domain/usecases/get_cities_usecase.dart';
+import 'package:clinic_booking_system/logics/core_data/presentation/providers/city_provider.dart';
+import 'package:clinic_booking_system/core/tokens/app_theme.dart';
+import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Hàm này cần nằm độc lập ở mức cao nhất (top-level)
-  // để xử lý các luồng thông báo ngầm khi app đã bị đóng (terminated).
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
 }
@@ -24,7 +30,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('vi', null);
   
-  // Giữ lại Core Init phòng trường hợp các plugin nền cần
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -32,15 +37,39 @@ void main() async {
     print('⚠️ Firebase Core Init warning: $e');
   }
 
-  // QUAN TRỌNG: Khởi tạo session AuthService từ SharedPreferences trước khi dựng UI
-  await AuthService.init();
+  // TODO: Refactor AuthService to UseCases in future phases (Remove old init)
+  // await AuthService.init();
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
   ));
 
-  runApp(const MyApp());
+  // Dependency Injection for Auth
+  final authRemoteDataSource = AuthRemoteDataSource();
+  final authRepo = AuthRepoImpl(authRemoteDataSource);
+  
+  // Dependency Injection for Core Data
+  final dio = Dio();
+  final cityRemoteDataSource = CityRemoteDataSourceImpl(dio);
+  final cityRepo = CityRepoImpl(cityRemoteDataSource);
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider(
+          loginUseCase: LoginUseCase(authRepo),
+          registerUseCase: RegisterUseCase(authRepo),
+          logoutUseCase: LogoutUseCase(authRepo),
+          getCurrentUserUseCase: GetCurrentUserUseCase(authRepo),
+        )),
+        ChangeNotifierProvider(create: (_) => CityProvider(
+          getCitiesUseCase: GetCitiesUseCase(cityRepo),
+        )),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -52,7 +81,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -61,7 +89,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _setupFCM() async {
-    // Yêu cầu quyền gửi thông báo (Quan trọng cho Android 13+ và iOS)
     FirebaseMessaging messaging = FirebaseMessaging.instance;
     await messaging.requestPermission(
       alert: true,
@@ -69,13 +96,10 @@ class _MyAppState extends State<MyApp> {
       sound: true,
     );
 
-    // Xử lý khi app đang đóng hoàn toàn và người dùng bấm vào thông báo
     RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
       _handleNotificationClick(initialMessage);
     }
-
-    // Xử lý khi app đang chạy ngầm (background) và người dùng bấm vào thông báo
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       _handleNotificationClick(message);
     });
@@ -83,28 +107,17 @@ class _MyAppState extends State<MyApp> {
 
   void _handleNotificationClick(RemoteMessage message) {
     print('FCM Clicked: ${message.data}');
-    // Nếu có logic chuyển hướng, thêm ở đây
-    // Ví dụ: navigatorKey.currentState?.pushNamed('/notification-history');
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'STL clinic',
+      title: 'STL Clinic Booking',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       navigatorKey: navigatorKey,
-      routes: {
-        '/welcome': (context) => const WelcomeScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/onboarding-flow': (context) => const OnboardingFlowScreen(),
-      },
-      home: const SplashScreen(),
+      initialRoute: AppRoutes.welcome,
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }
