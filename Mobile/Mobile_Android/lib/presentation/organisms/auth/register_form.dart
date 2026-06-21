@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../logics/auth/providers/auth_provider.dart';
-import '../atoms/app_button.dart';
-import '../atoms/app_text_field.dart';
-import '../molecules/auth_input_field.dart';
+import '../../../logics/auth/providers/auth_provider.dart';
+import '../../atoms/app_button.dart';
+import '../../atoms/app_text_field.dart';
+import '../../molecules/auth/auth_input_field.dart';
+import '../../pages/welcome/onboarding_page.dart';
 
 class RegisterForm extends StatefulWidget {
   final VoidCallback onToggleAuthMode;
@@ -44,9 +45,13 @@ class _RegisterFormState extends State<RegisterForm> {
     final authProvider = context.read<AuthProvider>();
     // For now we will assume the OTP part is handled or mocked, so we just call register
     final success = await authProvider.register(input, password, displayName, '000000');
+    if (!mounted) return;
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đăng ký thành công!')));
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đăng ký thành công! Vui lòng hoàn tất hồ sơ.')));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingPage()),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${authProvider.errorMessage}')));
     }

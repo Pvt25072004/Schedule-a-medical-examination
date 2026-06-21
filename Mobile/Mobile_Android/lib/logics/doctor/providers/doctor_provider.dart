@@ -22,7 +22,7 @@ class DoctorProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await applyForDoctorUseCase(Map<String, data);
+      final result = await applyForDoctorUseCase(data);
       // TODO: Handle result
     } catch(e) {
       _errorMessage = e.toString();
@@ -36,7 +36,7 @@ class DoctorProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await registerGuestDoctorUseCase(Map<String, data);
+      final result = await registerGuestDoctorUseCase(data);
       // TODO: Handle result
     } catch(e) {
       _errorMessage = e.toString();

@@ -3,8 +3,7 @@ import '../domain/entities/schedule.dart';
 
 class ScheduleProvider extends ChangeNotifier {
 
-  ScheduleProvider({
-  });
+  ScheduleProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

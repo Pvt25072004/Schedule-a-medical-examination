@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/email_model.dart';
 
 abstract class EmailRemoteDataSource {
@@ -16,7 +16,7 @@ class EmailRemoteDataSourceImpl implements EmailRemoteDataSource {
       final response = await dio.post('${ApiConfig.baseUrl}/auth/send-registration-otp', data: {'email': email});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
-        return data as void;
+        return;
       } else {
         throw Exception('Failed to load');
       }
@@ -25,3 +25,4 @@ class EmailRemoteDataSourceImpl implements EmailRemoteDataSource {
     }
   }
 }
+

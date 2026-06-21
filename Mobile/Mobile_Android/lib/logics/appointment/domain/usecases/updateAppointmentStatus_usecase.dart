@@ -13,6 +13,6 @@ class UpdateappointmentstatusUseCase {
     String? bankAccount,
     String? accountName,
   }) async {
-    return await repository.updateAppointmentStatus(appointmentId, status: status, reason: reason, bankName: bankName, bankAccount: bankAccount, accountName: accountName, : );
+    return await repository.updateAppointmentStatus(appointmentId: appointmentId, status: status, reason: reason, bankName: bankName, bankAccount: bankAccount, accountName: accountName);
   }
 }

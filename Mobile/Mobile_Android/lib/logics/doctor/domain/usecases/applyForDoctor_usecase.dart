@@ -6,6 +6,6 @@ class ApplyfordoctorUseCase {
   ApplyfordoctorUseCase(this.repository);
 
   Future<bool> call(Map<String, dynamic> data) async {
-    return await repository.applyForDoctor(Map<String, data);
+    return await repository.applyForDoctor(data);
   }
 }

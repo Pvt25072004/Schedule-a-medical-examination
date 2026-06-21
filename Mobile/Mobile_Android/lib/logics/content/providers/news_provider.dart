@@ -3,8 +3,7 @@ import '../domain/entities/news.dart';
 
 class NewsProvider extends ChangeNotifier {
 
-  NewsProvider({
-  });
+  NewsProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

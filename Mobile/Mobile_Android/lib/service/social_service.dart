@@ -1,21 +1,17 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../utils/api_config.dart';
-import 'auth_service.dart';
+import 'package:dio/dio.dart';
+import '../core/utils/api_config.dart';
+import '../core/network/dio_client.dart';
 
 class SocialService {
+  Dio get _dio => DioClient().dio;
   Future<List<dynamic>> fetchPosts({int page = 1, int limit = 10}) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/posts?page=$page&limit=$limit');
-      final headers = <String, String>{};
-      final token = AuthService.accessToken;
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-      final response = await http.get(url, headers: headers).timeout(ApiConfig.timeout);
+      final url = '${ApiConfig.baseUrl}/posts?page=$page&limit=$limit';
+      
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        final decoded = response.data;
         if (decoded is List) return decoded;
         if (decoded is Map && decoded.containsKey('data')) {
           return decoded['data'] as List<dynamic>;
@@ -30,17 +26,8 @@ class SocialService {
 
   Future<bool> likePost(int postId) async {
     try {
-      final token = AuthService.accessToken;
-      if (token == null) return false;
-
-      final url = Uri.parse('${ApiConfig.baseUrl}/likes/toggle/$postId');
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(ApiConfig.timeout);
+      final url = '${ApiConfig.baseUrl}/likes/toggle/$postId';
+      final response = await _dio.post(url);
 
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
@@ -51,19 +38,11 @@ class SocialService {
 
   Future<bool> checkLikeStatus(int postId) async {
     try {
-      final token = AuthService.accessToken;
-      if (token == null) return false;
-
-      final url = Uri.parse('${ApiConfig.baseUrl}/likes/check/$postId');
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(ApiConfig.timeout);
+      final url = '${ApiConfig.baseUrl}/likes/check/$postId';
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        final decoded = response.data;
         return decoded['is_liked'] == true;
       }
       return false;
@@ -75,11 +54,11 @@ class SocialService {
 
   Future<List<dynamic>> fetchComments(int postId) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/comments/post/$postId');
-      final response = await http.get(url).timeout(ApiConfig.timeout);
+      final url = '${ApiConfig.baseUrl}/comments/post/$postId';
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        return response.data as List<dynamic>;
       }
       return [];
     } catch (e) {
@@ -90,21 +69,14 @@ class SocialService {
 
   Future<bool> commentPost(int postId, String content) async {
     try {
-      final token = AuthService.accessToken;
-      if (token == null) return false;
-
-      final url = Uri.parse('${ApiConfig.baseUrl}/comments');
-      final response = await http.post(
+      final url = '${ApiConfig.baseUrl}/comments';
+      final response = await _dio.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
+        data: {
           'post_id': postId,
           'content': content
-        }),
-      ).timeout(ApiConfig.timeout);
+        },
+      );
 
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
@@ -115,11 +87,11 @@ class SocialService {
 
   Future<Map<String, dynamic>?> fetchFanpageDetail(int hospitalId) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/fanpages/hospital/$hospitalId');
-      final response = await http.get(url).timeout(ApiConfig.timeout);
+      final url = '${ApiConfig.baseUrl}/fanpages/hospital/$hospitalId';
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        return response.data as Map<String, dynamic>;
       }
       return null;
     } catch (e) {
@@ -130,16 +102,11 @@ class SocialService {
 
   Future<List<dynamic>> fetchPostsByFanpage(int hospitalId, {int page = 1, int limit = 10}) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/posts/hospital/$hospitalId?page=$page&limit=$limit');
-      final headers = <String, String>{};
-      final token = AuthService.accessToken;
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-      final response = await http.get(url, headers: headers).timeout(ApiConfig.timeout);
+      final url = '${ApiConfig.baseUrl}/posts/hospital/$hospitalId?page=$page&limit=$limit';
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        final decoded = response.data;
         if (decoded is List) return decoded;
         if (decoded is Map && decoded.containsKey('data')) {
           return decoded['data'] as List<dynamic>;
@@ -152,3 +119,4 @@ class SocialService {
     }
   }
 }
+

@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/appointment_model.dart';
 
 abstract class AppointmentRemoteDataSource {
+  Future<List<dynamic>> fetchUserAppointments(int userId);
   Future<int> getOrCreateUserId({
     required String email,
     required String fullName,
@@ -37,6 +38,21 @@ abstract class AppointmentRemoteDataSource {
 class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
   final Dio dio;
   AppointmentRemoteDataSourceImpl(this.dio);
+
+  @override
+  Future<List<dynamic>> fetchUserAppointments(int userId) async {
+    try {
+      final response = await dio.get('${ApiConfig.baseUrl}/appointments/user/$userId');
+      if (response.statusCode == 200) {
+        return response.data as List<dynamic>;
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print('🔥 fetchUserAppointments Error: $e');
+      return [];
+    }
+  }
 
   @override
   Future<int> getOrCreateUserId({
@@ -85,7 +101,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
     required String accountName,
   }) async {
     try {
-      final response = await dio.post('', data: payload);
+      final response = await dio.post('', data: {});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         return data as bool;
@@ -108,7 +124,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
     String? hospitalNameSnapshot,
   }) async {
     try {
-      final response = await dio.put('', data: payload);
+      final response = await dio.put('', data: {});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         return data as bool;
@@ -120,3 +136,4 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
     }
   }
 }
+

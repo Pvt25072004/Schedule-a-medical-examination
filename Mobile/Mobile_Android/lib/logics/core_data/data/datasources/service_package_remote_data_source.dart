@@ -1,13 +1,14 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/service_package_model.dart';
 
-abstract class ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}RemoteDataSource {
+abstract class ServicePackageRemoteDataSource {
   // TODO: Add methods
 }
 
-class ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}RemoteDataSourceImpl implements ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}RemoteDataSource {
+class ServicePackageRemoteDataSourceImpl implements ServicePackageRemoteDataSource {
   final Dio dio;
 
-  ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}RemoteDataSourceImpl(this.dio);
+  ServicePackageRemoteDataSourceImpl(this.dio);
 }
+

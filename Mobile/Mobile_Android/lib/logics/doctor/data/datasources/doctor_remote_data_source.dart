@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/doctor_model.dart';
 
 abstract class DoctorRemoteDataSource {
@@ -40,3 +40,4 @@ class DoctorRemoteDataSourceImpl implements DoctorRemoteDataSource {
     }
   }
 }
+

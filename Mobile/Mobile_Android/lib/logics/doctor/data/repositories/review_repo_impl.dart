@@ -14,7 +14,7 @@ class ReviewRepoImpl implements ReviewRepository {
     required int rating,
     String? comment,
   }) async {
-    return await remoteDataSource.createReview(userId, doctorId: doctorId, appointmentId: appointmentId, rating: rating, comment: comment, : );
+    return await remoteDataSource.createReview(userId: userId, doctorId: doctorId, appointmentId: appointmentId, rating: rating, comment: comment);
   }
   @override
   Future<bool> updateReview({
@@ -22,6 +22,6 @@ class ReviewRepoImpl implements ReviewRepository {
     required int rating,
     String? comment,
   }) async {
-    return await remoteDataSource.updateReview(reviewId, rating: rating, comment: comment, : );
+    return await remoteDataSource.updateReview(reviewId: reviewId, rating: rating, comment: comment);
   }
 }

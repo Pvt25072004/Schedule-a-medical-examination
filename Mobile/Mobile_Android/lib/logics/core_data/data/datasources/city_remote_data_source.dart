@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/city_model.dart';
 
 abstract class CityRemoteDataSource {
@@ -34,3 +34,4 @@ class CityRemoteDataSourceImpl implements CityRemoteDataSource {
     }
   }
 }
+

@@ -12,7 +12,7 @@ class PaymentRepoImpl implements PaymentRepository {
     required double amount,
     required String orderInfo,
   }) async {
-    return await remoteDataSource.createVnpayUrl(appointmentId, amount: amount, orderInfo: orderInfo, : );
+    return await remoteDataSource.createVnpayUrl(appointmentId: appointmentId, amount: amount, orderInfo: orderInfo);
   }
   @override
   Future<String?> createPayosUrl({
@@ -20,6 +20,6 @@ class PaymentRepoImpl implements PaymentRepository {
     required double amount,
     required String orderInfo,
   }) async {
-    return await remoteDataSource.createPayosUrl(appointmentId, amount: amount, orderInfo: orderInfo, : );
+    return await remoteDataSource.createPayosUrl(appointmentId: appointmentId, amount: amount, orderInfo: orderInfo);
   }
 }

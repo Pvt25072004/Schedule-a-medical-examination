@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:clinic_booking_system/screens/profile.dart';
-import 'screens/appointments.dart';
-import 'screens/booking.dart';
-import 'screens/home.dart';
-import 'screens/chatbot.dart';
-import 'screens/social_feed_screen.dart';
-import 'service/auth_service.dart';
-import 'screens/doctor_dashboard.dart';
-import 'screens/all_doctors_screen.dart' as all_doctors_screen;
-import 'screens/service_packages_screen.dart' as service_packages_screen;
-import 'utils/snackbar_helper.dart' as snackbar_helper;
+import 'presentation/pages/profile/profile_page.dart';
+import 'presentation/pages/appointments/appointments_page.dart';
+import 'presentation/pages/booking/booking_page.dart';
+import 'presentation/pages/home/home_page.dart';
+import 'presentation/organisms/chatbot/chatbot_widget.dart';
+import 'presentation/pages/social/social_feed_page.dart';
+import 'presentation/pages/doctors/doctor_dashboard_page.dart';
+import 'presentation/pages/doctors/all_doctors_page.dart';
+import 'presentation/pages/service_packages/service_packages_page.dart';
+import 'core/utils/snackbar_helper.dart' as snackbar_helper;
+import 'package:provider/provider.dart';
+import 'logics/auth/providers/auth_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -54,18 +55,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   bool _canScanQR = false;
 
   Future<void> _checkDoctorRole() async {
-    final user = AuthService.currentUser;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.currentUser;
     if (user != null) {
-      try {
-        final data = await AuthService().fetchUserData(user.uid);
-        final role = data['role'] as String? ?? '';
-        if (mounted) {
-          setState(() {
-            _isDoctor = (role == 'Bác sĩ' || role.toLowerCase() == 'doctor');
-          });
-        }
-      } catch (e) {
-        debugPrint('⚠️ Lỗi kiểm tra quyền: $e');
+      if (mounted) {
+        setState(() {
+          _isDoctor = (user.role == 'Bác sĩ' || user.role?.toLowerCase() == 'doctor' || user.role == 'DOCTOR');
+        });
       }
     }
   }
@@ -123,7 +119,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 title: const Text('Đặt khám theo bác sĩ'),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const all_doctors_screen.AllDoctorsScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AllDoctorsPage()));
                 },
               ),
               ListTile(
@@ -139,7 +135,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 title: const Text('Gói dịch vụ khám'),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const service_packages_screen.ServicePackagesScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ServicePackagesPage()));
                 },
               ),
             ],
@@ -200,7 +196,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   ),
                   // 👈 Nội dung chatbot screen
                   Expanded(
-                    child: const ChatBotScreen(), // 👈 Wrap ChatBotScreen vào đây
+                    child: const ChatbotWidget(), // 👈 Wrap ChatBotScreen vào đây
                   ),
                 ],
               ),
@@ -226,11 +222,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             IndexedStack(
               index: _selectedIndex,
               children: [
-                HomeScreen(onBookingTap: _switchToBooking),
-                const BookingScreen(),
-                const SocialFeedScreen(),
-                const AppointmentsScreen(),
-                const ProfileScreen(),
+                HomePage(onBookingTap: _switchToBooking),
+                const BookingPage(),
+                const SocialFeedPage(),
+                const AppointmentsPage(),
+                const ProfilePage(),
               ],
             ),
 
@@ -261,7 +257,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
                         Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const DoctorDashboardScreen()),
+                          MaterialPageRoute(builder: (context) => const DoctorDashboardPage()),
                         );
                       },
                       child: Padding(
@@ -432,25 +428,31 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       elevation: 10,
                       child: Transform.scale(
                         scale: 1 + 0.08 * (changed ? (1 - (t - 0.5) * 2) : t * 2),
-                        child: (AuthService.currentUser?.photoURL != null && AuthService.currentUser!.photoURL!.isNotEmpty)
-                            ? ClipOval(
-                                child: Image.network(
-                                  AuthService.currentUser!.photoURL!,
-                                  width: 28,
-                                  height: 28,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (c, e, s) => Icon(
+                        child: Builder(
+                          builder: (context) {
+                            final authProvider = Provider.of<AuthProvider>(context);
+                            final currentUser = authProvider.currentUser;
+                            return (currentUser?.photoUrl != null && currentUser!.photoUrl!.isNotEmpty)
+                                ? ClipOval(
+                                    child: Image.network(
+                                      currentUser.photoUrl!,
+                                      width: 28,
+                                      height: 28,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => Icon(
+                                        changed ? Icons.person_outline : Icons.person,
+                                        size: 28,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Icon(
                                     changed ? Icons.person_outline : Icons.person,
                                     size: 28,
                                     color: Colors.white,
-                                  ),
-                                ),
-                              )
-                            : Icon(
-                                changed ? Icons.person_outline : Icons.person,
-                                size: 28,
-                                color: Colors.white,
-                              ),
+                                  );
+                          }
+                        ),
                       ),
                       onPressed: () {
                         setState(() => _selectedIndex = 4);

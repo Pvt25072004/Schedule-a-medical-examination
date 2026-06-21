@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/user_entity.dart';
-import '../../domain/usecases/auth_usecases.dart';
+import '../domain/entities/user_entity.dart';
+import '../domain/usecases/auth_usecases.dart';
+import '../domain/usecases/login_usecase.dart';
+import '../domain/usecases/register_usecase.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase loginUseCase;
@@ -27,6 +29,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _initSession() async {
+    await checkAuthStatus();
+  }
+
+  Future<void> checkAuthStatus() async {
     _currentUser = await getCurrentUserUseCase();
     notifyListeners();
   }

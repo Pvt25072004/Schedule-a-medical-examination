@@ -3,8 +3,7 @@ import '../domain/entities/hospital.dart';
 
 class HospitalProvider extends ChangeNotifier {
 
-  HospitalProvider({
-  });
+  HospitalProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

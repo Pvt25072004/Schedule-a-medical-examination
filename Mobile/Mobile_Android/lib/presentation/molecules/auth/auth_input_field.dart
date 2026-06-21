@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../atoms/app_text_field.dart';
+import '../../atoms/app_text_field.dart';
 
 class AuthInputField extends StatefulWidget {
   final String inputType;

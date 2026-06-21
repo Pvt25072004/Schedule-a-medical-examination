@@ -26,7 +26,7 @@ class PaymentProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await createVnpayUrlUseCase(appointmentId, amount: amount, orderInfo: orderInfo, : );
+      final result = await createVnpayUrlUseCase(appointmentId: appointmentId, amount: amount, orderInfo: orderInfo);
       // TODO: Handle result
     } catch(e) {
       _errorMessage = e.toString();
@@ -44,7 +44,7 @@ class PaymentProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await createPayosUrlUseCase(appointmentId, amount: amount, orderInfo: orderInfo, : );
+      final result = await createPayosUrlUseCase(appointmentId: appointmentId, amount: amount, orderInfo: orderInfo);
       // TODO: Handle result
     } catch(e) {
       _errorMessage = e.toString();

@@ -7,12 +7,17 @@ class AppointmentRepoImpl implements AppointmentRepository {
   AppointmentRepoImpl(this.remoteDataSource);
 
   @override
+  Future<List<dynamic>> fetchUserAppointments(int userId) async {
+    return await remoteDataSource.fetchUserAppointments(userId);
+  }
+
+  @override
   Future<int> getOrCreateUserId({
     required String email,
     required String fullName,
     required String phone,
   }) async {
-    return await remoteDataSource.getOrCreateUserId(email, fullName: fullName, phone: phone, : );
+    return await remoteDataSource.getOrCreateUserId(email: email, fullName: fullName, phone: phone);
   }
   @override
   Future<bool> updateAppointmentStatus({
@@ -23,7 +28,7 @@ class AppointmentRepoImpl implements AppointmentRepository {
     String? bankAccount,
     String? accountName,
   }) async {
-    return await remoteDataSource.updateAppointmentStatus(appointmentId, status: status, reason: reason, bankName: bankName, bankAccount: bankAccount, accountName: accountName, : );
+    return await remoteDataSource.updateAppointmentStatus(appointmentId: appointmentId, status: status, reason: reason, bankName: bankName, bankAccount: bankAccount, accountName: accountName);
   }
   @override
   Future<bool> requestRefund({
@@ -32,7 +37,7 @@ class AppointmentRepoImpl implements AppointmentRepository {
     required String bankAccount,
     required String accountName,
   }) async {
-    return await remoteDataSource.requestRefund(appointmentId, bankName: bankName, bankAccount: bankAccount, accountName: accountName, : );
+    return await remoteDataSource.requestRefund(appointmentId: appointmentId, bankName: bankName, bankAccount: bankAccount, accountName: accountName);
   }
   @override
   Future<bool> rescheduleAppointment({
@@ -45,6 +50,6 @@ class AppointmentRepoImpl implements AppointmentRepository {
     String? doctorNameSnapshot,
     String? hospitalNameSnapshot,
   }) async {
-    return await remoteDataSource.rescheduleAppointment(appointmentId, scheduleId: scheduleId, doctorId: doctorId, hospitalId: hospitalId, appointmentDate: appointmentDate, appointmentTime: appointmentTime, doctorNameSnapshot: doctorNameSnapshot, hospitalNameSnapshot: hospitalNameSnapshot, : );
+    return await remoteDataSource.rescheduleAppointment(appointmentId: appointmentId, scheduleId: scheduleId, doctorId: doctorId, hospitalId: hospitalId, appointmentDate: appointmentDate, appointmentTime: appointmentTime, doctorNameSnapshot: doctorNameSnapshot, hospitalNameSnapshot: hospitalNameSnapshot);
   }
 }

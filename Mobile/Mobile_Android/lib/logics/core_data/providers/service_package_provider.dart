@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../domain/entities/service_package.dart';
 
-class ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}Provider extends ChangeNotifier {
+class ServicePackageProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 

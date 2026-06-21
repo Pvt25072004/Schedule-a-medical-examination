@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/city.dart';
-import '../../domain/usecases/get_cities_usecase.dart';
+import '../domain/entities/city.dart';
+import '../domain/usecases/get_cities_usecase.dart';
 
 class CityProvider extends ChangeNotifier {
   final GetCitiesUseCase getCitiesUseCase;

@@ -3,8 +3,7 @@ import '../domain/entities/medical_record.dart';
 
 class MedicalRecordProvider extends ChangeNotifier {
 
-  MedicalRecordProvider({
-  });
+  MedicalRecordProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/review_model.dart';
 
 abstract class ReviewRemoteDataSource {
@@ -60,3 +60,4 @@ class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
     }
   }
 }
+

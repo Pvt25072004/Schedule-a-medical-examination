@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../logics/auth/providers/auth_provider.dart';
-import '../atoms/app_button.dart';
-import '../atoms/app_text_field.dart';
-import '../molecules/auth_input_field.dart';
-import '../molecules/social_login_row.dart';
+import '../../../logics/auth/providers/auth_provider.dart';
+import '../../atoms/app_button.dart';
+import '../../atoms/app_text_field.dart';
+import '../../molecules/auth/auth_input_field.dart';
+import '../../molecules/auth/social_login_row.dart';
+import '../../pages/welcome/onboarding_page.dart';
+import '../../pages/doctors/doctor_dashboard_page.dart';
+import '../../pages/auth/password/email_for_pass_page.dart';
 
 class LoginForm extends StatefulWidget {
   final VoidCallback onToggleAuthMode;
@@ -28,7 +31,23 @@ class _LoginFormState extends State<LoginForm> {
     final success = await authProvider.login(input, password);
     
     if (success) {
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      final user = authProvider.currentUser;
+      if (mounted && user != null) {
+        final role = user.role?.toUpperCase() ?? '';
+        if (role == 'UNASSIGNED') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingPage()),
+          );
+        } else if (role == 'DOCTOR') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DoctorDashboardPage()),
+          );
+        } else {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${authProvider.errorMessage}')));
@@ -84,7 +103,12 @@ class _LoginFormState extends State<LoginForm> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EmailForPassPage()),
+                );
+              },
               child: const Text("Quên mật khẩu?", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
             ),
           ),

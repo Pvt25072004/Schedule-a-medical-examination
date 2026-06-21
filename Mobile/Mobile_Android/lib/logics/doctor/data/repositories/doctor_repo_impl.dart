@@ -8,10 +8,10 @@ class DoctorRepoImpl implements DoctorRepository {
 
   @override
   Future<bool> applyForDoctor(Map<String, dynamic> data) async {
-    return await remoteDataSource.applyForDoctor(Map<String, data);
+    return await remoteDataSource.applyForDoctor(data);
   }
   @override
   Future<bool> registerGuestDoctor(Map<String, dynamic> data) async {
-    return await remoteDataSource.registerGuestDoctor(Map<String, data);
+    return await remoteDataSource.registerGuestDoctor(data);
   }
 }

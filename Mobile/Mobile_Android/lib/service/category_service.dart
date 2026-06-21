@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../utils/api_config.dart';
+import '../core/utils/api_config.dart';
 
 class CategoryService {
   Future<List<dynamic>> fetchCategories({int? hospitalId}) async {
@@ -26,3 +26,4 @@ class CategoryService {
     }
   }
 }
+

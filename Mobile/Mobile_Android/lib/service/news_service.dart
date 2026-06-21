@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../utils/api_config.dart';
+import '../core/utils/api_config.dart';
 
 class NewsService {
   /// Lấy danh sách tin tức (báo) với phân trang
@@ -30,3 +30,4 @@ class NewsService {
     }
   }
 }
+

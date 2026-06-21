@@ -1,10 +1,10 @@
 import '../../domain/entities/service_package.dart';
 
-class ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}Model extends ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)} {
-  ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}Model({super.id});
+class ServicePackageModel extends ServicePackage {
+  ServicePackageModel({super.id});
 
-  factory ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}Model.fromJson(Map<String, dynamic> json) {
-    return ${word[0].toUpperCase()}${word.substring(1)}${word[0].toUpperCase()}${word.substring(1)}Model(
+  factory ServicePackageModel.fromJson(Map<String, dynamic> json) {
+    return ServicePackageModel(
       id: json['_id'] ?? json['id'],
     );
   }

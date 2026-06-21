@@ -11,6 +11,6 @@ class RequestrefundUseCase {
     required String bankAccount,
     required String accountName,
   }) async {
-    return await repository.requestRefund(appointmentId, bankName: bankName, bankAccount: bankAccount, accountName: accountName, : );
+    return await repository.requestRefund(appointmentId: appointmentId, bankName: bankName, bankAccount: bankAccount, accountName: accountName);
   }
 }

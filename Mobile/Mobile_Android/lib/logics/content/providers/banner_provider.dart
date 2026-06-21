@@ -3,8 +3,7 @@ import '../domain/entities/banner.dart';
 
 class BannerProvider extends ChangeNotifier {
 
-  BannerProvider({
-  });
+  BannerProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

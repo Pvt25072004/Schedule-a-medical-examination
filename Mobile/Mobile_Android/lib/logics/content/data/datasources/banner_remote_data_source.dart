@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/banner_model.dart';
 
 abstract class BannerRemoteDataSource {
@@ -30,3 +30,4 @@ class BannerRemoteDataSourceImpl implements BannerRemoteDataSource {
     }
   }
 }
+

@@ -1,6 +1,7 @@
 import '../entities/appointment.dart';
 
 abstract class AppointmentRepository {
+  Future<List<dynamic>> fetchUserAppointments(int userId);
   Future<int> getOrCreateUserId({
     required String email,
     required String fullName,

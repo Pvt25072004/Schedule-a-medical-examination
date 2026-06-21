@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/social_model.dart';
 
 abstract class SocialRemoteDataSource {
@@ -55,3 +55,4 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
     }
   }
 }
+

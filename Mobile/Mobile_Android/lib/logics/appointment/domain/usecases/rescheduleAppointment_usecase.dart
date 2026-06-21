@@ -15,6 +15,6 @@ class RescheduleappointmentUseCase {
     String? doctorNameSnapshot,
     String? hospitalNameSnapshot,
   }) async {
-    return await repository.rescheduleAppointment(appointmentId, scheduleId: scheduleId, doctorId: doctorId, hospitalId: hospitalId, appointmentDate: appointmentDate, appointmentTime: appointmentTime, doctorNameSnapshot: doctorNameSnapshot, hospitalNameSnapshot: hospitalNameSnapshot, : );
+    return await repository.rescheduleAppointment(appointmentId: appointmentId, scheduleId: scheduleId, doctorId: doctorId, hospitalId: hospitalId, appointmentDate: appointmentDate, appointmentTime: appointmentTime, doctorNameSnapshot: doctorNameSnapshot, hospitalNameSnapshot: hospitalNameSnapshot);
   }
 }

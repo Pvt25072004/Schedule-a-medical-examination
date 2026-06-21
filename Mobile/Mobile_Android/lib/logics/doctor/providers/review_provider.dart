@@ -28,7 +28,7 @@ class ReviewProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await createReviewUseCase(userId, doctorId: doctorId, appointmentId: appointmentId, rating: rating, comment: comment, : );
+      final result = await createReviewUseCase(userId: userId, doctorId: doctorId, appointmentId: appointmentId, rating: rating, comment: comment);
       // TODO: Handle result
     } catch(e) {
       _errorMessage = e.toString();
@@ -46,7 +46,7 @@ class ReviewProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await updateReviewUseCase(reviewId, rating: rating, comment: comment, : );
+      final result = await updateReviewUseCase(reviewId: reviewId, rating: rating, comment: comment);
       // TODO: Handle result
     } catch(e) {
       _errorMessage = e.toString();

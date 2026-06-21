@@ -1,34 +1,20 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'auth_service.dart';
-import '../utils/api_config.dart';
+import 'package:dio/dio.dart';
+import '../core/utils/api_config.dart';
+import '../core/network/dio_client.dart';
 
 class AppointmentService {
-  /// Lấy Access Token hiện tại
-  Map<String, String> _getHeaders() {
-    final token = AuthService.accessToken;
-    final headers = {'Content-Type': 'application/json'};
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-    return headers;
-  }
+  Dio get _dio => DioClient().dio;
 
-  /// Đồng bộ hóa tài khoản Firebase sang SQL Server (NestJS) - Dùng làm fallback dự phòng
   Future<int> getOrCreateUserId({
     required String email,
     required String fullName,
     required String phone,
   }) async {
     try {
-      // BƯỚC 1: Kiểm tra xem user đã tồn tại trên SQL hay chưa qua GET /users
-      final listResponse = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/users'),
-        headers: _getHeaders(),
-      ).timeout(ApiConfig.timeout);
+      final listResponse = await _dio.get('${ApiConfig.baseUrl}/users');
 
       if (listResponse.statusCode == 200) {
-        final List<dynamic> users = jsonDecode(listResponse.body);
+        final List<dynamic> users = listResponse.data;
         final existingUser = users.firstWhere(
           (u) => u['email'].toString().toLowerCase() == email.toLowerCase(),
           orElse: () => null,
@@ -39,28 +25,26 @@ class AppointmentService {
         }
       }
 
-      // BƯỚC 2: Nếu chưa tồn tại, tiến hành tạo mới tự động (Bridge)
       final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
       final validPhone = cleanPhone.length >= 10 ? cleanPhone.substring(0, 10) : '0999999999';
 
-      final createResponse = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/users'),
-        headers: _getHeaders(),
-        body: jsonEncode({
+      final createResponse = await _dio.post(
+        '${ApiConfig.baseUrl}/users',
+        data: {
           'full_name': fullName.isNotEmpty ? fullName : 'Khách hàng',
           'email': email,
           'phone': validPhone,
           'gender': 'other',
           'role': 'patient',
           'password_hash': 'firebase_bridged', 
-        }),
-      ).timeout(ApiConfig.timeout);
+        },
+      );
 
       if (createResponse.statusCode == 201) {
-        final Map<String, dynamic> newUser = jsonDecode(createResponse.body);
+        final Map<String, dynamic> newUser = createResponse.data;
         return newUser['id'] as int;
       } else {
-        print('⚠️ Không thể tự động tạo user trên Backend: ${createResponse.body}');
+        print('⚠️ Không thể tự động tạo user trên Backend: ${createResponse.data}');
       }
     } catch (e) {
       print('🔥 Lỗi đồng bộ hóa Bridge User: $e');
@@ -69,7 +53,6 @@ class AppointmentService {
     return 1; 
   }
 
-  /// Tạo lịch hẹn mới trên hệ thống
   Future<Map<String, dynamic>?> createAppointment({
     required int doctorId,
     required int hospitalId,
@@ -83,20 +66,18 @@ class AppointmentService {
     String? patientDob,
     String? relationship,
     String? patientAddress,
+    String? currentUserId, // Thêm trường này
   }) async {
     try {
       int realUserId = 1;
 
-      // KIỂM TRA ƯU TIÊN: Dùng trực tiếp User ID từ session đã đăng nhập của AuthService mới!
-      final currentUser = AuthService.currentUser;
-      if (currentUser != null && currentUser.uid.isNotEmpty) {
-        final parsedId = int.tryParse(currentUser.uid);
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        final parsedId = int.tryParse(currentUserId);
         if (parsedId != null) {
           realUserId = parsedId;
           print('✅ Dùng trực tiếp User ID từ Session mới: $realUserId');
         }
       } else {
-        // FALLBACK: Dùng cơ chế Bridge nếu chạy luồng không bắt buộc login cũ
         print('⚠️ Không tìm thấy session, dùng luồng Bridge...');
         realUserId = await getOrCreateUserId(
           email: patientEmail,
@@ -119,18 +100,17 @@ class AppointmentService {
         if (patientAddress != null) 'patientAddress': patientAddress,
       };
 
-      print('🚀 Gửi payload đặt lịch: ${jsonEncode(payload)}');
+      print('🚀 Gửi payload đặt lịch: $payload');
 
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/appointments'),
-        headers: _getHeaders(),
-        body: jsonEncode(payload),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.post(
+        '${ApiConfig.baseUrl}/appointments',
+        data: payload,
+      );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        return response.data as Map<String, dynamic>;
       } else {
-        final errorMsg = jsonDecode(utf8.decode(response.bodyBytes))['message'] ?? 'Lỗi không rõ';
+        final errorMsg = response.data['message'] ?? 'Lỗi không rõ';
         throw Exception(errorMsg);
       }
     } catch (e) {
@@ -139,18 +119,14 @@ class AppointmentService {
     }
   }
 
-  /// Lấy danh sách lịch hẹn của Bệnh nhân theo mã Bệnh nhân (User ID)
   Future<List<dynamic>> fetchUserAppointments(int userId) async {
     try {
       final urlStr = '${ApiConfig.baseUrl}/appointments/user/$userId';
       print('➡️ Lấy lịch khám của Bệnh nhân: $urlStr');
-      final response = await http.get(
-        Uri.parse(urlStr),
-        headers: _getHeaders(),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.get(urlStr);
 
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        return response.data as List<dynamic>;
       }
       return [];
     } catch (e) {
@@ -159,7 +135,6 @@ class AppointmentService {
     }
   }
 
-  /// Lấy danh sách lịch hẹn của Bác sĩ theo mã Bác sĩ và Ngày khám (tuỳ chọn)
   Future<List<dynamic>> fetchDoctorAppointments({required int doctorId, String? date}) async {
     try {
       String urlStr = '${ApiConfig.baseUrl}/appointments/doctor/$doctorId';
@@ -168,13 +143,10 @@ class AppointmentService {
       }
 
       print('➡️ Lấy lịch khám của Bác sĩ: $urlStr');
-      final response = await http.get(
-        Uri.parse(urlStr),
-        headers: _getHeaders(),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.get(urlStr);
 
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        return response.data as List<dynamic>;
       }
       return [];
     } catch (e) {
@@ -183,7 +155,6 @@ class AppointmentService {
     }
   }
 
-  /// Cập nhật trạng thái Lịch hẹn (Ví dụ: Xác nhận, Hoàn tất, Từ chối)
   Future<bool> updateAppointmentStatus({
     required int appointmentId,
     required String status,
@@ -203,16 +174,15 @@ class AppointmentService {
       };
 
       print('🚀 Cập nhật Trạng thái Lịch hẹn: $urlStr -> $status');
-      final response = await http.patch(
-        Uri.parse(urlStr),
-        headers: _getHeaders(),
-        body: jsonEncode(payload),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.patch(
+        urlStr,
+        data: payload,
+      );
 
       if (response.statusCode == 200) {
         return true;
       }
-      print('🔥 updateAppointmentStatus Failed with status ${response.statusCode}: ${response.body}');
+      print('🔥 updateAppointmentStatus Failed with status ${response.statusCode}: ${response.data}');
       return false;
     } catch (e) {
       print('🔥 updateAppointmentStatus Error: $e');
@@ -235,16 +205,15 @@ class AppointmentService {
       };
 
       print('🚀 Yêu cầu hoàn tiền: $urlStr');
-      final response = await http.post(
-        Uri.parse(urlStr),
-        headers: _getHeaders(),
-        body: jsonEncode(payload),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.post(
+        urlStr,
+        data: payload,
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       }
-      print('🔥 requestRefund Failed with status ${response.statusCode}: ${response.body}');
+      print('🔥 requestRefund Failed with status ${response.statusCode}: ${response.data}');
       return false;
     } catch (e) {
       print('🔥 requestRefund Error: $e');
@@ -275,16 +244,15 @@ class AppointmentService {
       };
 
       print('🚀 Dời lịch hẹn: $urlStr');
-      final response = await http.put(
-        Uri.parse(urlStr),
-        headers: _getHeaders(),
-        body: jsonEncode(payload),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.put(
+        urlStr,
+        data: payload,
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       }
-      print('🔥 reschedule Failed with status ${response.statusCode}: ${response.body}');
+      print('🔥 reschedule Failed with status ${response.statusCode}: ${response.data}');
       return false;
     } catch (e) {
       print('🔥 reschedule Error: $e');
@@ -292,3 +260,4 @@ class AppointmentService {
     }
   }
 }
+

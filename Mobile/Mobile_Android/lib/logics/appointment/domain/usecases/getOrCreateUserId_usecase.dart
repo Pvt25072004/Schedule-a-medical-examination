@@ -10,6 +10,6 @@ class GetorcreateuseridUseCase {
     required String fullName,
     required String phone,
   }) async {
-    return await repository.getOrCreateUserId(email, fullName: fullName, phone: phone, : );
+    return await repository.getOrCreateUserId(email: email, fullName: fullName, phone: phone);
   }
 }

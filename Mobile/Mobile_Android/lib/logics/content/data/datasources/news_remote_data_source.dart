@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/news_model.dart';
 
 abstract class NewsRemoteDataSource {
@@ -31,3 +31,4 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
     }
   }
 }
+

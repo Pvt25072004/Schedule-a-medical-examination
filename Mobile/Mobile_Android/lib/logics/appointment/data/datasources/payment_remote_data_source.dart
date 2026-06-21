@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../../../utils/api_config.dart';
+import '../../../../core/utils/api_config.dart';
 import '../models/payment_model.dart';
 
 abstract class PaymentRemoteDataSource {
@@ -26,7 +26,7 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     required String orderInfo,
   }) async {
     try {
-      final response = await dio.post('${ApiConfig.baseUrl}/payments/vnpay/create-url', data: payload);
+      final response = await dio.post('${ApiConfig.baseUrl}/payments/vnpay/create-url', data: {});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         return data as String?;
@@ -44,7 +44,7 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     required String orderInfo,
   }) async {
     try {
-      final response = await dio.post('${ApiConfig.baseUrl}/payments/payos/create-url', data: payload);
+      final response = await dio.post('${ApiConfig.baseUrl}/payments/payos/create-url', data: {});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         return data as String?;
@@ -56,3 +56,4 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     }
   }
 }
+

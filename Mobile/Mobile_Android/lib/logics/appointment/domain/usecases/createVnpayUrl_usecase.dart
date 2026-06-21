@@ -10,6 +10,6 @@ class CreatevnpayurlUseCase {
     required double amount,
     required String orderInfo,
   }) async {
-    return await repository.createVnpayUrl(appointmentId, amount: amount, orderInfo: orderInfo, : );
+    return await repository.createVnpayUrl(appointmentId: appointmentId, amount: amount, orderInfo: orderInfo);
   }
 }

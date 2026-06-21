@@ -3,8 +3,7 @@ import '../domain/entities/startup.dart';
 
 class StartupProvider extends ChangeNotifier {
 
-  StartupProvider({
-  });
+  StartupProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

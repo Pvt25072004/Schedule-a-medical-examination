@@ -10,6 +10,6 @@ class UpdatereviewUseCase {
     required int rating,
     String? comment,
   }) async {
-    return await repository.updateReview(reviewId, rating: rating, comment: comment, : );
+    return await repository.updateReview(reviewId: reviewId, rating: rating, comment: comment);
   }
 }

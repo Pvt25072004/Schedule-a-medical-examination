@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../templates/auth_template.dart';
-import '../../organisms/register_form.dart';
+import '../../organisms/auth/register_form.dart';
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});

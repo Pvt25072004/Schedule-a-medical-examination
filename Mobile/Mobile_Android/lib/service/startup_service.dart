@@ -1,35 +1,38 @@
 import 'package:flutter/material.dart';
-import 'auth_service.dart';
 import 'category_service.dart';
-import '../screens/home.dart';
-import '../screens/doctor_dashboard.dart';
-import '../welcome/onboarding.dart';
-import '../welcome/welcome.dart';
+import '../presentation/pages/home/home_page.dart';
+import '../presentation/pages/doctors/doctor_dashboard_page.dart';
+import '../presentation/pages/welcome/onboarding_page.dart';
+import '../presentation/pages/welcome/welcome_page.dart';
 import '../dashboard.dart';
+import 'package:provider/provider.dart';
+import '../logics/auth/providers/auth_provider.dart';
+import '../logics/user/providers/user_provider.dart';
 
 class StartupService {
   static final CategoryService _categoryService = CategoryService();
-  static final AuthService _authService = AuthService();
-
-  /// Khởi tạo và xác định màn hình bắt đầu
   static Future<Map<String, dynamic>> initialize(BuildContext context) async {
     final startTime = DateTime.now();
 
-    // 1. Khởi tạo Core (Auth state)
-    await AuthService.init();
-    final user = AuthService.currentUser;
+    final authProvider = context.read<AuthProvider>();
+    // Đảm bảo current user được load (ví dụ check token)
+    if (authProvider.currentUser == null) {
+       await authProvider.checkAuthStatus(); // Giả sử có hàm này, nếu không thì getCurrentUser
+    }
+    final user = authProvider.currentUser;
 
     Widget nextScreen;
     List<dynamic> initialCategories = [];
 
     if (user != null) {
       try {
-        // 2. Lấy dữ liệu người dùng (Timeout 3s để không treo Splash)
-        final userData = await _authService.fetchUserData(user.uid).timeout(const Duration(seconds: 3));
+        final userProvider = context.read<UserProvider>();
+        await userProvider.fetchUserData(user.id);
+        final userData = userProvider.userData ?? {};
         final role = userData['role'] as String? ?? 'patient';
 
         if (role.toLowerCase() == 'doctor' || role == 'Bác sĩ') {
-          nextScreen = const DoctorDashboardScreen();
+          nextScreen = const DoctorDashboardPage();
         } else {
           // Bệnh nhân - Tải thêm chuyên khoa (dữ liệu nhẹ, Timeout 2s)
           initialCategories = await _categoryService.fetchCategories().timeout(const Duration(seconds: 2));
@@ -38,17 +41,17 @@ class StartupService {
           final bool isProfileIncomplete = !_isProfileComplete(userData);
 
           if (isOnboardingNeeded || isProfileIncomplete) {
-            nextScreen = const OnboardingFlowScreen();
+            nextScreen = const OnboardingPage();
           } else {
             nextScreen = const MainScreen();
           }
         }
       } catch (e) {
         debugPrint('⚠️ Startup Error (Failsafe): $e');
-        nextScreen = const WelcomeScreen(); // Fallback về Welcome nếu lỗi
+        nextScreen = const WelcomePage(); // Fallback về Welcome nếu lỗi
       }
     } else {
-      nextScreen = const WelcomeScreen();
+      nextScreen = const WelcomePage();
     }
 
     // 3. Đảm bảo thời gian hiển thị tối thiểu (800ms)

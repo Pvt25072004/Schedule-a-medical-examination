@@ -12,6 +12,6 @@ class CreatereviewUseCase {
     required int rating,
     String? comment,
   }) async {
-    return await repository.createReview(userId, doctorId: doctorId, appointmentId: appointmentId, rating: rating, comment: comment, : );
+    return await repository.createReview(userId: userId, doctorId: doctorId, appointmentId: appointmentId, rating: rating, comment: comment);
   }
 }

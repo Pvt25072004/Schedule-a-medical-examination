@@ -3,8 +3,7 @@ import '../domain/entities/category.dart';
 
 class CategoryProvider extends ChangeNotifier {
 
-  CategoryProvider({
-  });
+  CategoryProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

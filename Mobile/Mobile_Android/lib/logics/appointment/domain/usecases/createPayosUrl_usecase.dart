@@ -10,6 +10,6 @@ class CreatepayosurlUseCase {
     required double amount,
     required String orderInfo,
   }) async {
-    return await repository.createPayosUrl(appointmentId, amount: amount, orderInfo: orderInfo, : );
+    return await repository.createPayosUrl(appointmentId: appointmentId, amount: amount, orderInfo: orderInfo);
   }
 }

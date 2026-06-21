@@ -6,6 +6,6 @@ class RegisterguestdoctorUseCase {
   RegisterguestdoctorUseCase(this.repository);
 
   Future<bool> call(Map<String, dynamic> data) async {
-    return await repository.registerGuestDoctor(Map<String, data);
+    return await repository.registerGuestDoctor(data);
   }
 }

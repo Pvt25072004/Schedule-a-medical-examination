@@ -3,8 +3,7 @@ import '../domain/entities/service_package.dart';
 
 class ServicePackageProvider extends ChangeNotifier {
 
-  ServicePackageProvider({
-  });
+  ServicePackageProvider();
 
   bool _isLoading = false;
   String? _errorMessage;

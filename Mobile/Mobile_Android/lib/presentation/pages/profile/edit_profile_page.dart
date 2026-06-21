@@ -1,0 +1,544 @@
+import 'package:clinic_booking_system/core/utils/snackbar_helper.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../../logics/auth/providers/auth_provider.dart';
+import '../../../logics/user/providers/user_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:clinic_booking_system/core/tokens/app_colors.dart';
+import '../home/home_page.dart';
+
+class EditProfilePage extends StatefulWidget {
+  const EditProfilePage({super.key});
+
+  @override
+  State<EditProfilePage> createState() => _EditProfileState();
+}
+
+class _EditProfileState extends State<EditProfilePage> {
+  Map<String, dynamic>? userData;
+  bool _isLoading = true;
+
+  // Controllers cho các trường nhập liệu
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _medicalHistoryController = TextEditingController();
+  final _insuranceController = TextEditingController();
+
+  // Địa chỉ - tách riêng
+  final _streetController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _provinceController = TextEditingController();
+
+  String _selectedGender = 'Nam';
+
+  DateTime? _selectedDob;
+  final List<String> _genders = ['Nam', 'Nữ', 'Khác'];
+
+  // Màu fill nền cho input
+  final Color _inputFillColor = Colors.grey.shade50;
+
+  // Trạng thái email/phone từ backend
+  bool _emailExists = false;
+  bool _phoneExists = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  // Helper để tạo tiêu đề khối
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 20,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- LOGIC FETCH DATA (Cập nhật từ Backend) ---
+  Future<void> _fetchUserData() async {
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.currentUser;
+    if (user == null) {
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+      return;
+    }
+
+    try {
+      final userProvider = context.read<UserProvider>();
+      if (userProvider.userData == null) {
+        await userProvider.fetchUserData(user.id);
+      }
+      final data = userProvider.userData;
+
+      if (mounted) {
+        setState(() {
+          userData = data;
+          _isLoading = false;
+
+          _nameController.text = userData?['displayName'] ?? '';
+          _phoneController.text = userData?['phone'] ?? '';
+          _emailController.text = userData?['email'] ?? (user.email ?? '');
+
+          // Fallback gender Mapping
+          _selectedGender = userData?['gender'] ?? 'Nam';
+          _medicalHistoryController.text = userData?['medicalHistory'] ?? '';
+          _insuranceController.text = userData?['insuranceId'] ?? 'BH123456789'; // Giả định BH Y tế
+
+          final address = userData?['address'] as Map?;
+          if (address != null) {
+            _streetController.text = address['street'] ?? '';
+            _districtController.text = address['district'] ?? '';
+            _provinceController.text = address['province'] ?? '';
+          }
+
+          final dobRaw = userData?['dateOfBirth'];
+          if (dobRaw != null) {
+            try {
+              _selectedDob = DateTime.tryParse(dobRaw.toString());
+            } catch (_) {
+              _selectedDob = null;
+            }
+          }
+
+          // Kiểm tra email/phone exists để set readOnly
+          _emailExists = _emailController.text.isNotEmpty;
+          _phoneExists = _phoneController.text.isNotEmpty && !_phoneController.text.startsWith('0000');
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        showAppSnackBar(context, 'Không thể tải dữ liệu profile: $e');
+      }
+    }
+  }
+
+  // --- LOGIC CHỌN NGÀY ---
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDob ?? DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedDob = picked;
+      });
+    }
+  }
+
+  // --- LOGIC SAVE ---
+  Future<void> _saveProfile() async {
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.currentUser;
+    if (user == null) return;
+
+    if (_nameController.text.trim().isEmpty) {
+      showAppSnackBar(context, 'Vui lòng nhập tên hiển thị');
+      return;
+    }
+
+    try {
+      final updates = <String, dynamic>{
+        'displayName': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'email': _emailController.text.trim(),
+        'gender': _selectedGender,
+        'dateOfBirth': _selectedDob != null ? DateFormat('yyyy-MM-dd').format(_selectedDob!) : null,
+        'medicalHistory': _medicalHistoryController.text.trim(),
+        'insuranceId': _insuranceController.text.trim(),
+        'address': {
+          'street': _streetController.text.trim(),
+          'district': _districtController.text.trim(),
+          'province': _provinceController.text.trim(),
+        },
+      };
+
+      final userProvider = context.read<UserProvider>();
+      final success = await userProvider.updateProfile(user.id, updates);
+
+      if (success) {
+        if (context.mounted) {
+          showAppSnackBar(context, 'Cập nhật hồ sơ thành công');
+          Navigator.pop(context);
+        }
+      } else {
+        if (context.mounted) {
+          showAppSnackBar(context, 'Lỗi cập nhật: ${userProvider.errorMessage}');
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAppSnackBar(context, 'Lỗi cập nhật: ${e.toString()}');
+      }
+    }
+  }
+
+  // --- LOGIC XÓA TÀI KHOẢN ---
+  Future<void> _deleteAccount() async {
+    showAppSnackBar(context, 'Chức năng xóa tài khoản đang phát triển...');
+  }
+
+  // --- WIDGET TEXTFIELD CÓ KHUNG ---
+  Widget _buildFramedTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required TextStyle textStyle,
+    Widget? prefixIcon,
+    TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: readOnly,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: labelText,
+        prefixIcon: prefixIcon,
+        suffixIcon: readOnly ? Icon(Icons.verified, color: AppColors.primary, size: 20) : null,
+        labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+        filled: true,
+        fillColor: readOnly ? AppColors.primaryLight : _inputFillColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.red),
+        ),
+      ),
+      style: textStyle,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const labelStyle = TextStyle(fontSize: 16, color: Colors.black87);
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text("Tài khoản", style: TextStyle(fontWeight: FontWeight.w600)),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // --- 1. KHỐI ẢNH ĐẠI DIỆN ---
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Ảnh đại diện'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primary, width: 3),
+                          ),
+                          child: CircleAvatar(
+                            radius: 40,
+                            backgroundColor: AppColors.primaryLight,
+                            child: const Icon(Icons.person, size: 50, color: AppColors.primary),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () { showAppSnackBar(context, 'Chọn ảnh (Mock)'); },
+                            icon: const Icon(Icons.camera_alt_outlined, size: 20),
+                            label: const Text('Thay đổi ảnh', style: TextStyle(fontWeight: FontWeight.w600)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: AppColors.primary,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('JPG, PNG. Tối đa 2MB', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // --- 2. KHỐI THÔNG TIN CÁ NHÂN ---
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Thông tin cá nhân'),
+                    const SizedBox(height: 16),
+
+                    // Họ và tên
+                    _buildFramedTextField(
+                      controller: _nameController,
+                      labelText: 'Họ và tên *',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.person_outline, size: 20, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Giới tính
+                    _buildFramedTextField(
+                      controller: TextEditingController(text: _selectedGender),
+                      labelText: 'Giới tính',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.transgender, size: 20, color: Colors.grey),
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Ngày sinh
+                    GestureDetector(
+                      onTap: _pickDate,
+                      child: _buildFramedTextField(
+                        controller: TextEditingController(
+                          text: _selectedDob != null
+                              ? DateFormat('dd/MM/yyyy').format(_selectedDob!)
+                              : null,
+                        ),
+                        labelText: 'Ngày sinh',
+                        textStyle: labelStyle.copyWith(
+                          color: _selectedDob == null ? Colors.grey.shade600 : Colors.black87,
+                        ),
+                        prefixIcon: const Icon(Icons.calendar_today_outlined, size: 20, color: Colors.grey),
+                        readOnly: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Số bảo hiểm y tế
+                    _buildFramedTextField(
+                      controller: _insuranceController,
+                      labelText: 'Số bảo hiểm y tế',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.verified_user_outlined, size: 20, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Bệnh nền
+                    _buildFramedTextField(
+                      controller: _medicalHistoryController,
+                      labelText: 'Bệnh nền',
+                      textStyle: labelStyle,
+                      maxLines: 3,
+                      prefixIcon: const Icon(Icons.medical_information_outlined, size: 20, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // --- 3. KHỐI THÔNG TIN LIÊN HỆ & ĐỊA CHỈ ---
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Thông tin liên hệ'),
+                    const SizedBox(height: 16),
+
+                    // Email
+                    _buildFramedTextField(
+                      controller: _emailController,
+                      labelText: 'Email *',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.email_outlined, size: 20, color: Colors.grey),
+                      keyboardType: TextInputType.emailAddress,
+                      readOnly: _emailExists,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Số điện thoại
+                    _buildFramedTextField(
+                      controller: _phoneController,
+                      labelText: 'Số điện thoại *',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.phone_outlined, size: 20, color: Colors.grey),
+                      keyboardType: TextInputType.phone,
+                      readOnly: _phoneExists,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Địa chỉ
+                    _buildFramedTextField(
+                      controller: _streetController,
+                      labelText: 'Số nhà, đường *',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFramedTextField(
+                      controller: _districtController,
+                      labelText: 'Quận/Huyện *',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.map_outlined, size: 20, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFramedTextField(
+                      controller: _provinceController,
+                      labelText: 'Thành phố/Tỉnh *',
+                      textStyle: labelStyle,
+                      prefixIcon: const Icon(Icons.location_city_outlined, size: 20, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // --- 4. NÚT HÀNH ĐỘNG ---
+            SizedBox(
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _saveProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  "Lưu thay đổi",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Nút Xóa tài khoản
+            SizedBox(
+              height: 50,
+              child: OutlinedButton(
+                onPressed: _deleteAccount,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "Xóa tài khoản",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _medicalHistoryController.dispose();
+    _streetController.dispose();
+    _districtController.dispose();
+    _provinceController.dispose();
+    _insuranceController.dispose();
+    super.dispose();
+  }
+}
+
+
+
+

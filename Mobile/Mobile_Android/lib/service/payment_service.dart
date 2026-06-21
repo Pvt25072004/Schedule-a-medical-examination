@@ -1,17 +1,10 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'auth_service.dart';
-import '../utils/api_config.dart';
+import 'package:dio/dio.dart';
+import '../core/utils/api_config.dart';
+import '../core/network/dio_client.dart';
 
 class PaymentService {
-  Map<String, String> _getHeaders() {
-    final token = AuthService.accessToken;
-    final headers = {'Content-Type': 'application/json'};
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-    return headers;
-  }
+  Dio get _dio => DioClient().dio;
 
   Future<String?> createVnpayUrl({
     required int appointmentId,
@@ -27,17 +20,16 @@ class PaymentService {
 
       print('🚀 Gọi API tạo URL VNPAY: ${jsonEncode(payload)}');
 
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/payments/vnpay/create-url'),
-        headers: _getHeaders(),
-        body: jsonEncode(payload),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.post(
+        '${ApiConfig.baseUrl}/payments/vnpay/create-url',
+        data: payload,
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final data = response.data;
         return data['url'] as String?;
       } else {
-        print('🔥 Lỗi từ backend VNPAY: ${response.body}');
+        print('🔥 Lỗi từ backend VNPAY: ${response.data}');
         return null;
       }
     } catch (e) {
@@ -60,17 +52,16 @@ class PaymentService {
 
       print('🚀 Gọi API tạo URL PayOS: ${jsonEncode(payload)}');
 
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/payments/payos/create-url'),
-        headers: _getHeaders(),
-        body: jsonEncode(payload),
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.post(
+        '${ApiConfig.baseUrl}/payments/payos/create-url',
+        data: payload,
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final data = response.data;
         return data['url'] as String?;
       } else {
-        print('🔥 Lỗi từ backend PayOS: ${response.body}');
+        print('🔥 Lỗi từ backend PayOS: ${response.data}');
         return null;
       }
     } catch (e) {
@@ -82,13 +73,12 @@ class PaymentService {
   /// Lấy thông tin thanh toán của lịch hẹn
   Future<Map<String, dynamic>?> checkPaymentStatus(int appointmentId) async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/payments/appointment/$appointmentId'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(ApiConfig.timeout);
+      final response = await _dio.get(
+        '${ApiConfig.baseUrl}/payments/appointment/$appointmentId',
+      );
 
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes));
+        return response.data as Map<String, dynamic>;
       }
       return null;
     } catch (e) {
@@ -97,3 +87,4 @@ class PaymentService {
     }
   }
 }
+
