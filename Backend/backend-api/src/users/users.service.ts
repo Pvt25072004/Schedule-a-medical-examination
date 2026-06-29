@@ -105,6 +105,14 @@ export class UsersService {
     });
   }
 
+  async findFirstHospitalAdmin(): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { role: 'admin_hospital' },
+      order: { id: 'ASC' },
+      relations: ['hospital'],
+    });
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     if (createUserDto.password) {
       createUserDto.password_hash = await bcrypt.hash(createUserDto.password, 10);

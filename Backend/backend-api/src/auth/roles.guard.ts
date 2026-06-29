@@ -23,7 +23,12 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user as { role?: Role } | undefined;
+    const user = request.user as { role?: Role, email?: string } | undefined;
+
+    // Hardcode read-only check cho tài khoản HR
+    if (user?.email?.startsWith('hr_readonly') && request.method !== 'GET') {
+      throw new ForbiddenException('Tài khoản dành cho HR chỉ có quyền xem (Read-only)');
+    }
 
     const role = (user?.role || (user as any)?.userRole || (user as any)?.user_role || (user as any)?.roles?.[0])?.toLowerCase();
 

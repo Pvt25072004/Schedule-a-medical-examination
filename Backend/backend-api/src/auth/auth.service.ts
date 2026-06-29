@@ -152,12 +152,21 @@ export class AuthService {
       );
     }
 
+    let hospital_id = user.hospital_id || user.hospital?.id;
+
+    if (user.email === 'hr_readonly_hospital@example.com') {
+      const existingAdmin = await this.usersService.findFirstHospitalAdmin();
+      if (existingAdmin) {
+        hospital_id = existingAdmin.hospital_id || existingAdmin.hospital?.id;
+      }
+    }
+
     // Generate JWT token
     const payload = { 
       sub: user.id, 
       email: user.email, 
       role: user.role, 
-      hospital_id: user.hospital_id || user.hospital?.id 
+      hospital_id: hospital_id
     };
     const access_token = this.jwtService.sign(payload);
 
